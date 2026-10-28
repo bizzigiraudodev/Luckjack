@@ -4,7 +4,7 @@
   const Bonuses = root.Bonuses || (typeof require !== 'undefined' && require('./bonuses.js'));
   const Decks = root.Decks || (typeof require !== 'undefined' && require('./decks.js'));
 
-  const HANDS_PER_CYCLE = 10;
+  const HANDS_PER_CYCLE = 15;
   const SHOP_EVERY = 5;
   const MAX_BONUSES = 5;
   const START_MONEY = 100;
