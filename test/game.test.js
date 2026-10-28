@@ -109,13 +109,19 @@ test('Segunda Oportunidad descarta la última carta', () => {
   assert.ok(!g.canDiscard());
 });
 
-function failCycle(g) {
-  for (let i = 0; i < 5; i++) {
-    stack(g, [c('K'), c('K'), c('7'), c('8')]); // pierde 17 vs 18
+// Juega `n` manos con las mismas cartas, pasando por la tienda de mitad de ciclo.
+function playHands(g, n, cards) {
+  for (let i = 0; i < n; i++) {
+    stack(g, cards);
     g.deal(10);
     g.stand();
     g.nextHand();
+    if (g.phase === 'shop' && g.shop.midCycle) g.leaveShop();
   }
+}
+
+function failCycle(g) {
+  playHands(g, 10, [c('K'), c('K'), c('7'), c('8')]); // pierde 17 vs 18
 }
 
 test('no llegar a la cuota hace perder el mazo; perder el 3ro es game over', () => {
@@ -197,22 +203,39 @@ test('mazo dorado en la tienda: aparece ~5% y se puede comprar', () => {
   assert.strictEqual(g.shop.deckOffer, null, 'no se ofrece si ya lo tenés');
 });
 
-test('superar la cuota abre la tienda y se puede comprar', () => {
+test('la tienda aparece a las 5 manos sin chequear la cuota', () => {
   const g = new Game();
   for (let i = 0; i < 5; i++) {
-    stack(g, [c('K'), c('9'), c('Q'), c('8')]);
+    stack(g, [c('K'), c('K'), c('7'), c('8')]);
     g.deal(10);
     g.stand();
     g.nextHand();
   }
-  assert.strictEqual(g.money, 150);
+  assert.strictEqual(g.money, 50);
   assert.strictEqual(g.phase, 'shop');
+  assert.ok(g.shop.midCycle);
+  g.leaveShop();
+  assert.strictEqual(g.cycle, 1);
+  assert.strictEqual(g.handInCycle, 6);
+  assert.strictEqual(g.phase, 'betting');
+});
+
+test('superar la cuota a las 10 manos abre la tienda y se puede comprar', () => {
+  const g = new Game();
+  playHands(g, 9, [c('K'), c('9'), c('Q'), c('8')]);
+  stack(g, [c('K'), c('9'), c('Q'), c('8')]);
+  g.deal(10);
+  g.stand();
+  g.nextHand();
+  assert.strictEqual(g.money, 200);
+  assert.strictEqual(g.phase, 'shop');
+  assert.ok(!g.shop.midCycle);
   assert.strictEqual(g.shop.offers.length, 3);
   const offer = g.shop.offers[0];
   const price = g.priceOf(offer);
   g.buy(offer.id);
   assert.ok(g.has(offer.id));
-  assert.strictEqual(g.money, 150 - price);
+  assert.strictEqual(g.money, 200 - price);
   g.sell(offer.id);
   assert.ok(!g.has(offer.id));
   g.leaveShop();

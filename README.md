@@ -14,9 +14,9 @@ npm start   # sirve la carpeta con `serve`
 
 - Blackjack clásico contra el crupier: acercate a 21 más que él sin pasarte. El crupier se planta en 17.
 - Ganar paga **1:1**, el blackjack natural paga **3:2**. Podés **doblar** con tus dos primeras cartas.
-- Empezás con **$100**. La partida se divide en **ciclos de 5 manos**.
+- Empezás con **$100**. La partida se divide en **ciclos de 10 manos**.
 - Al terminar cada ciclo tenés que tener al menos la **cuota** (`$100 × 1.25^ciclo`), si no, perdés.
-- Si la superás, aparece la **tienda**: 3 bonuses al azar (ponderados por rareza). Podés comprar, vender a mitad de precio o pagar para cambiar las ofertas. Máximo 5 bonuses.
+- Cada **5 manos** aparece la **tienda** (a mitad de ciclo y, si superaste la cuota, al final): 3 bonuses al azar (ponderados por rareza). Podés comprar, vender a mitad de precio o pagar para cambiar las ofertas. Máximo 5 bonuses.
 - Cada ciclo sube la cuota y la apuesta mínima (`$10 + $5` por ciclo). El objetivo: llegar lo más lejos posible. El récord se guarda en el navegador.
 
 ### Mazos (vidas)

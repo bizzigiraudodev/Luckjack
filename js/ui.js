@@ -1,6 +1,6 @@
 // Interfaz: dibuja el estado de Game y conecta los botones.
 (function () {
-  const { Game, HANDS_PER_CYCLE, MAX_BONUSES, OUTCOME_TEXT, formatNet } = GameModule;
+  const { Game, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, OUTCOME_TEXT, formatNet } = GameModule;
   const { RARITY, getBonus } = Bonuses;
 
   const $ = (id) => document.getElementById(id);
@@ -143,7 +143,8 @@
       $('btn-discard').disabled = !game.canDiscard();
     }
     if (game.phase === 'roundOver') {
-      $('btn-next').textContent = game.handInCycle >= HANDS_PER_CYCLE ? 'Terminar ciclo' : 'Siguiente mano';
+      $('btn-next').textContent = game.handInCycle >= HANDS_PER_CYCLE ? 'Terminar ciclo'
+        : game.handInCycle % SHOP_EVERY === 0 ? 'Ir a la tienda' : 'Siguiente mano';
     }
   }
 
@@ -160,8 +161,12 @@
     shop.hidden = game.phase !== 'shop';
     if (game.phase !== 'shop') return;
     $('shop-money').textContent = `$${game.money}`;
-    $('shop-quota').textContent = `$${game.quotaFor(game.cycle + 1)}`;
-    $('shop-minbet').textContent = `$${game.minBetFor(game.cycle + 1)}`;
+    // A mitad de ciclo se muestra la cuota actual; al final, la del próximo ciclo.
+    const nextCycle = game.shop.midCycle ? game.cycle : game.cycle + 1;
+    $('shop-quota-label').textContent = game.shop.midCycle
+      ? `Cuota (quedan ${HANDS_PER_CYCLE - game.handInCycle} manos)` : 'Próxima cuota';
+    $('shop-quota').textContent = `$${game.quotaFor(nextCycle)}`;
+    $('shop-minbet').textContent = `$${game.minBetFor(nextCycle)}`;
 
     const offers = game.shop.offers.map((b) => {
       const el = document.createElement('div');

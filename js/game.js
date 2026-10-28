@@ -4,7 +4,8 @@
   const Bonuses = root.Bonuses || (typeof require !== 'undefined' && require('./bonuses.js'));
   const Decks = root.Decks || (typeof require !== 'undefined' && require('./decks.js'));
 
-  const HANDS_PER_CYCLE = 5;
+  const HANDS_PER_CYCLE = 10;
+  const SHOP_EVERY = 5;
   const MAX_BONUSES = 5;
   const START_MONEY = 100;
   const RESHUFFLE_AT = 15;
@@ -318,9 +319,18 @@
       this.bet = 0;
 
       if (this.handInCycle >= HANDS_PER_CYCLE) return this.endCycle();
-
-      this.handInCycle++;
       if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
+      // A mitad de ciclo también hay tienda, pero sin chequear la cuota.
+      if (this.handInCycle % SHOP_EVERY === 0) {
+        this.addLog('🛒 ¡Tienda de mitad de ciclo!');
+        this.openShop(true);
+        return this.phase;
+      }
+      return this.startNextHand();
+    }
+
+    startNextHand() {
+      this.handInCycle++;
       this.reshuffleIfLow();
       this.phase = 'betting';
       return this.phase;
@@ -387,9 +397,9 @@
     }
 
     // --- Tienda ---
-    openShop() {
+    openShop(midCycle = false) {
       this.phase = 'shop';
-      this.shop = { offers: Bonuses.rollShop(this.bonuses, 3, this.rng), rerollCost: 5 };
+      this.shop = { offers: Bonuses.rollShop(this.bonuses, 3, this.rng), rerollCost: 5, midCycle };
       this.rollDeckOffer();
     }
 
@@ -455,7 +465,12 @@
 
     leaveShop() {
       if (this.phase !== 'shop') throw new Error('No estás en la tienda');
+      const midCycle = this.shop.midCycle;
       this.shop = null;
+      if (midCycle) {
+        if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
+        return this.startNextHand();
+      }
       this.cycle++;
       this.handInCycle = 1;
       this.shieldUsed = false;
@@ -481,7 +496,7 @@
     return n >= 0 ? `+$${n}` : `-$${-n}`;
   }
 
-  const GameModule = { Game, HANDS_PER_CYCLE, MAX_BONUSES, START_MONEY, OUTCOME_TEXT, formatNet };
+  const GameModule = { Game, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, START_MONEY, OUTCOME_TEXT, formatNet };
   if (typeof module !== 'undefined' && module.exports) module.exports = GameModule;
   else root.GameModule = GameModule;
 })(typeof window !== 'undefined' ? window : globalThis);
