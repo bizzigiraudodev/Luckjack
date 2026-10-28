@@ -23,7 +23,7 @@ test('valor de manos con ases', () => {
 });
 
 test('ganar una mano paga 1:1', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   stack(g, [c('K'), c('9'), c('Q'), c('8')]);
   g.deal(10);
   const r = g.stand();
@@ -32,13 +32,13 @@ test('ganar una mano paga 1:1', () => {
 });
 
 test('blackjack paga 3:2 y Blackjack Dorado 2:1', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   stack(g, [c('A'), c('9'), c('K'), c('8')]);
   g.deal(10);
   assert.strictEqual(g.result.outcome, 'blackjack');
   assert.strictEqual(g.money, 115);
 
-  const g2 = new Game();
+  const g2 = new Game({ startingPick: false });
   g2.bonuses.push('dorado');
   stack(g2, [c('A'), c('9'), c('K'), c('8')]);
   g2.deal(10);
@@ -46,7 +46,7 @@ test('blackjack paga 3:2 y Blackjack Dorado 2:1', () => {
 });
 
 test('pasarse pierde la apuesta, Red de Seguridad devuelve la mitad', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.bonuses.push('red');
   stack(g, [c('K'), c('9'), c('6'), c('8'), c('Q')]);
   g.deal(10);
@@ -56,7 +56,7 @@ test('pasarse pierde la apuesta, Red de Seguridad devuelve la mitad', () => {
 });
 
 test('Escudo convierte la primera derrota del ciclo en empate', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.bonuses.push('escudo');
   stack(g, [c('K'), c('K'), c('7'), c('Q')]);
   g.deal(10);
@@ -67,7 +67,7 @@ test('Escudo convierte la primera derrota del ciclo en empate', () => {
 });
 
 test('Límite Elástico: 22 no se pasa y cuenta como 21', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.bonuses.push('elastico');
   stack(g, [c('K'), c('K'), c('5'), c('9'), c('7')]);
   g.deal(10);
@@ -77,7 +77,7 @@ test('Límite Elástico: 22 no se pasa y cuenta como 21', () => {
 });
 
 test('doblar duplica la apuesta', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   stack(g, [c('5'), c('9'), c('6'), c('8'), c('K')]);
   g.deal(10);
   const r = g.double();
@@ -86,7 +86,7 @@ test('doblar duplica la apuesta', () => {
 });
 
 test('Charlie de Cinco gana automáticamente x2', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.bonuses.push('charlie');
   stack(g, [c('2'), c('K'), c('2'), c('9'), c('2'), c('3'), c('2')]);
   g.deal(10);
@@ -98,7 +98,7 @@ test('Charlie de Cinco gana automáticamente x2', () => {
 });
 
 test('Segunda Oportunidad descarta la última carta', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.bonuses.push('segunda');
   stack(g, [c('K'), c('9'), c('5'), c('8'), c('2')]);
   g.deal(10);
@@ -125,7 +125,7 @@ function failCycle(g) {
 }
 
 test('no llegar a la cuota hace perder el mazo; perder el 3ro es game over', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.bonuses.push('herradura');
   failCycle(g);
   assert.strictEqual(g.phase, 'deckLost');
@@ -144,7 +144,7 @@ test('no llegar a la cuota hace perder el mazo; perder el 3ro es game over', () 
 });
 
 test('quedarse sin dinero para la apuesta mínima hace perder el mazo', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   stack(g, [c('K'), c('K'), c('7'), c('8')]);
   g.deal(100);
   g.stand();
@@ -175,7 +175,7 @@ test('cada mazo cambia la chance de carta buena según su suerte', () => {
 });
 
 test('Rayos X coincide con la carta que efectivamente sale', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.deckType = 'maldito';
   g.deal(10);
   if (g.phase !== 'playing') return;
@@ -185,7 +185,7 @@ test('Rayos X coincide con la carta que efectivamente sale', () => {
 });
 
 test('mazo dorado en la tienda: aparece ~5% y se puede comprar', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   g.money = 1000;
   let seen = 0;
   for (let i = 0; i < 4000; i++) {
@@ -204,7 +204,7 @@ test('mazo dorado en la tienda: aparece ~5% y se puede comprar', () => {
 });
 
 test('la tienda aparece a las 5 manos sin chequear la cuota', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   for (let i = 0; i < 5; i++) {
     stack(g, [c('K'), c('K'), c('7'), c('8')]);
     g.deal(10);
@@ -221,7 +221,7 @@ test('la tienda aparece a las 5 manos sin chequear la cuota', () => {
 });
 
 test('superar la cuota a las 15 manos abre la tienda y se puede comprar', () => {
-  const g = new Game();
+  const g = new Game({ startingPick: false });
   playHands(g, 14, [c('K'), c('9'), c('Q'), c('8')]);
   stack(g, [c('K'), c('9'), c('Q'), c('8')]);
   g.deal(10);
@@ -254,6 +254,31 @@ test('la tienda no ofrece bonuses que ya tenés ni repetidos', () => {
   }
 });
 
+test('al empezar se elige 1 bonus gratis entre 3', () => {
+  const g = new Game();
+  assert.strictEqual(g.phase, 'shop');
+  assert.ok(g.shop.free);
+  assert.strictEqual(g.shop.offers.length, 3);
+  assert.strictEqual(g.shop.deckOffer, null);
+  assert.throws(() => g.reroll());
+  const pick = g.shop.offers[1];
+  assert.strictEqual(g.priceOf(pick), 0);
+  g.buy(pick.id);
+  assert.deepStrictEqual(g.bonuses, [pick.id]);
+  assert.strictEqual(g.money, 100);
+  assert.strictEqual(g.phase, 'betting', 'elegir uno cierra la tienda');
+  assert.strictEqual(g.handInCycle, 1);
+
+  const skip = new Game();
+  skip.leaveShop();
+  assert.strictEqual(skip.phase, 'betting');
+  assert.deepStrictEqual(skip.bonuses, []);
+
+  g.phase = 'gameover';
+  g.reset();
+  assert.ok(g.shop.free, 'una partida nueva vuelve a ofrecer el bonus gratis');
+});
+
 test('simulación: partidas aleatorias no rompen invariantes', () => {
   let seed = 42;
   const rng = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
@@ -271,7 +296,7 @@ test('simulación: partidas aleatorias no rompen invariantes', () => {
       else if (g.phase === 'shop') {
         if (g.canBuyDeck()) g.buyDeck();
         for (const o of [...g.shop.offers]) if (g.canBuy(o)) g.buy(o.id);
-        g.leaveShop();
+        if (g.phase === 'shop') g.leaveShop();
       }
       assert.ok(g.money >= 0, 'el dinero nunca es negativo');
       assert.ok(Number.isInteger(g.money), 'el dinero es entero');

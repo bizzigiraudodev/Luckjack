@@ -15,8 +15,10 @@
   }
 
   class Game {
-    constructor({ rng = Math.random } = {}) {
+    // `startingPick: false` saltea la elección del bonus inicial (útil en tests).
+    constructor({ rng = Math.random, startingPick = true } = {}) {
       this.rng = rng;
+      this.startingPick = startingPick;
       this.reset();
     }
 
@@ -43,6 +45,13 @@
       this.shop = null;
       this.log = [];
       this.newDeck();
+      if (this.startingPick) this.openStartingPick();
+    }
+
+    // Al empezar la partida elegís 1 bonus gratis entre 3.
+    openStartingPick() {
+      this.phase = 'shop';
+      this.shop = { offers: Bonuses.rollShop([], 3, this.rng), free: true, deckOffer: null };
     }
 
     // --- Parámetros que escalan con el ciclo ---
@@ -414,7 +423,7 @@
     }
 
     canBuyDeck() {
-      return this.phase === 'shop' && !!this.shop.deckOffer && this.money >= this.deckPrice();
+      return this.phase === 'shop' && !this.shop.free && !!this.shop.deckOffer && this.money >= this.deckPrice();
     }
 
     buyDeck() {
@@ -426,6 +435,7 @@
     }
 
     priceOf(bonus) {
+      if (this.shop && this.shop.free) return 0;
       return Bonuses.priceOf(bonus, this.cycle);
     }
 
@@ -440,15 +450,20 @@
       this.money -= this.priceOf(bonus);
       this.bonuses.push(bonus.id);
       this.shop.offers = this.shop.offers.filter((b) => b !== bonus);
+      if (this.shop.free) {
+        this.addLog(`🎁 Elegiste ${bonus.icon} ${bonus.name} como bonus inicial.`);
+        this.leaveShop();
+        return;
+      }
       this.addLog(`🛒 Compraste ${bonus.icon} ${bonus.name}.`);
     }
 
     sellValue(bonusId) {
-      return Math.floor(this.priceOf(Bonuses.getBonus(bonusId)) / 2);
+      return Math.floor(Bonuses.priceOf(Bonuses.getBonus(bonusId), this.cycle) / 2);
     }
 
     sell(bonusId) {
-      if (this.phase !== 'shop' || !this.has(bonusId)) throw new Error('No podés vender eso');
+      if (this.phase !== 'shop' || this.shop.free || !this.has(bonusId)) throw new Error('No podés vender eso');
       const value = this.sellValue(bonusId);
       this.money += value;
       this.bonuses = this.bonuses.filter((id) => id !== bonusId);
@@ -456,7 +471,7 @@
     }
 
     reroll() {
-      if (this.phase !== 'shop' || this.money < this.shop.rerollCost) throw new Error('No te alcanza');
+      if (this.phase !== 'shop' || this.shop.free || this.money < this.shop.rerollCost) throw new Error('No te alcanza');
       this.money -= this.shop.rerollCost;
       this.shop.offers = Bonuses.rollShop(this.bonuses, 3, this.rng);
       this.rollDeckOffer();
@@ -465,8 +480,12 @@
 
     leaveShop() {
       if (this.phase !== 'shop') throw new Error('No estás en la tienda');
-      const midCycle = this.shop.midCycle;
+      const { midCycle, free } = this.shop;
       this.shop = null;
+      if (free) {
+        this.phase = 'betting';
+        return this.phase;
+      }
       if (midCycle) {
         if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
         return this.startNextHand();

@@ -160,6 +160,14 @@
     const shop = $('shop');
     shop.hidden = game.phase !== 'shop';
     if (game.phase !== 'shop') return;
+    const free = !!game.shop.free;
+    $('shop-title').textContent = free ? '🎁 Bonus inicial gratis' : '🛒 Tienda';
+    $('shop-free-sub').hidden = !free;
+    $('shop-sub').hidden = free;
+    $('shop-owned-wrap').hidden = free;
+    $('btn-reroll').hidden = free;
+    $('btn-leave').textContent = free ? 'Arrancar sin bonus' : 'Seguir jugando →';
+    $('btn-leave').classList.toggle('primary', !free);
     $('shop-money').textContent = `$${game.money}`;
     // A mitad de ciclo se muestra la cuota actual; al final, la del próximo ciclo.
     const nextCycle = game.shop.midCycle ? game.cycle : game.cycle + 1;
@@ -179,7 +187,7 @@
         <p>${b.desc}</p>`;
       const btn = document.createElement('button');
       btn.className = 'primary';
-      btn.textContent = `Comprar $${price}`;
+      btn.textContent = free ? 'Elegir' : `Comprar $${price}`;
       btn.disabled = !game.canBuy(b);
       if (game.bonuses.length >= MAX_BONUSES) btn.title = 'No tenés lugar: vendé un bonus primero';
       btn.onclick = () => { game.buy(b.id); render(); };
