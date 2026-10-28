@@ -13,7 +13,7 @@ npm start   # sirve la carpeta con `serve`
 ### Reglas
 
 - Blackjack clásico contra el crupier: acercate a 21 más que él sin pasarte. El crupier se planta en 17.
-- Ganar paga **1:1**, el blackjack natural paga **3:2**. Podés **doblar** con tus dos primeras cartas.
+- Ganar paga **1:1** (apostás $10, cobrás $20) y el blackjack natural paga **3:2** (cobrás $25). Podés **doblar** con tus dos primeras cartas y **dividir** pares del mismo rango (hasta 4 manos; los ases divididos reciben una sola carta y un 21 dividido no cuenta como blackjack).
 - Empezás con **$100** y elegís **1 bonus gratis** entre 3 al azar. La partida se divide en **ciclos de 15 manos**.
 - Al terminar cada ciclo tenés que tener al menos la **cuota** (`$90 × 1.25^ciclo`, redondeada a $5), si no, perdés.
 - Cada **5 manos** aparece la **tienda** (en las manos 5 y 10 sin chequear la cuota, y en la 15 si la superaste): 3 bonuses al azar (ponderados por rareza). Podés comprar, vender a mitad de precio o pagar para cambiar las ofertas. Máximo 5 bonuses.
@@ -40,6 +40,7 @@ Una carta es "buena" si arma una buena mano: la primera carta es un As o vale 10
 | `H` o `P` | Pedir carta |
 | `S` | Plantarse |
 | `D` | Doblar |
+| `X` | Dividir par |
 | `R` | Descartar (con Segunda Oportunidad) |
 
 ## Bonuses
@@ -53,13 +54,13 @@ Una carta es "buena" si arma una buena mano: la primera carta es un As o vale 10
 | 🧮 | Contador de Cartas | Común | Muestra la probabilidad de pasarte |
 | 🕸️ | Red de Seguridad | Común | Si te pasás, recuperás la mitad de la apuesta |
 | 👁️ | Ojo del Crupier | Poco común | Ves la carta oculta del crupier |
-| 🌟 | Blackjack Dorado | Poco común | El blackjack paga 2:1 |
+| 🌟 | Blackjack Dorado | Poco común | El blackjack paga 2:1: cobrás x3 lo apostado en vez de x2.5 |
 | 🤝 | Empate a Favor | Poco común | Los empates pagan +50% |
 | 🎯 | Veintiuno Exacto | Poco común | Ganar con 21 exacto duplica la ganancia |
 | 🔥 | Racha Caliente | Poco común | +20% de ganancia por victoria consecutiva |
 | 🎲 | Dados Cargados | Poco común | Si el crupier se pasa, ganancia x1.5 |
 | ⏫ | Doble o Nada | Poco común | Ganar doblado paga x1.5 |
-| ♻️ | Segunda Oportunidad | Poco común | Descartá la última carta pedida (1 vez por mano) |
+| ♻️ | Segunda Oportunidad | Poco común | Descartá la última carta pedida (1 vez por mano). Si te pasaste, recibís otra en su lugar |
 | 🩻 | Rayos X | Raro | Ves la próxima carta del mazo |
 | 🛡️ | Escudo | Raro | La primera derrota de cada ciclo es empate |
 | 🖐️ | Charlie de Cinco | Raro | 5 cartas sin pasarte = victoria automática x2 |

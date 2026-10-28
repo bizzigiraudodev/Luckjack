@@ -23,7 +23,7 @@
   function renderIntel() {
     const parts = [];
     if (game.phase === 'playing') {
-      if (game.has('contador')) parts.push(`🧮 Riesgo de pasarte: <b>${Math.round(game.bustChance() * 100)}%</b>`);
+      if (game.has('contador') && !game.bustPending) parts.push(`🧮 Riesgo de pasarte: <b>${Math.round(game.bustChance() * 100)}%</b>`);
       if (game.has('rayos')) {
         const n = game.peekNext();
         parts.push(`🩻 Próxima carta: <b class="${Cards.isRed(n) ? 'red' : ''}">${n.rank}${n.suit}</b>`);
@@ -47,10 +47,16 @@
         ? `Te faltan $${left} para la cuota. Quedan ${HANDS_PER_CYCLE - game.handInCycle + 1} manos.`
         : '¡Ya superaste la cuota de este ciclo! Seguí sumando para la tienda.';
     } else if (game.phase === 'playing') {
-      msg.textContent = `Apostaste $${game.bet}. ¿Pedís o te plantás?`;
+      const which = game.hands.length > 1 ? `Mano ${game.handIndex + 1} de ${game.hands.length}. ` : '';
+      msg.textContent = game.bustPending
+        ? `${which}Te pasaste. ¿Usás tu Segunda Oportunidad?`
+        : `${which}Apostaste $${game.bet}. ¿Pedís o te plantás?`;
     } else if (game.phase === 'roundOver' && game.result) {
       const r = game.result;
-      msg.textContent = `${OUTCOME_TEXT[r.outcome]} · ${formatNet(r.net)}`;
+      const detail = r.hands.length > 1
+        ? r.hands.map((h, i) => `M${i + 1} ${OUTCOME_TEXT[h.outcome].split(' ')[0]}`).join(' · ') + ' → '
+        : `${OUTCOME_TEXT[r.outcome]} · `;
+      msg.textContent = `${detail}${formatNet(r.net)}`;
       msg.classList.add(r.net > 0 ? 'good' : r.net < 0 ? 'bad' : 'neutral');
     }
   }
@@ -101,6 +107,8 @@
     push: 'Empate. Nadie pierde.',
     lose: 'La casa gana.',
     bust: 'Se pasó, lo siento.',
+    split: ['Bueno, veamos esas manos.', 'Manos divididas, cuentas claras.'],
+    bustPending: '¿Quiere otra oportunidad?',
     shop: 'Pase por la tienda, lo espero.',
     deckLost: 'Cambiamos de mazo...',
     gameover: 'La casa siempre gana.',
@@ -110,9 +118,10 @@
     let line = null;
     let mood = null;
     if (game.phase === 'betting') line = pick(DEALER_LINES.betting);
-    else if (game.phase === 'playing') line = pick(DEALER_LINES.playing);
+    else if (game.phase === 'playing') line = game.bustPending ? DEALER_LINES.bustPending : pick(DEALER_LINES.playing);
     else if (game.phase === 'roundOver' && game.result) {
       line = DEALER_LINES[game.result.outcome];
+      if (Array.isArray(line)) line = pick(line);
       if (game.result.net > 0) mood = 'sad';
       else if (game.result.net < 0) mood = 'happy';
     } else line = DEALER_LINES[game.phase] || null;
@@ -147,9 +156,16 @@
       renderBetSpot();
     }
     if (game.phase === 'playing') {
+      const pending = game.bustPending;
+      $('btn-hit').hidden = pending;
+      $('btn-double').hidden = pending;
       $('btn-double').disabled = !game.canDouble();
+      $('btn-split').hidden = pending || !game.canSplit();
+      $('btn-stand').textContent = pending ? 'Aceptar' : 'Plantarse';
       $('btn-discard').hidden = !game.has('segunda');
       $('btn-discard').disabled = !game.canDiscard();
+      $('btn-discard').textContent = pending ? '♻️ Descartar y pedir otra' : '♻️ Descartar';
+      $('btn-discard').classList.toggle('primary', pending);
     }
     if (game.phase === 'roundOver') {
       $('btn-next').textContent = game.handInCycle >= HANDS_PER_CYCLE ? 'Terminar ciclo'
@@ -323,6 +339,7 @@
   $('btn-stand').addEventListener('click', () => { game.stand(); render(); });
   $('btn-double').addEventListener('click', () => { game.double(); render(); });
   $('btn-discard').addEventListener('click', () => { game.discard(); render(); });
+  $('btn-split').addEventListener('click', () => { game.split(); render(); });
   $('btn-next').addEventListener('click', () => { game.nextHand(); render(); });
   $('btn-reroll').addEventListener('click', () => { game.reroll(); render(); });
   $('btn-leave').addEventListener('click', () => { game.leaveShop(); render(); });
@@ -347,10 +364,11 @@
     const k = e.key.toLowerCase();
     if (game.phase === 'betting' && k === 'enter') $('btn-deal').click();
     else if (game.phase === 'playing') {
-      if (k === 'h' || k === 'p') $('btn-hit').click();
+      if ((k === 'h' || k === 'p') && game.canHit()) $('btn-hit').click();
       else if (k === 's') $('btn-stand').click();
       else if (k === 'd' && game.canDouble()) $('btn-double').click();
       else if (k === 'r' && game.canDiscard()) $('btn-discard').click();
+      else if (k === 'x' && game.canSplit()) $('btn-split').click();
     } else if (game.phase === 'roundOver' && (k === 'enter' || k === ' ')) {
       e.preventDefault();
       $('btn-next').click();

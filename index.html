@@ -106,8 +106,7 @@
 
         <div class="seat player-seat">
           <div class="bet-spot" id="bet-spot"><div class="chips" id="bet-chips"></div><span class="bet-amount" id="bet-amount"></span></div>
-          <div class="hand" id="player-hand"></div>
-          <span class="score" id="player-score"></span>
+          <div class="player-hands" id="player-hands"></div>
         </div>
       </div>
     </div>
@@ -127,6 +126,7 @@
       <button class="primary" id="btn-hit">Pedir</button>
       <button id="btn-stand">Plantarse</button>
       <button id="btn-double">Doblar</button>
+      <button id="btn-split">✂️ Dividir</button>
       <button id="btn-discard">♻️ Descartar</button>
     </div>
     <div class="next-controls" id="next-controls">
@@ -185,7 +185,7 @@
       <h2>Cómo se juega</h2>
       <ul class="rules">
         <li>Es blackjack contra el crupier: llegá más cerca de 21 que él sin pasarte. El crupier se planta en 17.</li>
-        <li>Ganar paga 1:1, el blackjack paga 3:2. Podés <b>doblar</b> con tus dos primeras cartas.</li>
+        <li>Ganar paga 1:1 (apostás $10, cobrás $20) y el blackjack paga 3:2 (cobrás $25). Podés <b>doblar</b> con tus dos primeras cartas y <b>dividir</b> pares del mismo rango.</li>
         <li>La partida se divide en <b>ciclos de 15 manos</b>. Al final de cada ciclo tenés que tener al menos la <b>cuota</b> o perdés.</li>
         <li>Al empezar la partida elegís <b>1 bonus gratis</b> entre 3.</li>
         <li>Cada <b>5 manos</b> aparece la <b>tienda</b> para comprar bonuses aleatorios (máximo 5). Podés vender los que no quieras por la mitad de su precio.</li>

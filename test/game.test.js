@@ -109,6 +109,93 @@ test('Segunda Oportunidad descarta la última carta', () => {
   assert.ok(!g.canDiscard());
 });
 
+test('Segunda Oportunidad: si te pasás, descartás y recibís otra carta', () => {
+  const g = new Game({ startingPick: false });
+  g.bonuses.push('segunda');
+  stack(g, [c('K'), c('9'), c('6'), c('8'), c('Q'), c('3')]);
+  g.deal(10);
+  g.hit(); // 26: se pasa
+  assert.strictEqual(g.phase, 'playing', 'espera la decisión');
+  assert.ok(g.bustPending);
+  assert.ok(!g.canHit() && !g.canDouble());
+  g.discard(); // sale la Q, entra el 3 → 19
+  assert.strictEqual(g.playerValue().total, 19);
+  assert.ok(!g.canDiscard());
+  const r = g.stand();
+  assert.strictEqual(r.outcome, 'win');
+});
+
+test('Segunda Oportunidad: aceptar haberse pasado pierde la mano', () => {
+  const g = new Game({ startingPick: false });
+  g.bonuses.push('segunda');
+  stack(g, [c('K'), c('9'), c('6'), c('8'), c('Q')]);
+  g.deal(10);
+  g.hit();
+  const r = g.stand();
+  assert.strictEqual(r.outcome, 'bust');
+  assert.strictEqual(g.money, 90);
+});
+
+test('dividir un par juega dos manos con la misma apuesta', () => {
+  const g = new Game({ startingPick: false });
+  // jugador K, K · crupier 9, 8 · nuevas: 9 (mano 1), 5 (mano 2), 7 (pide mano 2)
+  stack(g, [c('K'), c('9'), c('K', '♥'), c('8'), c('9'), c('5'), c('7')]);
+  g.deal(10);
+  assert.ok(g.canSplit());
+  g.split();
+  assert.strictEqual(g.hands.length, 2);
+  assert.strictEqual(g.bet, 20);
+  assert.strictEqual(g.money, 80);
+  g.stand(); // mano 1: 19
+  assert.strictEqual(g.handIndex, 1);
+  g.hit(); // mano 2: 15 + 7 = 22 → se pasa
+  const r = g.result;
+  assert.strictEqual(r.outcome, 'split');
+  assert.deepStrictEqual(r.hands.map((h) => h.outcome), ['win', 'bust']);
+  assert.strictEqual(g.money, 100);
+});
+
+test('21 en una mano dividida no es blackjack y los ases reciben una carta', () => {
+  const g = new Game({ startingPick: false });
+  stack(g, [c('A'), c('9'), c('A', '♥'), c('8'), c('K'), c('5')]);
+  g.deal(10);
+  g.split();
+  assert.strictEqual(g.phase, 'roundOver', 'ases divididos se plantan solos');
+  assert.deepStrictEqual(g.result.hands.map((h) => h.outcome), ['win', 'lose']);
+  assert.strictEqual(g.result.hands[0].payout, 20, '21 dividido paga 1:1');
+});
+
+test('no se puede dividir sin par, sin dinero o con 4 manos', () => {
+  const g = new Game({ startingPick: false });
+  stack(g, [c('K'), c('9'), c('Q'), c('8')]);
+  g.deal(10);
+  assert.ok(!g.canSplit(), 'K y Q no son par');
+
+  const g2 = new Game({ startingPick: false });
+  stack(g2, [c('8'), c('9'), c('8', '♥'), c('7')]);
+  g2.deal(100);
+  assert.ok(!g2.canSplit(), 'no alcanza el dinero');
+
+  const g3 = new Game({ startingPick: false });
+  g3.money = 1000;
+  stack(g3, [c('8'), c('9'), c('8', '♥'), c('7'), c('8', '♦'), c('8', '♣'), c('8'), c('8', '♥'), c('2'), c('3')]);
+  g3.deal(10);
+  g3.split(); // 8+8 | 8+8
+  g3.split(); // 8+8 | 8+2 | 8+8 ... vuelve a dividir la primera
+  g3.split();
+  assert.strictEqual(g3.hands.length, 4);
+  assert.ok(!g3.canSplit());
+});
+
+test('Blackjack Dorado cobra x3 lo apostado', () => {
+  const g = new Game({ startingPick: false });
+  g.bonuses.push('dorado');
+  stack(g, [c('A'), c('9'), c('Q'), c('8')]);
+  g.deal(10);
+  assert.strictEqual(g.result.payout, 30);
+  assert.strictEqual(g.result.net, 20);
+});
+
 // Juega `n` manos con las mismas cartas, pasando por la tienda de mitad de ciclo.
 function playHands(g, n, cards) {
   for (let i = 0; i < n; i++) {
@@ -290,6 +377,8 @@ test('simulación: partidas aleatorias no rompen invariantes', () => {
       else if (g.phase === 'betting') g.deal(g.minBet);
       else if (g.phase === 'playing') {
         if (g.canDiscard() && g.playerBusted()) g.discard();
+        else if (g.bustPending) g.stand();
+        else if (g.canSplit() && g.rng() < 0.5) g.split();
         else if (g.playerValue().total < 17) g.hit();
         else g.stand();
       } else if (g.phase === 'roundOver') g.nextHand();

@@ -10,7 +10,8 @@
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // Cartas que ya están dibujadas en la mesa (mismos objetos que en Game).
-  const shown = { player: [], dealer: [], holeHidden: false };
+  // Cada mano del jugador: { cards, box, handEl, scoreEl, betEl }.
+  const shown = { hands: [], dealer: [], holeHidden: false };
   let game = null;
 
   function cardEl(card, faceDown = false, peek = false) {
@@ -26,6 +27,19 @@
     return el;
   }
 
+  function createHand() {
+    const box = document.createElement('div');
+    box.className = 'hand-box';
+    box.innerHTML = '<div class="hand"></div><div class="hand-info"><span class="score"></span><span class="hand-bet"></span></div>';
+    return {
+      cards: [],
+      box,
+      handEl: box.querySelector('.hand'),
+      scoreEl: box.querySelector('.score'),
+      betEl: box.querySelector('.hand-bet'),
+    };
+  }
+
   function animate(el, keyframes, ms, opts = {}) {
     if (!ms || !el.animate) return Promise.resolve();
     return el.animate(keyframes, { duration: ms, easing: 'cubic-bezier(.2,.7,.3,1)', ...opts }).finished;
@@ -34,7 +48,7 @@
   // Desplazamiento desde el centro de `el` hasta el centro de `target`.
   function offset(el, target) {
     const a = el.getBoundingClientRect();
-    const b = target.getBoundingClientRect();
+    const b = target.getBoundingClientRect ? target.getBoundingClientRect() : target;
     return { dx: b.left + b.width / 2 - (a.left + a.width / 2), dy: b.top + b.height / 2 - (a.top + a.height / 2) };
   }
 
@@ -58,15 +72,22 @@
     return game.has('ojo');
   }
 
-  async function dealCard(who, card) {
-    const faceDown = who === 'dealer' && shown.dealer.length === 1;
+  // `target` es 'dealer' o una mano del jugador.
+  async function dealCard(target, card) {
+    const isDealer = target === 'dealer';
+    const faceDown = isDealer && shown.dealer.length === 1;
     const el = cardEl(card, faceDown, faceDown && peekHole());
     const dealer = $('dealer');
     dealer.classList.add('reach');
     await wait(PAUSE_MS);
     dealer.classList.replace('reach', 'toss');
-    $(`${who}-hand`).appendChild(el);
-    shown[who].push(card);
+    if (isDealer) {
+      $('dealer-hand').appendChild(el);
+      shown.dealer.push(card);
+    } else {
+      target.handEl.appendChild(el);
+      target.cards.push(card);
+    }
     if (faceDown) shown.holeHidden = true;
     updateShoe();
     await flyFrom(el, $('shoe'));
@@ -86,26 +107,52 @@
     updateScores();
   }
 
-  async function discardLastPlayerCard() {
-    const el = $('player-hand').lastElementChild;
+  async function discardLast(hand) {
+    const el = hand.handEl.lastElementChild;
     if (el) {
       await flyTo(el, $('discard'));
       el.remove();
     }
-    shown.player.pop();
+    hand.cards.pop();
+    updateScores();
+  }
+
+  // Al dividir, la segunda carta se desliza hasta una mano nueva.
+  async function moveSplitCards() {
+    const moves = [];
+    for (let i = 0; i < game.hands.length; i++) {
+      const first = game.hands[i].cards[0];
+      if (shown.hands[i] && shown.hands[i].cards[0] === first) continue;
+      const from = shown.hands.find((h) => h.cards.includes(first));
+      if (!from) return;
+      const idx = from.cards.indexOf(first);
+      const el = from.handEl.children[idx];
+      const before = el.getBoundingClientRect();
+      const hand = createHand();
+      $('player-hands').insertBefore(hand.box, shown.hands[i] ? shown.hands[i].box : null);
+      hand.handEl.appendChild(el);
+      from.cards.splice(idx, 1);
+      hand.cards.push(first);
+      shown.hands.splice(i, 0, hand);
+      moves.push([el, before]);
+    }
+    await Promise.all(moves.map(([el, before]) => {
+      const { dx, dy } = offset(el, before);
+      return animate(el, [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], DEAL_MS);
+    }));
     updateScores();
   }
 
   async function sweep() {
-    const els = [...$('dealer-hand').children, ...$('player-hand').children];
+    const els = [...$('dealer-hand').children, ...shown.hands.flatMap((h) => [...h.handEl.children])];
     await Promise.all(els.map((el, i) => flyTo(el, $('discard'), i * 50)));
     clearHands();
   }
 
   function clearHands() {
     $('dealer-hand').replaceChildren();
-    $('player-hand').replaceChildren();
-    shown.player = [];
+    $('player-hands').replaceChildren();
+    shown.hands = [];
     shown.dealer = [];
     shown.holeHidden = false;
     updateScores();
@@ -116,22 +163,31 @@
   // Lleva la mesa al estado del juego animando cada carta nueva en el orden real del reparto.
   async function sync(g) {
     game = g;
-    if (!game.player.length && !game.dealer.length) {
-      if (shown.player.length || shown.dealer.length) await sweep();
+    if (!game.hands.length && !game.dealer.length) {
+      if (shown.hands.length || shown.dealer.length) await sweep();
       updateShoe();
       return;
     }
     if (!isPrefix(shown.dealer, game.dealer)) clearHands();
-    while (!isPrefix(shown.player, game.player)) await discardLastPlayerCard();
 
-    if (!shown.player.length && !shown.dealer.length) {
+    if (!shown.hands.length) {
       // Reparto inicial: jugador, crupier, jugador, crupier (boca abajo).
+      const hand = createHand();
+      $('player-hands').appendChild(hand.box);
+      shown.hands.push(hand);
+      const cards = game.hands[0].cards;
       for (let i = 0; i < 2; i++) {
-        if (game.player[i]) await dealCard('player', game.player[i]);
+        if (cards[i]) await dealCard(hand, cards[i]);
         if (game.dealer[i]) await dealCard('dealer', game.dealer[i]);
       }
     }
-    for (const card of game.player.slice(shown.player.length)) await dealCard('player', card);
+
+    await moveSplitCards();
+    for (let i = 0; i < game.hands.length; i++) {
+      const hand = shown.hands[i];
+      while (!isPrefix(hand.cards, game.hands[i].cards)) await discardLast(hand);
+      for (const card of game.hands[i].cards.slice(hand.cards.length)) await dealCard(hand, card);
+    }
 
     if (game.phase !== 'playing' && shown.holeHidden) {
       await wait(PAUSE_MS);
@@ -146,19 +202,34 @@
       const el = $('dealer-hand').children[1];
       if (el) el.replaceWith(cardEl(shown.dealer[1], true, peekHole()));
     }
+    markHands();
     updateScores();
     updateShoe();
   }
 
+  // Resalta la mano activa y, al terminar, cuáles ganaron o perdieron.
+  function markHands() {
+    const multi = game.hands.length > 1;
+    shown.hands.forEach((hand, i) => {
+      const data = game.hands[i];
+      const res = game.phase === 'roundOver' && game.result && game.result.hands ? game.result.hands[i] : null;
+      hand.box.classList.toggle('active', multi && game.phase === 'playing' && i === game.handIndex);
+      hand.box.classList.toggle('won', multi && !!res && res.net > 0);
+      hand.box.classList.toggle('lost', multi && !!res && res.net < 0);
+      hand.betEl.textContent = multi || data.doubled ? `$${data.bet}` : '';
+    });
+  }
+
   function updateScores() {
-    const p = $('player-score');
-    const d = $('dealer-score');
-    if (shown.player.length) {
-      const v = Cards.handValue(shown.player, game.bustLimit);
-      p.textContent = `${v.total}${v.soft && v.total < game.bustLimit ? ' suave' : ''}`;
-    } else {
-      p.textContent = '';
+    for (const hand of shown.hands) {
+      if (!hand.cards.length) {
+        hand.scoreEl.textContent = '';
+        continue;
+      }
+      const v = Cards.handValue(hand.cards, game.bustLimit);
+      hand.scoreEl.textContent = `${v.total}${v.soft && v.total < game.bustLimit ? ' suave' : ''}`;
     }
+    const d = $('dealer-score');
     if (!shown.dealer.length) d.textContent = '';
     else if (shown.holeHidden && !peekHole()) d.textContent = Cards.cardValue(shown.dealer[0]);
     else d.textContent = Cards.handValue(shown.dealer).total;
@@ -169,7 +240,8 @@
     if (!game) return;
     const left = Math.min(1, game.deck.length / FULL_SHOE);
     $('shoe-cards').style.setProperty('--fill', left.toFixed(3));
-    const used = Math.max(0, FULL_SHOE - game.deck.length - shown.player.length - shown.dealer.length);
+    const onTable = shown.dealer.length + shown.hands.reduce((n, h) => n + h.cards.length, 0);
+    const used = Math.max(0, FULL_SHOE - game.deck.length - onTable);
     $('discard-pile').style.setProperty('--fill', Math.min(1, used / FULL_SHOE).toFixed(3));
   }
 

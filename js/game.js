@@ -7,6 +7,7 @@
   const HANDS_PER_CYCLE = 15;
   const SHOP_EVERY = 5;
   const MAX_BONUSES = 5;
+  const MAX_HANDS = 4; // se puede volver a dividir hasta tener 4 manos
   const START_MONEY = 100;
   const RESHUFFLE_AT = 15;
   const QUOTA_FACTOR = 0.9; // cuotas 10% más bajas que la curva base
@@ -36,12 +37,13 @@
       this.deckType = Decks.DECK_SEQUENCE[0];
       this.maxCleared = 0;
       this.deckLostReason = null;
-      this.player = [];
+      this.hands = [];
+      this.handIndex = 0;
       this.dealer = [];
-      this.bet = 0;
       this.lastBet = this.minBet;
-      this.doubled = false;
       this.discardUsed = false;
+      this.bustPending = false;
+      this.dealtPair = false;
       this.result = null;
       this.shop = null;
       this.log = [];
@@ -100,13 +102,13 @@
     }
 
     // Saca una carta. Las del jugador pasan por la suerte del mazo.
-    draw(who = 'dealer') {
+    draw(who = 'dealer', hand = this.player) {
       if (this.deck.length === 0) this.newDeck();
       if (this.topFixed || who !== 'player') {
         this.topFixed = false;
         return this.deck.pop();
       }
-      const i = Decks.pickIndex(this.deck, this.player, this.luck, this.bustLimit, this.rng);
+      const i = Decks.pickIndex(this.deck, hand, this.luck, this.bustLimit, this.rng);
       return this.deck.splice(i, 1)[0];
     }
 
@@ -127,9 +129,17 @@
     }
 
     // Puntaje efectivo para comparar con el crupier (un 22 elástico vale 21).
-    playerScore() {
-      const { total } = this.playerValue();
+    scoreOf(cards) {
+      const { total } = Cards.handValue(cards, this.bustLimit);
       return total === 22 && this.has('elastico') ? 21 : total;
+    }
+
+    bustedCards(cards) {
+      return Cards.handValue(cards, this.bustLimit).total > this.bustLimit;
+    }
+
+    playerScore() {
+      return this.scoreOf(this.player);
     }
 
     dealerValue() {
@@ -137,7 +147,7 @@
     }
 
     playerBusted() {
-      return this.playerValue().total > this.bustLimit;
+      return this.bustedCards(this.player);
     }
 
     // Probabilidad de pasarse si se pide otra carta (para el Contador de Cartas).
@@ -159,6 +169,30 @@
       if (this.log.length > 30) this.log.pop();
     }
 
+    // --- Manos del jugador ---
+    // Cada ronda tiene una o más manos (más de una si dividiste pares).
+    get hand() {
+      return this.hands[this.handIndex] || null;
+    }
+
+    // Cartas de la mano activa.
+    get player() {
+      return this.hand ? this.hand.cards : [];
+    }
+
+    // Apuesta total en la mesa (suma de todas las manos).
+    get bet() {
+      return this.hands.reduce((s, h) => s + h.bet, 0);
+    }
+
+    get doubled() {
+      return !!this.hand && this.hand.doubled;
+    }
+
+    newHand(cards, bet, fromSplit = false) {
+      return { cards, bet, doubled: false, done: false, forced: null, fromSplit };
+    }
+
     // --- Acciones del jugador ---
     canBet(amount) {
       return this.phase === 'betting' && Number.isInteger(amount) &&
@@ -167,79 +201,137 @@
 
     deal(amount) {
       if (!this.canBet(amount)) throw new Error('Apuesta inválida');
-      this.bet = amount;
       this.lastBet = amount;
       this.money -= amount;
-      this.doubled = false;
       this.discardUsed = false;
+      this.bustPending = false;
       this.result = null;
-      this.player = [];
+      this.hands = [this.newHand([], amount)];
+      this.handIndex = 0;
       this.player.push(this.draw('player'));
       this.dealer = [this.draw()];
       this.player.push(this.draw('player'));
       this.dealer.push(this.draw());
+      this.dealtPair = this.player[0].rank === this.player[1].rank;
       this.phase = 'playing';
 
-      const pBJ = Cards.isBlackjack(this.player);
-      const dBJ = Cards.isBlackjack(this.dealer);
-      if (pBJ || dBJ) return this.resolve();
-      if (this.checkCharlie()) return this.result;
+      if (Cards.isBlackjack(this.player) || Cards.isBlackjack(this.dealer)) return this.finishRound();
       return null;
     }
 
+    canAct() {
+      return this.phase === 'playing' && !this.bustPending;
+    }
+
     canHit() {
-      return this.phase === 'playing';
+      return this.canAct();
     }
 
     hit() {
       if (!this.canHit()) throw new Error('No podés pedir ahora');
       this.player.push(this.draw('player'));
-      if (this.playerBusted()) return this.resolve();
-      if (this.checkCharlie()) return this.result;
-      if (this.playerScore() === 21) return this.stand();
+      return this.afterDraw();
+    }
+
+    // Después de recibir una carta: pasarse, Charlie de Cinco o 21 cierran la mano.
+    afterDraw() {
+      if (this.playerBusted()) {
+        // Con Segunda Oportunidad podés descartar la carta que te pasó y pedir otra.
+        if (this.has('segunda') && !this.discardUsed) {
+          this.bustPending = true;
+          return null;
+        }
+        return this.finishHand();
+      }
+      if (this.has('charlie') && this.player.length >= 5) {
+        this.hand.forced = 'charlie';
+        return this.finishHand();
+      }
+      if (this.playerScore() === 21) return this.finishHand();
       return null;
     }
 
+    // Plantarse (o aceptar haberse pasado cuando hay Segunda Oportunidad).
     stand() {
       if (this.phase !== 'playing') throw new Error('No podés plantarte ahora');
-      this.playDealer();
-      return this.resolve();
+      this.bustPending = false;
+      return this.finishHand();
     }
 
     canDouble() {
-      return this.phase === 'playing' && this.player.length === 2 && !this.doubled &&
-        this.money >= this.bet;
+      return this.canAct() && this.player.length === 2 && !this.hand.doubled &&
+        this.money >= this.hand.bet;
     }
 
     double() {
       if (!this.canDouble()) throw new Error('No podés doblar ahora');
-      this.money -= this.bet;
-      this.bet *= 2;
-      this.doubled = true;
+      this.money -= this.hand.bet;
+      this.hand.bet *= 2;
+      this.hand.doubled = true;
       this.player.push(this.draw('player'));
-      if (this.playerBusted()) return this.resolve();
-      return this.stand();
+      return this.finishHand();
+    }
+
+    canSplit() {
+      return this.canAct() && this.player.length === 2 &&
+        this.player[0].rank === this.player[1].rank &&
+        this.hands.length < MAX_HANDS && this.money >= this.hand.bet;
+    }
+
+    // Divide el par en dos manos con la misma apuesta y reparte una carta a cada una.
+    split() {
+      if (!this.canSplit()) throw new Error('No podés dividir ahora');
+      const hand = this.hand;
+      this.money -= hand.bet;
+      const second = this.newHand([hand.cards.pop()], hand.bet, true);
+      hand.fromSplit = true;
+      this.hands.splice(this.handIndex + 1, 0, second);
+      hand.cards.push(this.draw('player', hand.cards));
+      second.cards.push(this.draw('player', second.cards));
+      this.addLog(`✂️ Dividiste un par de ${hand.cards[0].rank}.`);
+      // Ases divididos: una sola carta para cada uno.
+      if (hand.cards[0].rank === 'A') {
+        second.done = true;
+        return this.finishHand();
+      }
+      if (this.playerScore() === 21) return this.finishHand();
+      return null;
     }
 
     canDiscard() {
       return this.phase === 'playing' && this.has('segunda') && !this.discardUsed &&
-        this.player.length > 2;
+        (this.bustPending || this.player.length > 2);
     }
 
+    // Segunda Oportunidad: descarta la última carta. Si te habías pasado, recibís una nueva.
     discard() {
       if (!this.canDiscard()) throw new Error('No podés descartar ahora');
       const card = this.player.pop();
       this.discardUsed = true;
       this.addLog(`♻️ Descartaste ${card.rank}${card.suit}.`);
-      return null;
+      if (!this.bustPending) return null;
+      this.bustPending = false;
+      this.player.push(this.draw('player'));
+      return this.afterDraw();
     }
 
-    checkCharlie() {
-      if (this.has('charlie') && this.player.length >= 5 && !this.playerBusted()) {
-        this.resolve('charlie');
-        return true;
+    // Cierra la mano activa y pasa a la siguiente; si no quedan, juega el crupier.
+    finishHand() {
+      this.hand.done = true;
+      while (this.hand && this.hand.done) this.handIndex++;
+      if (this.hand) {
+        if (this.playerScore() === 21) return this.finishHand();
+        return null;
       }
-      return false;
+      this.handIndex = this.hands.length - 1;
+      return this.finishRound();
+    }
+
+    finishRound() {
+      const dealerNeeded = !Cards.isBlackjack(this.dealer) && this.hands.some((h) =>
+        !h.forced && !this.bustedCards(h.cards) && !this.isNatural(h));
+      if (dealerNeeded) this.playDealer();
+      return this.resolve();
     }
 
     playDealer() {
@@ -247,26 +339,31 @@
       while (this.dealerValue().total < standOn) this.dealer.push(this.draw());
     }
 
-    // --- Resolución de la mano ---
-    outcome(forced) {
-      if (forced) return forced;
-      const pBJ = Cards.isBlackjack(this.player);
+    // --- Resolución de la ronda ---
+    isNatural(hand) {
+      return !hand.fromSplit && Cards.isBlackjack(hand.cards);
+    }
+
+    handOutcome(hand) {
+      if (hand.forced) return hand.forced;
+      const pBJ = this.isNatural(hand);
       const dBJ = Cards.isBlackjack(this.dealer);
       if (pBJ && dBJ) return 'push';
       if (pBJ) return 'blackjack';
       if (dBJ) return 'lose';
-      if (this.playerBusted()) return 'bust';
+      if (this.bustedCards(hand.cards)) return 'bust';
       const d = this.dealerValue().total;
       if (d > 21) return 'dealerBust';
-      const p = this.playerScore();
+      const p = this.scoreOf(hand.cards);
       if (p > d) return 'win';
       if (p < d) return 'lose';
       return 'push';
     }
 
-    resolve(forced) {
-      let outcome = this.outcome(forced);
-      const bet = this.bet;
+    // Paga una mano. Devuelve { outcome, bet, payout, net, notes }.
+    resolveHand(hand) {
+      let outcome = this.handOutcome(hand);
+      const bet = hand.bet;
       const notes = [];
       let payout = 0; // dinero que vuelve al jugador (incluye la apuesta)
 
@@ -279,14 +376,16 @@
       const won = ['blackjack', 'win', 'dealerBust', 'charlie'].includes(outcome);
 
       if (outcome === 'blackjack') {
+        // Normal: ganás 1.5 veces lo apostado (x2.5 en total). Dorado: el doble (x3 en total).
         const mult = this.has('dorado') ? 2 : 1.5;
+        if (this.has('dorado')) notes.push('🌟 x3');
         payout = bet + bet * mult;
       } else if (won) {
         let profit = bet;
         if (outcome === 'charlie') { profit *= 2; notes.push('🖐️ Charlie x2'); }
         if (outcome === 'dealerBust' && this.has('dados')) { profit *= 1.5; notes.push('🎲 x1.5'); }
-        if (this.has('veintiuno') && this.playerScore() === 21) { profit *= 2; notes.push('🎯 x2'); }
-        if (this.doubled && this.has('doble')) { profit *= 1.5; notes.push('⏫ x1.5'); }
+        if (this.has('veintiuno') && this.scoreOf(hand.cards) === 21) { profit *= 2; notes.push('🎯 x2'); }
+        if (hand.doubled && this.has('doble')) { profit *= 1.5; notes.push('⏫ x1.5'); }
         payout = bet + profit;
       } else if (outcome === 'push') {
         payout = bet;
@@ -297,36 +396,54 @@
       }
 
       if (won && this.has('racha') && this.streak > 0) {
-        const extra = (payout - bet) * 0.2 * this.streak;
-        payout += extra;
+        payout += (payout - bet) * 0.2 * this.streak;
         notes.push(`🔥 racha x${this.streak}`);
       }
+      if (won && this.has('herradura')) payout += 5;
+      this.streak = won ? this.streak + 1 : (outcome === 'push' ? this.streak : 0);
 
-      // Bonos fijos
+      payout = Math.floor(payout);
+      return { outcome, bet, payout, net: payout - bet, notes };
+    }
+
+    resolve() {
+      const results = this.hands.map((h) => this.resolveHand(h));
+      const notes = [];
+
+      // Bonos fijos de la ronda
       let flat = 0;
-      if (won && this.has('herradura')) flat += 5;
-      if (this.has('diezmo')) flat += 2 * this.player.filter(Cards.isFace).length;
-      if (this.has('gemelos') && this.player[0].rank === this.player[1].rank) {
+      if (this.has('diezmo')) {
+        flat += 2 * this.hands.reduce((n, h) => n + h.cards.filter(Cards.isFace).length, 0);
+      }
+      if (this.has('gemelos') && this.dealtPair) {
         flat += 15;
         notes.push('👯 +$15');
       }
-      payout = Math.floor(payout) + flat;
 
-      this.streak = won ? this.streak + 1 : (outcome === 'push' ? this.streak : 0);
+      const bet = results.reduce((s, r) => s + r.bet, 0);
+      const payout = results.reduce((s, r) => s + r.payout, 0) + flat;
       this.money += payout;
       this.handsPlayed++;
       this.phase = 'roundOver';
-      this.result = { outcome, bet, payout, net: payout - bet, notes };
-      this.addLog(`${OUTCOME_TEXT[outcome]} (${formatNet(payout - bet)})${notes.length ? ' · ' + notes.join(' · ') : ''}`);
+      const outcome = results.length === 1 ? results[0].outcome : 'split';
+      this.result = { outcome, bet, payout, net: payout - bet, notes: [...results.flatMap((r) => r.notes), ...notes], hands: results };
+
+      if (results.length === 1) {
+        const n = this.result.notes;
+        this.addLog(`${OUTCOME_TEXT[outcome]} (${formatNet(this.result.net)})${n.length ? ' · ' + n.join(' · ') : ''}`);
+      } else {
+        const parts = results.map((r, i) => `M${i + 1}: ${OUTCOME_TEXT[r.outcome]}`);
+        this.addLog(`✂️ ${parts.join(' | ')} (${formatNet(this.result.net)})${notes.length ? ' · ' + notes.join(' · ') : ''}`);
+      }
       return this.result;
     }
 
     // Avanza a la siguiente mano; al cerrar un ciclo, chequea la cuota y abre la tienda.
     nextHand() {
       if (this.phase !== 'roundOver') throw new Error('La mano no terminó');
-      this.player = [];
+      this.hands = [];
+      this.handIndex = 0;
       this.dealer = [];
-      this.bet = 0;
 
       if (this.handInCycle >= HANDS_PER_CYCLE) return this.endCycle();
       if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
@@ -390,7 +507,8 @@
       this.handInCycle = 1;
       this.streak = 0;
       this.shieldUsed = false;
-      this.player = [];
+      this.hands = [];
+      this.handIndex = 0;
       this.dealer = [];
       this.result = null;
       this.lastBet = this.minBet;
@@ -507,6 +625,7 @@
     win: '✅ Ganaste',
     dealerBust: '💥 El crupier se pasó',
     charlie: '🖐️ Charlie de Cinco',
+    split: '✂️ Manos divididas',
     push: '➖ Empate',
     lose: '❌ Perdiste',
     bust: '💥 Te pasaste',
