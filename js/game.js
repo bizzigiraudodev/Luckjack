@@ -9,6 +9,7 @@
   const MAX_BONUSES = 5;
   const START_MONEY = 100;
   const RESHUFFLE_AT = 15;
+  const QUOTA_FACTOR = 0.9; // cuotas 10% más bajas que la curva base
 
   function roundTo5(n) {
     return Math.round(n / 5) * 5;
@@ -60,7 +61,7 @@
     }
 
     quotaFor(cycle) {
-      return roundTo5(START_MONEY * Math.pow(1.25, cycle));
+      return roundTo5(QUOTA_FACTOR * START_MONEY * Math.pow(1.25, cycle));
     }
 
     get minBet() {
