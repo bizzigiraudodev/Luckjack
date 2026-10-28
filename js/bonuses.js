@@ -2,9 +2,9 @@
 // Los efectos se aplican en game.js consultando `game.has(id)`.
 (function (root) {
   const RARITY = {
-    common: { label: 'Común', weight: 60, price: 25 },
-    uncommon: { label: 'Poco común', weight: 30, price: 45 },
-    rare: { label: 'Raro', weight: 10, price: 75 },
+    common: { label: 'Común', weight: 60, price: 20 },
+    uncommon: { label: 'Poco común', weight: 30, price: 35 },
+    rare: { label: 'Raro', weight: 10, price: 55 },
   };
 
   const BONUSES = [
