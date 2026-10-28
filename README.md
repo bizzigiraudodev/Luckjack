@@ -19,6 +19,19 @@ npm start   # sirve la carpeta con `serve`
 - Si la superás, aparece la **tienda**: 3 bonuses al azar (ponderados por rareza). Podés comprar, vender a mitad de precio o pagar para cambiar las ofertas. Máximo 5 bonuses.
 - Cada ciclo sube la cuota y la apuesta mínima (`$10 + $5` por ciclo). El objetivo: llegar lo más lejos posible. El récord se guarda en el navegador.
 
+### Mazos (vidas)
+
+Tenés **3 mazos**. Si perdés con uno (no llegás a la cuota o te quedás sin dinero para la apuesta mínima), pasás al siguiente, que es peor. Volvés al ciclo 1 con $100 y conservás tus bonuses. Perder con el último mazo es **game over**.
+
+| | Mazo | Chance de buena combinación |
+|-|------|-----------------------------|
+| 🂠 | Mazo Clásico | Normal (es con el que empezás) |
+| 🥀 | Mazo Gastado | 15% menos |
+| ☠️ | Mazo Maldito | 30% menos |
+| ✨ | Mazo Dorado | 5% más · aparece en la tienda con 5% de probabilidad y cuesta $200+ · reemplaza tu mazo actual |
+
+Una carta es "buena" si arma una buena mano: la primera carta es un As o vale 10, y las siguientes dejan tu mano entre 18 y 21 sin pasarte. La chance de recibir una carta buena es la natural del mazo multiplicada por la suerte del mazo (por ejemplo, ×0.85 en el Gastado). Solo afecta a tus cartas, no a las del crupier.
+
 ### Atajos de teclado
 
 | Tecla | Acción |
@@ -63,6 +76,7 @@ index.html        # página del juego
 css/style.css     # estilos de la mesa, cartas y tienda
 js/cards.js       # mazo y valor de manos
 js/bonuses.js     # catálogo de bonuses y sorteo de la tienda
+js/decks.js       # mazos y la suerte de cada uno
 js/game.js        # lógica del juego (sin DOM, testeable)
 js/ui.js          # render y eventos
 test/             # tests con node:test

@@ -116,6 +116,11 @@
     $('quota').textContent = `$${game.quota}`;
     $('quota').className = game.money >= game.quota ? 'ok' : 'warn';
     $('minbet').textContent = `$${game.minBet}`;
+    const deck = game.deckInfo;
+    const lives = Decks.DECK_SEQUENCE.length;
+    $('deck').textContent = `${deck.icon} ${'●'.repeat(game.decksLeft)}${'○'.repeat(lives - game.decksLeft)}`;
+    $('deck-stat').className = `stat deck-stat ${deck.id}`;
+    $('deck-stat').title = `${deck.name}: ${deck.desc} Te quedan ${game.decksLeft} de ${lives} mazos.`;
   }
 
   function renderControls() {
@@ -184,6 +189,21 @@
     }
     $('shop-offers').replaceChildren(...offers);
 
+    const deckOffer = game.shop.deckOffer;
+    $('shop-deck').hidden = !deckOffer;
+    if (deckOffer) {
+      $('shop-deck').innerHTML = `
+        <div class="icon">${deckOffer.icon}</div>
+        <div class="info"><div class="name">¡${deckOffer.name}! <span class="rarity">Oferta especial</span></div>
+        <p>${deckOffer.desc}</p></div>`;
+      const btn = document.createElement('button');
+      btn.className = 'primary';
+      btn.textContent = `Comprar $${game.deckPrice()}`;
+      btn.disabled = !game.canBuyDeck();
+      btn.onclick = () => { game.buyDeck(); render(); };
+      $('shop-deck').appendChild(btn);
+    }
+
     $('slots').textContent = `(${game.bonuses.length}/${MAX_BONUSES})`;
     const owned = game.bonuses.map((id) => {
       const btn = document.createElement('button');
@@ -209,11 +229,20 @@
     reroll.disabled = game.money < game.shop.rerollCost;
   }
 
+  function renderDeckLost() {
+    $('decklost').hidden = game.phase !== 'deckLost';
+    if (game.phase !== 'deckLost') return;
+    const d = game.deckInfo;
+    $('decklost-reason').textContent = game.deckLostReason;
+    $('decklost-next').innerHTML = `Ahora jugás con el <b>${d.icon} ${d.name}</b>: ${d.desc} ` +
+      (game.decksLeft === 1 ? '<b>Es tu último mazo.</b>' : `Te quedan ${game.decksLeft} mazos.`);
+  }
+
   function renderGameOver() {
     const el = $('gameover');
     el.hidden = game.phase !== 'gameover';
     if (game.phase !== 'gameover') return;
-    const cleared = game.cycle - 1;
+    const cleared = game.maxCleared;
     let best = loadBest();
     const isRecord = !best || cleared > best.cycles || (cleared === best.cycles && game.money > best.money);
     if (isRecord && !el.dataset.saved) {
@@ -236,6 +265,7 @@
     renderControls();
     renderLog();
     renderShop();
+    renderDeckLost();
     renderGameOver();
   }
 
@@ -261,6 +291,11 @@
   $('btn-next').addEventListener('click', () => { game.nextHand(); render(); });
   $('btn-reroll').addEventListener('click', () => { game.reroll(); render(); });
   $('btn-leave').addEventListener('click', () => { game.leaveShop(); render(); });
+  $('btn-continue').addEventListener('click', () => {
+    game.continueWithNextDeck();
+    $('bet-input').value = '';
+    render();
+  });
   $('btn-restart').addEventListener('click', () => {
     game.reset();
     delete $('gameover').dataset.saved;

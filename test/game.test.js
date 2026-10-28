@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const Cards = require('../js/cards.js');
 const Bonuses = require('../js/bonuses.js');
+const Decks = require('../js/decks.js');
 const { Game } = require('../js/game.js');
 
 const c = (rank, suit = '♠') => ({ rank, suit });
@@ -108,15 +109,92 @@ test('Segunda Oportunidad descarta la última carta', () => {
   assert.ok(!g.canDiscard());
 });
 
-test('el ciclo termina a las 5 manos: cuota no alcanzada → game over', () => {
-  const g = new Game();
+function failCycle(g) {
   for (let i = 0; i < 5; i++) {
     stack(g, [c('K'), c('K'), c('7'), c('8')]); // pierde 17 vs 18
     g.deal(10);
     g.stand();
     g.nextHand();
   }
+}
+
+test('no llegar a la cuota hace perder el mazo; perder el 3ro es game over', () => {
+  const g = new Game();
+  g.bonuses.push('herradura');
+  failCycle(g);
+  assert.strictEqual(g.phase, 'deckLost');
+  assert.strictEqual(g.deckType, 'gastado');
+  g.continueWithNextDeck();
+  assert.strictEqual(g.money, 100);
+  assert.strictEqual(g.cycle, 1);
+  assert.ok(g.has('herradura'), 'los bonuses se conservan');
+
+  failCycle(g);
+  assert.strictEqual(g.deckType, 'maldito');
+  g.continueWithNextDeck();
+
+  failCycle(g);
   assert.strictEqual(g.phase, 'gameover');
+});
+
+test('quedarse sin dinero para la apuesta mínima hace perder el mazo', () => {
+  const g = new Game();
+  stack(g, [c('K'), c('K'), c('7'), c('8')]);
+  g.deal(100);
+  g.stand();
+  g.nextHand();
+  assert.strictEqual(g.phase, 'deckLost');
+  assert.strictEqual(g.decksLeft, 2);
+});
+
+test('cada mazo cambia la chance de carta buena según su suerte', () => {
+  let seed = 7;
+  const rng = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+  const hand = [c('10'), c('2')]; // 12: buenas son 6..9 (y nada más)
+  const rate = (luck) => {
+    let good = 0;
+    const N = 20000;
+    for (let i = 0; i < N; i++) {
+      const deck = Cards.buildDeck(2, 0, rng);
+      const card = deck[Decks.pickIndex(deck, hand, luck, 21, rng)];
+      if (Decks.isGoodDraw(hand, card)) good++;
+    }
+    return good / N;
+  };
+  const base = rate(1);
+  for (const id of ['gastado', 'maldito', 'dorado']) {
+    const r = rate(Decks.DECKS[id].luck);
+    assert.ok(Math.abs(r / base - Decks.DECKS[id].luck) < 0.04, `${id}: ${r} vs ${base}`);
+  }
+});
+
+test('Rayos X coincide con la carta que efectivamente sale', () => {
+  const g = new Game();
+  g.deckType = 'maldito';
+  g.deal(10);
+  if (g.phase !== 'playing') return;
+  const next = g.peekNext();
+  g.hit();
+  assert.strictEqual(g.player[2], next);
+});
+
+test('mazo dorado en la tienda: aparece ~5% y se puede comprar', () => {
+  const g = new Game();
+  g.money = 1000;
+  let seen = 0;
+  for (let i = 0; i < 4000; i++) {
+    g.phase = 'roundOver';
+    g.openShop();
+    if (g.shop.deckOffer) seen++;
+  }
+  assert.ok(seen > 120 && seen < 280, `apareció ${seen} veces`);
+
+  g.shop.deckOffer = Decks.DECKS.dorado;
+  g.buyDeck();
+  assert.strictEqual(g.deckType, 'dorado');
+  assert.strictEqual(g.money, 1000 - Decks.deckPrice(1));
+  g.openShop();
+  assert.strictEqual(g.shop.deckOffer, null, 'no se ofrece si ya lo tenés');
 });
 
 test('superar la cuota abre la tienda y se puede comprar', () => {
@@ -159,14 +237,16 @@ test('simulación: partidas aleatorias no rompen invariantes', () => {
   for (let run = 0; run < 200; run++) {
     const g = new Game({ rng });
     let steps = 0;
-    while (g.phase !== 'gameover' && steps++ < 2000) {
-      if (g.phase === 'betting') g.deal(g.minBet);
+    while (g.phase !== 'gameover' && steps++ < 5000) {
+      if (g.phase === 'deckLost') g.continueWithNextDeck();
+      else if (g.phase === 'betting') g.deal(g.minBet);
       else if (g.phase === 'playing') {
         if (g.canDiscard() && g.playerBusted()) g.discard();
         else if (g.playerValue().total < 17) g.hit();
         else g.stand();
       } else if (g.phase === 'roundOver') g.nextHand();
       else if (g.phase === 'shop') {
+        if (g.canBuyDeck()) g.buyDeck();
         for (const o of [...g.shop.offers]) if (g.canBuy(o)) g.buy(o.id);
         g.leaveShop();
       }

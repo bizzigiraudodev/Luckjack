@@ -10,6 +10,7 @@
   <header class="hud">
     <h1>🍀 Luck<span>jack</span></h1>
     <div class="stats">
+      <div class="stat deck-stat" id="deck-stat"><small>Mazo</small><strong id="deck">🂠</strong></div>
       <div class="stat"><small>Dinero</small><strong id="money">$0</strong></div>
       <div class="stat"><small>Ciclo</small><strong id="cycle">1</strong></div>
       <div class="stat"><small>Mano</small><strong id="hand">1/5</strong></div>
@@ -67,12 +68,25 @@
     <div class="modal">
       <h2>🛒 Tienda</h2>
       <p class="sub">Dinero: <strong id="shop-money"></strong> · Próxima cuota: <strong id="shop-quota"></strong> · Apuesta mínima: <strong id="shop-minbet"></strong></p>
+      <div class="deck-offer" id="shop-deck" hidden></div>
       <div class="offers" id="shop-offers"></div>
       <h3>Tus bonuses <small id="slots"></small></h3>
       <div class="owned" id="shop-owned"></div>
       <div class="modal-actions">
         <button id="btn-reroll">🔄 Cambiar ofertas</button>
         <button class="primary" id="btn-leave">Seguir jugando →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="decklost" hidden>
+    <div class="modal">
+      <h2>🃏 Perdiste el mazo</h2>
+      <p id="decklost-reason"></p>
+      <p id="decklost-next"></p>
+      <p class="sub">Volvés al ciclo 1 con $100. Tus bonuses se quedan con vos.</p>
+      <div class="modal-actions">
+        <button class="primary" id="btn-continue">Seguir con el nuevo mazo</button>
       </div>
     </div>
   </div>
@@ -97,6 +111,8 @@
         <li>La partida se divide en <b>ciclos de 5 manos</b>. Al final de cada ciclo tenés que tener al menos la <b>cuota</b> o perdés.</li>
         <li>Si superás la cuota, entrás a la <b>tienda</b> a comprar bonuses aleatorios (máximo 5). Podés vender los que no quieras por la mitad de su precio.</li>
         <li>Cada ciclo sube la cuota y la apuesta mínima. ¿Hasta qué ciclo llegás?</li>
+        <li>Tenés <b>3 mazos</b>. Si perdés con el 🂠 Mazo Clásico, pasás al 🥀 Mazo Gastado (15% menos de chances de buenas cartas) y después al ☠️ Mazo Maldito (30% menos). Perder con el último es <b>game over</b>.</li>
+        <li>Muy de vez en cuando (5%) la tienda ofrece un carísimo ✨ <b>Mazo Dorado</b>, con 5% más de chances que el clásico.</li>
       </ul>
       <div class="modal-actions">
         <button class="primary" id="btn-close-help">¡A jugar!</button>
@@ -108,6 +124,7 @@
 
   <script src="js/cards.js"></script>
   <script src="js/bonuses.js"></script>
+  <script src="js/decks.js"></script>
   <script src="js/game.js"></script>
   <script src="js/ui.js"></script>
 </body>

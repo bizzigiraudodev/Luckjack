@@ -2,6 +2,7 @@
 (function (root) {
   const Cards = root.Cards || (typeof require !== 'undefined' && require('./cards.js'));
   const Bonuses = root.Bonuses || (typeof require !== 'undefined' && require('./bonuses.js'));
+  const Decks = root.Decks || (typeof require !== 'undefined' && require('./decks.js'));
 
   const HANDS_PER_CYCLE = 5;
   const MAX_BONUSES = 5;
@@ -26,7 +27,11 @@
       this.bonuses = [];
       this.streak = 0;
       this.shieldUsed = false;
-      this.phase = 'betting'; // betting | playing | roundOver | shop | gameover
+      this.phase = 'betting'; // betting | playing | roundOver | shop | deckLost | gameover
+      this.deckIndex = 0; // posición en Decks.DECK_SEQUENCE (cuántos mazos perdiste)
+      this.deckType = Decks.DECK_SEQUENCE[0];
+      this.maxCleared = 0;
+      this.deckLostReason = null;
       this.player = [];
       this.dealer = [];
       this.bet = 0;
@@ -64,18 +69,44 @@
       return this.bonuses.includes(id);
     }
 
+    get deckInfo() {
+      return Decks.DECKS[this.deckType];
+    }
+
+    get luck() {
+      return this.deckInfo.luck;
+    }
+
+    // Mazos que te quedan, contando el actual.
+    get decksLeft() {
+      return Decks.DECK_SEQUENCE.length - this.deckIndex;
+    }
+
     // --- Mazo ---
     newDeck() {
       this.deck = Cards.buildDeck(2, this.has('iman') ? 6 : 0, this.rng);
+      this.topFixed = false;
     }
 
-    draw() {
+    // Saca una carta. Las del jugador pasan por la suerte del mazo.
+    draw(who = 'dealer') {
       if (this.deck.length === 0) this.newDeck();
-      return this.deck.pop();
+      if (this.topFixed || who !== 'player') {
+        this.topFixed = false;
+        return this.deck.pop();
+      }
+      const i = Decks.pickIndex(this.deck, this.player, this.luck, this.bustLimit, this.rng);
+      return this.deck.splice(i, 1)[0];
     }
 
+    // Rayos X: decide la próxima carta (como si fuera para el jugador) y la deja fija arriba.
     peekNext() {
       if (this.deck.length === 0) this.newDeck();
+      if (!this.topFixed) {
+        const i = Decks.pickIndex(this.deck, this.player, this.luck, this.bustLimit, this.rng);
+        this.deck.push(this.deck.splice(i, 1)[0]);
+        this.topFixed = true;
+      }
       return this.deck[this.deck.length - 1];
     }
 
@@ -99,14 +130,17 @@
     }
 
     // Probabilidad de pasarse si se pide otra carta (para el Contador de Cartas).
+    // Tiene en cuenta la suerte del mazo: las cartas buenas nunca te pasan.
     bustChance() {
       if (this.deck.length === 0) return 0;
-      let busts = 0;
-      for (const c of this.deck) {
-        const v = Cards.handValue([...this.player, c], this.bustLimit).total;
-        if (v > this.bustLimit) busts++;
-      }
-      return busts / this.deck.length;
+      const busts = (c) => Cards.handValue([...this.player, c], this.bustLimit).total > this.bustLimit;
+      if (this.topFixed) return busts(this.deck[this.deck.length - 1]) ? 1 : 0;
+      const good = this.deck.filter((c) => Decks.isGoodDraw(this.player, c, this.bustLimit)).length;
+      const bad = this.deck.length - good;
+      const bustCount = this.deck.filter(busts).length;
+      if (this.luck === 1 || good === 0 || bad === 0) return bustCount / this.deck.length;
+      const pGood = Math.min(1, (this.luck * good) / this.deck.length);
+      return (1 - pGood) * (bustCount / bad);
     }
 
     addLog(msg) {
@@ -122,19 +156,16 @@
 
     deal(amount) {
       if (!this.canBet(amount)) throw new Error('Apuesta inválida');
-      if (this.deck.length < RESHUFFLE_AT) {
-        this.newDeck();
-        this.addLog('🔀 Se rebarajó el mazo.');
-      }
       this.bet = amount;
       this.lastBet = amount;
       this.money -= amount;
       this.doubled = false;
       this.discardUsed = false;
       this.result = null;
-      this.player = [this.draw()];
+      this.player = [];
+      this.player.push(this.draw('player'));
       this.dealer = [this.draw()];
-      this.player.push(this.draw());
+      this.player.push(this.draw('player'));
       this.dealer.push(this.draw());
       this.phase = 'playing';
 
@@ -151,7 +182,7 @@
 
     hit() {
       if (!this.canHit()) throw new Error('No podés pedir ahora');
-      this.player.push(this.draw());
+      this.player.push(this.draw('player'));
       if (this.playerBusted()) return this.resolve();
       if (this.checkCharlie()) return this.result;
       if (this.playerScore() === 21) return this.stand();
@@ -174,7 +205,7 @@
       this.money -= this.bet;
       this.bet *= 2;
       this.doubled = true;
-      this.player.push(this.draw());
+      this.player.push(this.draw('player'));
       if (this.playerBusted()) return this.resolve();
       return this.stand();
     }
@@ -289,7 +320,8 @@
       if (this.handInCycle >= HANDS_PER_CYCLE) return this.endCycle();
 
       this.handInCycle++;
-      if (this.money < this.minBet) return this.gameOver('Te quedaste sin dinero para la apuesta mínima.');
+      if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
+      this.reshuffleIfLow();
       this.phase = 'betting';
       return this.phase;
     }
@@ -301,10 +333,49 @@
         this.addLog(`🏦 Interés: +$${gain}`);
       }
       if (this.money < this.quota) {
-        return this.gameOver(`No llegaste a la cuota de $${this.quota} del ciclo ${this.cycle}.`);
+        return this.loseDeck(`No llegaste a la cuota de $${this.quota} del ciclo ${this.cycle}.`);
       }
+      this.maxCleared = Math.max(this.maxCleared, this.cycle);
       this.addLog(`✅ Ciclo ${this.cycle} superado. ¡A la tienda!`);
       this.openShop();
+      return this.phase;
+    }
+
+    reshuffleIfLow() {
+      if (this.deck.length < RESHUFFLE_AT) {
+        this.newDeck();
+        this.addLog('🔀 Se rebarajó el mazo.');
+      }
+    }
+
+    // Perder con un mazo te pasa al siguiente (peor); perder con el último es game over.
+    loseDeck(reason) {
+      const lost = this.deckInfo;
+      if (this.deckIndex >= Decks.DECK_SEQUENCE.length - 1) {
+        return this.gameOver(`${reason} Perdiste tu último mazo.`);
+      }
+      this.deckIndex++;
+      this.deckType = Decks.DECK_SEQUENCE[this.deckIndex];
+      this.deckLostReason = reason;
+      this.phase = 'deckLost';
+      this.addLog(`🃏 Perdiste el ${lost.name}. Pasás al ${this.deckInfo.name}.`);
+      return this.phase;
+    }
+
+    // Arranca de nuevo desde el ciclo 1 con $100 y el mazo nuevo. Los bonuses se conservan.
+    continueWithNextDeck() {
+      if (this.phase !== 'deckLost') throw new Error('No perdiste un mazo');
+      this.money = START_MONEY;
+      this.cycle = 1;
+      this.handInCycle = 1;
+      this.streak = 0;
+      this.shieldUsed = false;
+      this.player = [];
+      this.dealer = [];
+      this.result = null;
+      this.lastBet = this.minBet;
+      this.newDeck();
+      this.phase = 'betting';
       return this.phase;
     }
 
@@ -319,6 +390,29 @@
     openShop() {
       this.phase = 'shop';
       this.shop = { offers: Bonuses.rollShop(this.bonuses, 3, this.rng), rerollCost: 5 };
+      this.rollDeckOffer();
+    }
+
+    // Hay un 5% de chances de que la tienda ofrezca un mazo mejor.
+    rollDeckOffer() {
+      const offer = this.deckType !== 'dorado' && this.rng() < Decks.BETTER_DECK_CHANCE;
+      this.shop.deckOffer = offer ? Decks.DECKS.dorado : null;
+    }
+
+    deckPrice() {
+      return Decks.deckPrice(this.cycle);
+    }
+
+    canBuyDeck() {
+      return this.phase === 'shop' && !!this.shop.deckOffer && this.money >= this.deckPrice();
+    }
+
+    buyDeck() {
+      if (!this.canBuyDeck()) throw new Error('No podés comprar ese mazo');
+      this.money -= this.deckPrice();
+      this.deckType = this.shop.deckOffer.id;
+      this.shop.deckOffer = null;
+      this.addLog(`✨ Compraste el ${this.deckInfo.name}.`);
     }
 
     priceOf(bonus) {
@@ -355,6 +449,7 @@
       if (this.phase !== 'shop' || this.money < this.shop.rerollCost) throw new Error('No te alcanza');
       this.money -= this.shop.rerollCost;
       this.shop.offers = Bonuses.rollShop(this.bonuses, 3, this.rng);
+      this.rollDeckOffer();
       this.shop.rerollCost += 3;
     }
 
@@ -365,7 +460,7 @@
       this.handInCycle = 1;
       this.shieldUsed = false;
       this.newDeck();
-      if (this.money < this.minBet) return this.gameOver('Te quedaste sin dinero para la apuesta mínima.');
+      if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
       this.phase = 'betting';
       this.lastBet = Math.min(Math.max(this.lastBet, this.minBet), this.money);
       return this.phase;
