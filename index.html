@@ -14,76 +14,41 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Luckjack">
+  <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="app">
   <header class="hud">
-    <h1>🍀 Luck<span>jack</span></h1>
-    <button class="install-btn" id="btn-install" hidden>📲 Instalar app</button>
-    <div class="stats">
-      <div class="stat deck-stat" id="deck-stat"><small>Mazo</small><strong id="deck">🂠</strong></div>
-      <div class="stat"><small>Dinero</small><strong id="money">$0</strong></div>
-      <div class="stat"><small>Ciclo</small><strong id="cycle">1</strong></div>
-      <div class="stat"><small>Mano</small><strong id="hand">1/5</strong></div>
-      <div class="stat"><small>Cuota</small><strong id="quota">$0</strong></div>
-      <div class="stat"><small>Apuesta mín.</small><strong id="minbet">$0</strong></div>
+    <h1 class="logo"><span class="l1">LUCK</span><span class="l2">JACK</span></h1>
+    <div class="blind panel">
+      <div class="blind-title">CICLO <b id="cycle">1</b></div>
+      <div class="blind-goal">
+        <small>Llegá a</small>
+        <strong id="quota">$0</strong>
+      </div>
+      <div class="quota-bar"><i id="quota-fill"></i></div>
     </div>
+    <div class="money-box panel"><small>Dinero</small><strong id="money">$0</strong></div>
+    <div class="stats">
+      <div class="stat panel"><small>Mano</small><strong id="hand">1/15</strong></div>
+      <div class="stat panel"><small>Apuesta mín.</small><strong id="minbet">$0</strong></div>
+      <div class="stat panel deck-stat" id="deck-stat"><small>Mazo</small><strong id="deck"></strong></div>
+    </div>
+    <button class="install-btn btn-blue" id="btn-install" hidden>Instalar app</button>
   </header>
+  <div class="play">
 
-  <section class="bonus-bar" id="bonus-bar" aria-label="Tus bonuses"></section>
+  <section class="bonus-tray panel">
+    <div class="bonus-bar" id="bonus-bar" aria-label="Tus bonuses"></div>
+    <small class="tray-label" id="bonus-count">0/5</small>
+  </section>
 
   <main class="table-wrap">
     <div class="dealer-zone">
       <div class="dealer" id="dealer">
-        <svg viewBox="0 0 240 190" aria-hidden="true">
-          <defs>
-            <linearGradient id="vest" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#3a1018"/>
-              <stop offset="1" stop-color="#1c060b"/>
-            </linearGradient>
-            <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#2fbf71" stop-opacity="0.95"/>
-              <stop offset="1" stop-color="#0b6b3a" stop-opacity="0.85"/>
-            </linearGradient>
-          </defs>
-          <!-- brazos (detrás del torso) -->
-          <g class="arm arm-l">
-            <path d="M62 132 C44 146 36 168 34 196" stroke="#f4f1ea" stroke-width="22" stroke-linecap="round" fill="none"/>
-            <circle cx="34" cy="190" r="11" fill="#e8b38a"/>
-          </g>
-          <g class="arm arm-r">
-            <path d="M178 132 C196 146 204 168 206 196" stroke="#f4f1ea" stroke-width="22" stroke-linecap="round" fill="none"/>
-            <circle class="hand-r" cx="206" cy="190" r="11" fill="#e8b38a"/>
-          </g>
-          <!-- torso -->
-          <path d="M48 190 C48 150 64 128 98 120 L142 120 C176 128 192 150 192 190 Z" fill="#f4f1ea"/>
-          <path d="M48 190 C48 150 64 128 98 120 L112 120 L120 175 L128 120 L142 120 C176 128 192 150 192 190 Z" fill="url(#vest)"/>
-          <circle cx="120" cy="150" r="2.4" fill="#d4af37"/>
-          <circle cx="120" cy="166" r="2.4" fill="#d4af37"/>
-          <!-- cuello y moño -->
-          <rect x="106" y="98" width="28" height="26" rx="8" fill="#d9a07a"/>
-          <path d="M104 122 L120 128 L104 136 Z M136 122 L120 128 L136 136 Z" fill="#b3122e"/>
-          <circle cx="120" cy="128" r="4" fill="#8e0d24"/>
-          <!-- cabeza -->
-          <ellipse cx="84" cy="74" rx="7" ry="10" fill="#e3a982"/>
-          <ellipse cx="156" cy="74" rx="7" ry="10" fill="#e3a982"/>
-          <ellipse cx="120" cy="70" rx="35" ry="40" fill="#e8b38a"/>
-          <path d="M85 60 C84 30 104 22 122 22 C144 22 158 34 155 60 C150 46 138 40 120 41 C104 42 92 46 85 60 Z" fill="#2b1a12"/>
-          <path d="M80 50 Q120 30 160 50 L162 58 Q120 44 78 58 Z" fill="url(#visor)"/>
-          <path d="M78 58 Q120 44 162 58" stroke="#0b4f2b" stroke-width="2" fill="none"/>
-          <g class="brows" stroke="#2b1a12" stroke-width="3" stroke-linecap="round" fill="none">
-            <path class="brow" d="M98 64 Q106 60 113 63"/>
-            <path class="brow" d="M127 63 Q134 60 142 64"/>
-          </g>
-          <g class="eyes" fill="#1d1d1d">
-            <ellipse cx="106" cy="73" rx="4" ry="4.6"/>
-            <ellipse cx="134" cy="73" rx="4" ry="4.6"/>
-          </g>
-          <path d="M120 76 Q117 86 121 89" stroke="#c98d68" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <path d="M106 94 Q113 90 120 93 Q127 90 134 94 Q127 96 120 95 Q113 96 106 94 Z" fill="#2b1a12"/>
-          <path class="mouth" d="M110 100 Q120 108 130 100" stroke="#8a3b2b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          <path class="sweat" d="M155 58 Q160 66 157 70 Q152 70 152 65 Q153 61 155 58 Z" fill="#8fd3ff"/>
-        </svg>
+        <div id="dealer-sprite"></div>
         <div class="speech" id="speech" hidden></div>
       </div>
     </div>
@@ -131,24 +96,28 @@
       <button class="chip" data-delta="5">+5</button>
       <button class="chip" data-delta="10">+10</button>
       <button class="chip" id="bet-max">Máx</button>
-      <button class="primary" id="btn-deal">Repartir</button>
+      <button class="btn-blue big" id="btn-deal">Repartir</button>
     </div>
     <div class="play-controls" id="play-controls">
-      <button class="primary" id="btn-hit">Pedir</button>
-      <button id="btn-stand">Plantarse</button>
-      <button id="btn-double">Doblar</button>
-      <button id="btn-split">✂️ Dividir</button>
-      <button id="btn-discard">♻️ Descartar</button>
+      <button class="btn-blue" id="btn-hit">Pedir</button>
+      <button class="btn-red" id="btn-stand">Plantarse</button>
+      <button class="btn-green" id="btn-double">Doblar</button>
+      <button class="btn-purple" id="btn-split">Dividir</button>
+      <button class="btn-orange" id="btn-discard">Descartar</button>
     </div>
     <div class="next-controls" id="next-controls">
-      <button class="primary" id="btn-next">Siguiente mano</button>
+      <button class="btn-orange big" id="btn-next">Siguiente mano</button>
     </div>
   </section>
-
-  <section class="log-wrap">
+  </div>
+  <section class="log-wrap panel">
     <h3>Historial</h3>
     <ul class="log" id="log"></ul>
   </section>
+  </div>
+  <div class="crt" aria-hidden="true"></div>
+
+
 
   <div class="overlay" id="shop" hidden>
     <div class="modal">
@@ -237,8 +206,10 @@
   <script src="js/bonuses.js"></script>
   <script src="js/decks.js"></script>
   <script src="js/game.js"></script>
+  <script src="js/pixel.js"></script>
   <script src="js/table.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/pwa.js"></script>
+  <script src="js/bg.js"></script>
 </body>
 </html>

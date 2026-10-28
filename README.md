@@ -2,6 +2,8 @@
 
 Blackjack **roguelike** para el navegador. Ganá dinero mano a mano, superá la cuota de cada ciclo y comprá bonuses aleatorios en la tienda para romper la banca... hasta que la suerte se acabe.
 
+Estética pixel art inspirada en Balatro: fondo en remolino pixelado con efecto CRT, cartas y crupier dibujados píxel a píxel y la fuente [Tiny5](https://github.com/Gissio/font_tiny5) (SIL Open Font License, ver `fonts/OFL-Tiny5.txt`).
+
 ## Cómo jugar
 
 Abrí `index.html` en el navegador (no necesita instalar nada). Si preferís un servidor local:
@@ -84,10 +86,13 @@ Para agregar un bonus nuevo: sumalo al catálogo en `js/bonuses.js` y aplicá su
 ```
 index.html        # página del juego
 css/style.css     # estilos de la mesa, cartas y tienda
+css/fonts.css     # fuente pixel incrustada
 js/cards.js       # mazo y valor de manos
 js/bonuses.js     # catálogo de bonuses y sorteo de la tienda
 js/decks.js       # mazos y la suerte de cada uno
 js/game.js        # lógica del juego (sin DOM, testeable)
+js/pixel.js       # sprites pixel art (crupier y palos) generados como SVG
+js/bg.js          # fondo animado en remolino
 js/table.js       # mesa animada: el crupier reparte desde el sabot
 js/ui.js          # render y eventos
 js/pwa.js         # instalación como app (service worker y botón Instalar)

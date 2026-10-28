@@ -21,9 +21,10 @@
       el.classList.add('back');
       return el;
     }
-    if (Cards.isRed(card)) el.classList.add('red');
     if (peek) el.classList.add('peek');
-    el.innerHTML = `<span class="tl">${card.rank}<br>${card.suit}</span><span class="mid">${card.suit}</span><span class="br">${card.rank}<br>${card.suit}</span>`;
+    el.style.color = Pixel.SUIT_COLORS[card.suit];
+    const corner = `${card.rank}${Pixel.suit(card.suit)}`;
+    el.innerHTML = `<span class="tl">${corner}</span><span class="mid">${Pixel.suit(card.suit)}</span><span class="br">${corner}</span>`;
     return el;
   }
 
@@ -295,6 +296,8 @@
     }));
     $('bet-amount').textContent = amount ? `$${amount}` : '';
   }
+
+  $('dealer-sprite').innerHTML = Pixel.dealer();
 
   root.Table = { sync, setSpeech, setMood, renderBet };
 })(window);

@@ -65,7 +65,9 @@
     const b = getBonus(id);
     const el = document.createElement('div');
     el.className = `bonus ${b.rarity}`;
-    el.title = `${b.name}: ${b.desc}`;
+    el.dataset.name = `${b.name} · ${RARITY[b.rarity].label}`;
+    el.dataset.desc = b.desc;
+    el.tabIndex = 0;
     el.innerHTML = `<span class="icon">${b.icon}</span><span class="name">${b.name}</span>`;
     if (extra) el.appendChild(extra);
     return el;
@@ -81,6 +83,7 @@
       tiles.push(empty);
     }
     bar.replaceChildren(...tiles);
+    $('bonus-count').textContent = `${game.bonuses.length}/${MAX_BONUSES}`;
   }
 
   function renderHud() {
@@ -89,6 +92,9 @@
     $('hand').textContent = `${Math.min(game.handInCycle, HANDS_PER_CYCLE)}/${HANDS_PER_CYCLE}`;
     $('quota').textContent = `$${game.quota}`;
     $('quota').className = game.money >= game.quota ? 'ok' : 'warn';
+    const fill = Math.min(100, Math.round((game.money / game.quota) * 100));
+    $('quota-fill').style.setProperty('--fill', `${fill}%`);
+    $('quota-fill').classList.toggle('full', fill >= 100);
     $('minbet').textContent = `$${game.minBet}`;
     const deck = game.deckInfo;
     const lives = Decks.DECK_SEQUENCE.length;
@@ -211,7 +217,6 @@
         <div class="rarity">${RARITY[b.rarity].label}</div>
         <p>${b.desc}</p>`;
       const btn = document.createElement('button');
-      btn.className = 'primary';
       btn.textContent = free ? 'Elegir' : `Comprar $${price}`;
       btn.disabled = !game.canBuy(b);
       if (game.bonuses.length >= MAX_BONUSES) btn.title = 'No tenés lugar: vendé un bonus primero';
