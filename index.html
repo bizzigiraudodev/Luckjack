@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Luckjack</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="hud">
+    <h1>🍀 Luck<span>jack</span></h1>
+    <div class="stats">
+      <div class="stat"><small>Dinero</small><strong id="money">$0</strong></div>
+      <div class="stat"><small>Ciclo</small><strong id="cycle">1</strong></div>
+      <div class="stat"><small>Mano</small><strong id="hand">1/5</strong></div>
+      <div class="stat"><small>Cuota</small><strong id="quota">$0</strong></div>
+      <div class="stat"><small>Apuesta mín.</small><strong id="minbet">$0</strong></div>
+    </div>
+  </header>
+
+  <section class="bonus-bar" id="bonus-bar" aria-label="Tus bonuses"></section>
+
+  <main class="table">
+    <div class="side">
+      <h2>Crupier <span class="score" id="dealer-score"></span></h2>
+      <div class="hand" id="dealer-hand"></div>
+    </div>
+
+    <div class="center">
+      <div class="message" id="message">Hacé tu apuesta para empezar.</div>
+      <div class="intel" id="intel"></div>
+    </div>
+
+    <div class="side">
+      <h2>Vos <span class="score" id="player-score"></span></h2>
+      <div class="hand" id="player-hand"></div>
+    </div>
+  </main>
+
+  <section class="controls">
+    <div class="bet-controls" id="bet-controls">
+      <button class="chip" data-delta="-10">-10</button>
+      <button class="chip" data-delta="-5">-5</button>
+      <input type="number" id="bet-input" min="1" step="1" aria-label="Apuesta">
+      <button class="chip" data-delta="5">+5</button>
+      <button class="chip" data-delta="10">+10</button>
+      <button class="chip" id="bet-max">Máx</button>
+      <button class="primary" id="btn-deal">Repartir</button>
+    </div>
+    <div class="play-controls" id="play-controls">
+      <button class="primary" id="btn-hit">Pedir</button>
+      <button id="btn-stand">Plantarse</button>
+      <button id="btn-double">Doblar</button>
+      <button id="btn-discard">♻️ Descartar</button>
+    </div>
+    <div class="next-controls" id="next-controls">
+      <button class="primary" id="btn-next">Siguiente mano</button>
+    </div>
+  </section>
+
+  <section class="log-wrap">
+    <h3>Historial</h3>
+    <ul class="log" id="log"></ul>
+  </section>
+
+  <div class="overlay" id="shop" hidden>
+    <div class="modal">
+      <h2>🛒 Tienda</h2>
+      <p class="sub">Dinero: <strong id="shop-money"></strong> · Próxima cuota: <strong id="shop-quota"></strong> · Apuesta mínima: <strong id="shop-minbet"></strong></p>
+      <div class="offers" id="shop-offers"></div>
+      <h3>Tus bonuses <small id="slots"></small></h3>
+      <div class="owned" id="shop-owned"></div>
+      <div class="modal-actions">
+        <button id="btn-reroll">🔄 Cambiar ofertas</button>
+        <button class="primary" id="btn-leave">Seguir jugando →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="gameover" hidden>
+    <div class="modal">
+      <h2>💀 Fin de la partida</h2>
+      <p id="gameover-reason"></p>
+      <p id="gameover-stats"></p>
+      <div class="modal-actions">
+        <button class="primary" id="btn-restart">Nueva partida</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="help" hidden>
+    <div class="modal">
+      <h2>Cómo se juega</h2>
+      <ul class="rules">
+        <li>Es blackjack contra el crupier: llegá más cerca de 21 que él sin pasarte. El crupier se planta en 17.</li>
+        <li>Ganar paga 1:1, el blackjack paga 3:2. Podés <b>doblar</b> con tus dos primeras cartas.</li>
+        <li>La partida se divide en <b>ciclos de 5 manos</b>. Al final de cada ciclo tenés que tener al menos la <b>cuota</b> o perdés.</li>
+        <li>Si superás la cuota, entrás a la <b>tienda</b> a comprar bonuses aleatorios (máximo 5). Podés vender los que no quieras por la mitad de su precio.</li>
+        <li>Cada ciclo sube la cuota y la apuesta mínima. ¿Hasta qué ciclo llegás?</li>
+      </ul>
+      <div class="modal-actions">
+        <button class="primary" id="btn-close-help">¡A jugar!</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="help-btn" id="btn-help" aria-label="Ayuda">?</button>
+
+  <script src="js/cards.js"></script>
+  <script src="js/bonuses.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

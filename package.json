@@ -1,0 +1,11 @@
+{
+  "name": "luckjack",
+  "version": "0.1.0",
+  "description": "Blackjack roguelike: ganá dinero ronda a ronda, superá la cuota de cada ciclo y comprá bonuses en la tienda.",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "npx --yes serve ."
+  },
+  "license": "MIT"
+}
