@@ -1,9 +1,10 @@
 // Mesa animada: el crupier saca las cartas del sabot y las reparte una por una.
 (function (root) {
   const $ = (id) => document.getElementById(id);
-  const reduceMotion = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const DEAL_MS = reduceMotion ? 0 : 380;
-  const PAUSE_MS = reduceMotion ? 0 : 150;
+  // Las animaciones del reparto son parte del juego: se muestran aunque el sistema
+  // tenga activado "reducir movimiento" (en Windows suele venir así).
+  const DEAL_MS = 380;
+  const PAUSE_MS = 150;
   const FULL_SHOE = 104;
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
