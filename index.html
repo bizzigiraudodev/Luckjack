@@ -2,13 +2,24 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Luckjack</title>
+  <meta name="description" content="Blackjack roguelike: superá la cuota de cada ciclo y comprá bonuses en la tienda.">
+  <meta name="theme-color" content="#1a070b">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Luckjack">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="hud">
     <h1>🍀 Luck<span>jack</span></h1>
+    <button class="install-btn" id="btn-install" hidden>📲 Instalar app</button>
     <div class="stats">
       <div class="stat deck-stat" id="deck-stat"><small>Mazo</small><strong id="deck">🂠</strong></div>
       <div class="stat"><small>Dinero</small><strong id="money">$0</strong></div>
@@ -199,6 +210,27 @@
     </div>
   </div>
 
+  <div class="overlay" id="install-help" hidden>
+    <div class="modal">
+      <h2>📲 Instalar Luckjack</h2>
+      <p>Podés tener Luckjack como una app más en tu celular, con su ícono y sin barra del navegador. También funciona sin internet.</p>
+      <h3>iPhone / iPad (Safari)</h3>
+      <ol class="rules">
+        <li>Tocá el botón <b>Compartir</b> (el cuadrado con la flecha ⬆️).</li>
+        <li>Elegí <b>Agregar a pantalla de inicio</b>.</li>
+        <li>Tocá <b>Agregar</b>.</li>
+      </ol>
+      <h3>Android (Chrome)</h3>
+      <ol class="rules">
+        <li>Tocá el menú <b>⋮</b> arriba a la derecha.</li>
+        <li>Elegí <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.</li>
+      </ol>
+      <div class="modal-actions">
+        <button class="primary" id="btn-close-install">Entendido</button>
+      </div>
+    </div>
+  </div>
+
   <button class="help-btn" id="btn-help" aria-label="Ayuda">?</button>
 
   <script src="js/cards.js"></script>
@@ -207,5 +239,6 @@
   <script src="js/game.js"></script>
   <script src="js/table.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/pwa.js"></script>
 </body>
 </html>

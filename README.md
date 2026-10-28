@@ -10,6 +10,15 @@ Abrí `index.html` en el navegador (no necesita instalar nada). Si preferís un 
 npm start   # sirve la carpeta con `serve`
 ```
 
+### Instalar en el celular
+
+Luckjack es una app web instalable (PWA): no hace falta ninguna tienda de apps.
+
+- **Android (Chrome):** abrí https://bizzigiraudodev.github.io/Luckjack/ y tocá **📲 Instalar app** (o menú ⋮ → *Instalar app*).
+- **iPhone/iPad (Safari):** abrí el link, tocá **Compartir** ⬆️ → *Agregar a pantalla de inicio*.
+
+Queda con su ícono, se abre a pantalla completa y funciona sin internet.
+
 ### Reglas
 
 - Blackjack clásico contra el crupier: acercate a 21 más que él sin pasarte. El crupier se planta en 17.
@@ -81,6 +90,9 @@ js/decks.js       # mazos y la suerte de cada uno
 js/game.js        # lógica del juego (sin DOM, testeable)
 js/table.js       # mesa animada: el crupier reparte desde el sabot
 js/ui.js          # render y eventos
+js/pwa.js         # instalación como app (service worker y botón Instalar)
+sw.js             # service worker: guarda los archivos para jugar offline
+manifest.webmanifest, icons/  # nombre, colores e íconos de la app
 test/             # tests con node:test
 ```
 
@@ -89,3 +101,5 @@ test/             # tests con node:test
 ```bash
 npm test
 ```
+
+> Si agregás un archivo nuevo al juego, sumalo a la lista `ASSETS` de `sw.js` para que también funcione offline.

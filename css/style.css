@@ -29,6 +29,8 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 12px 16px 40px;
+  /* respeta el notch cuando corre como app instalada */
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 button {
@@ -60,6 +62,7 @@ button.primary:hover:not(:disabled) { background: #ffd56b; }
 }
 .hud h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
 .hud h1 span { color: var(--gold); }
+.install-btn { padding: 6px 12px; font-size: 0.85rem; border-color: var(--gold); color: var(--gold); }
 .stats { display: flex; gap: 8px; flex-wrap: wrap; }
 .stat {
   background: var(--panel);
