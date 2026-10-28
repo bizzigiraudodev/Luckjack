@@ -3,6 +3,7 @@
   const Cards = root.Cards || (typeof require !== 'undefined' && require('./cards.js'));
   const Bonuses = root.Bonuses || (typeof require !== 'undefined' && require('./bonuses.js'));
   const Decks = root.Decks || (typeof require !== 'undefined' && require('./decks.js'));
+  const Upgrades = root.Upgrades || (typeof require !== 'undefined' && require('./upgrades.js'));
 
   const HANDS_PER_CYCLE = 15;
   const SHOP_EVERY = 5;
@@ -30,6 +31,7 @@
       this.handInCycle = 1;
       this.handsPlayed = 0;
       this.bonuses = [];
+      this.upgrades = Object.fromEntries(Upgrades.UPGRADES.map((u) => [u.id, 0]));
       this.streak = 0;
       this.shieldUsed = false;
       this.phase = 'betting'; // betting | playing | roundOver | shop | deckLost | gameover
@@ -86,8 +88,31 @@
       return Decks.DECKS[this.deckType];
     }
 
+    // Suerte del mazo más la mejora de Suerte (en puntos porcentuales).
     get luck() {
-      return this.deckInfo.luck;
+      return this.deckInfo.luck + this.upgradeTotal('suerte') / 100;
+    }
+
+    // --- Mejoras (árbol de la tienda) ---
+    upgradeTotal(id) {
+      return Upgrades.totalAt(Upgrades.getUpgrade(id), this.upgrades[id]);
+    }
+
+    upgradeCost(id) {
+      return Upgrades.costAt(this.upgrades[id]);
+    }
+
+    canUpgrade(id) {
+      return this.phase === 'shop' && !this.shop.free && this.upgrades[id] < Upgrades.MAX_LEVEL &&
+        this.money >= this.upgradeCost(id);
+    }
+
+    upgrade(id) {
+      if (!this.canUpgrade(id)) throw new Error('No podés mejorar eso');
+      const u = Upgrades.getUpgrade(id);
+      this.money -= this.upgradeCost(id);
+      this.upgrades[id]++;
+      this.addLog(`⬆️ ${u.icon} ${u.name} nivel ${this.upgrades[id]} (+${Upgrades.gainAt(u, this.upgrades[id])}%).`);
     }
 
     // Mazos que te quedan, contando el actual.
@@ -394,11 +419,15 @@
         payout = bet / 2;
         notes.push('🕸️ recuperás la mitad');
       }
+      if ((outcome === 'lose' || outcome === 'bust') && this.upgrades.seguro) {
+        payout += bet * this.upgradeTotal('seguro') / 100;
+      }
 
       if (won && this.has('racha') && this.streak > 0) {
         payout += (payout - bet) * 0.2 * this.streak;
         notes.push(`🔥 racha x${this.streak}`);
       }
+      if (won && this.upgrades.ganancia) payout += (payout - bet) * this.upgradeTotal('ganancia') / 100;
       if (won && this.has('herradura')) payout += 5;
       this.streak = won ? this.streak + 1 : (outcome === 'push' ? this.streak : 0);
 
@@ -555,7 +584,8 @@
 
     priceOf(bonus) {
       if (this.shop && this.shop.free) return 0;
-      return Bonuses.priceOf(bonus, this.cycle);
+      const base = Bonuses.priceOf(bonus, this.cycle);
+      return Math.round(base * (1 - this.upgradeTotal('descuento') / 100));
     }
 
     canBuy(bonus) {

@@ -124,11 +124,21 @@
       <h2 id="shop-title">🛒 Tienda</h2>
       <p class="sub" id="shop-free-sub" hidden>Elegí 1 bonus gratis para arrancar la partida.</p>
       <p class="sub" id="shop-sub">Dinero: <strong id="shop-money"></strong> · <span id="shop-quota-label">Próxima cuota</span>: <strong id="shop-quota"></strong> · Apuesta mínima: <strong id="shop-minbet"></strong></p>
-      <div class="deck-offer" id="shop-deck" hidden></div>
-      <div class="offers" id="shop-offers"></div>
-      <div id="shop-owned-wrap">
-        <h3>Tus bonuses <small id="slots"></small></h3>
-        <div class="owned" id="shop-owned"></div>
+      <div class="tabs" id="shop-tabs" role="tablist">
+        <button class="tab active" data-tab="bonuses" role="tab">Bonuses</button>
+        <button class="tab" data-tab="mejoras" role="tab">Mejoras</button>
+      </div>
+      <div id="tab-bonuses">
+        <div class="deck-offer" id="shop-deck" hidden></div>
+        <div class="offers" id="shop-offers"></div>
+        <div id="shop-owned-wrap">
+          <h3>Tus bonuses <small id="slots"></small></h3>
+          <div class="owned" id="shop-owned"></div>
+        </div>
+      </div>
+      <div id="tab-mejoras" hidden>
+        <p class="sub">Mejoras permanentes para toda la partida. Cada nivel de una rama cuesta $2.5 más que el anterior.</p>
+        <div class="tree" id="upgrade-tree"></div>
       </div>
       <div class="modal-actions">
         <button id="btn-reroll">🔄 Cambiar ofertas</button>
@@ -171,6 +181,7 @@
         <li>Cada <b>5 manos</b> aparece la <b>tienda</b> para comprar bonuses aleatorios (máximo 5). Podés vender los que no quieras por la mitad de su precio.</li>
         <li>Cada ciclo sube la cuota y la apuesta mínima. ¿Hasta qué ciclo llegás?</li>
         <li>Tenés <b>3 mazos</b>. Si perdés con el 🂠 Mazo Clásico, pasás al 🥀 Mazo Gastado (15% menos de chances de buenas cartas) y después al ☠️ Mazo Maldito (30% menos). Perder con el último es <b>game over</b>.</li>
+        <li>En la pestaña <b>Mejoras</b> de la tienda subís de nivel stats permanentes: Suerte, Ganancia, Seguro y Descuento.</li>
         <li>Muy de vez en cuando (5%) la tienda ofrece un carísimo ✨ <b>Mazo Dorado</b>, con 5% más de chances que el clásico.</li>
       </ul>
       <div class="modal-actions">
@@ -205,6 +216,7 @@
   <script src="js/cards.js"></script>
   <script src="js/bonuses.js"></script>
   <script src="js/decks.js"></script>
+  <script src="js/upgrades.js"></script>
   <script src="js/game.js"></script>
   <script src="js/pixel.js"></script>
   <script src="js/table.js"></script>

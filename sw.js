@@ -1,6 +1,6 @@
 // Service worker: guarda el juego para poder jugar sin internet.
 // Primero intenta la red (así siempre ves la última versión) y si no hay conexión usa la copia guardada.
-const CACHE = 'luckjack-v2';
+const CACHE = 'luckjack-v3';
 const ASSETS = [
   './',
   'index.html',
@@ -10,6 +10,7 @@ const ASSETS = [
   'js/cards.js',
   'js/bonuses.js',
   'js/decks.js',
+  'js/upgrades.js',
   'js/game.js',
   'js/pixel.js',
   'js/table.js',

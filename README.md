@@ -30,6 +30,17 @@ Queda con su ícono, se abre a pantalla completa y funciona sin internet.
 - Cada **5 manos** aparece la **tienda** (en las manos 5 y 10 sin chequear la cuota, y en la 15 si la superaste): 3 bonuses al azar (ponderados por rareza). Podés comprar, vender a mitad de precio o pagar para cambiar las ofertas. Máximo 5 bonuses.
 - Cada ciclo sube la cuota y la apuesta mínima (`$10 + $5` por ciclo). El objetivo: llegar lo más lejos posible. El récord se guarda en el navegador.
 
+### Mejoras (árbol de la tienda)
+
+En la pestaña **Mejoras** de la tienda subís stats permanentes para toda la partida (se conservan aunque pierdas un mazo). Cada rama tiene 10 niveles; el primero cuesta **$5** y cada nivel siguiente **$2.5 más** ($5, $7.5, $10, …, $27.5).
+
+| | Rama | Cada nivel suma | Total al nivel 10 |
+|-|------|-----------------|-------------------|
+| 🍀 | Suerte | +0.15%, +0.25%, +0.35%, … (chance de cartas buenas) | +6% |
+| 💰 | Ganancia | +1%, +1.5%, +2%, … de la ganancia al ganar una mano | +32.5% |
+| 🛡️ | Seguro | +1%, +1.5%, +2%, … de la apuesta devuelta al perder | 32.5% |
+| 🏷️ | Descuento | +1%, +1.5%, +2%, … menos en el precio de los bonuses | 32.5% |
+
 ### Mazos (vidas)
 
 Tenés **3 mazos**. Si perdés con uno (no llegás a la cuota o te quedás sin dinero para la apuesta mínima), pasás al siguiente, que es peor. Volvés al ciclo 1 con $100 y conservás tus bonuses. Perder con el último mazo es **game over**.
@@ -90,6 +101,7 @@ css/fonts.css     # fuente pixel incrustada
 js/cards.js       # mazo y valor de manos
 js/bonuses.js     # catálogo de bonuses y sorteo de la tienda
 js/decks.js       # mazos y la suerte de cada uno
+js/upgrades.js    # árbol de mejoras de la tienda
 js/game.js        # lógica del juego (sin DOM, testeable)
 js/pixel.js       # sprites pixel art (crupier y palos) generados como SVG
 js/bg.js          # fondo animado en remolino

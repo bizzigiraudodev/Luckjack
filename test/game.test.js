@@ -366,6 +366,62 @@ test('al empezar se elige 1 bonus gratis entre 3', () => {
   assert.ok(g.shop.free, 'una partida nueva vuelve a ofrecer el bonus gratis');
 });
 
+test('mejoras: Suerte suma 0.15%, 0.25%, 0.35%... y cuesta $5, $7.5, $10...', () => {
+  const Upgrades = require('../js/upgrades.js');
+  const suerte = Upgrades.getUpgrade('suerte');
+  assert.deepStrictEqual([1, 2, 3, 4].map((l) => Upgrades.gainAt(suerte, l)), [0.15, 0.25, 0.35, 0.45]);
+  assert.deepStrictEqual([0, 1, 2, 3].map(Upgrades.costAt), [5, 7.5, 10, 12.5]);
+
+  const g = new Game({ startingPick: false });
+  g.money = 100;
+  g.phase = 'roundOver';
+  g.openShop(true);
+  g.upgrade('suerte');
+  g.upgrade('suerte');
+  assert.strictEqual(g.money, 87.5);
+  assert.strictEqual(g.upgradeTotal('suerte'), 0.4);
+  assert.ok(Math.abs(g.luck - 1.004) < 1e-9);
+  assert.strictEqual(g.upgradeCost('suerte'), 10);
+});
+
+test('mejoras: no se compran en la elección gratis ni pasando el nivel máximo', () => {
+  const g = new Game();
+  assert.ok(!g.canUpgrade('suerte'), 'no en el bonus inicial');
+  g.leaveShop();
+  g.money = 10000;
+  g.phase = 'roundOver';
+  g.openShop(true);
+  for (let i = 0; i < 10; i++) g.upgrade('ganancia');
+  assert.ok(!g.canUpgrade('ganancia'));
+  assert.strictEqual(g.upgradeTotal('ganancia'), 32.5);
+});
+
+test('mejoras: Ganancia, Seguro y Descuento', () => {
+  const g = new Game({ startingPick: false });
+  g.upgrades.ganancia = 2; // +2.5%
+  g.upgrades.seguro = 2; // 2.5%
+  stack(g, [c('K'), c('9'), c('Q'), c('8')]);
+  g.deal(100);
+  g.money = 0;
+  g.stand();
+  assert.strictEqual(g.result.payout, 202, 'gana 100 + 2.5%');
+
+  const g2 = new Game({ startingPick: false });
+  g2.upgrades.seguro = 2;
+  stack(g2, [c('K'), c('K'), c('7'), c('8')]);
+  g2.deal(100);
+  g2.stand();
+  assert.strictEqual(g2.result.payout, 2, 'recupera 2.5% de la apuesta (redondeado)');
+
+  const g3 = new Game({ startingPick: false });
+  g3.phase = 'roundOver';
+  g3.openShop(true);
+  const offer = g3.shop.offers[0];
+  const full = g3.priceOf(offer);
+  g3.upgrades.descuento = 10; // 32.5%
+  assert.strictEqual(g3.priceOf(offer), Math.round(full * 0.675));
+});
+
 test('simulación: partidas aleatorias no rompen invariantes', () => {
   let seed = 42;
   const rng = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
@@ -384,11 +440,12 @@ test('simulación: partidas aleatorias no rompen invariantes', () => {
       } else if (g.phase === 'roundOver') g.nextHand();
       else if (g.phase === 'shop') {
         if (g.canBuyDeck()) g.buyDeck();
+        if (!g.shop.free) for (const u of ['suerte', 'ganancia', 'seguro', 'descuento']) if (g.canUpgrade(u)) g.upgrade(u);
         for (const o of [...g.shop.offers]) if (g.canBuy(o)) g.buy(o.id);
         if (g.phase === 'shop') g.leaveShop();
       }
       assert.ok(g.money >= 0, 'el dinero nunca es negativo');
-      assert.ok(Number.isInteger(g.money), 'el dinero es entero');
+      assert.ok(Number.isInteger(g.money * 2), 'el dinero va de $0.50 en $0.50');
     }
   }
 });

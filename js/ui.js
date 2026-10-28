@@ -100,7 +100,8 @@
     const lives = Decks.DECK_SEQUENCE.length;
     $('deck').textContent = `${deck.icon} ${'●'.repeat(game.decksLeft)}${'○'.repeat(lives - game.decksLeft)}`;
     $('deck-stat').className = `stat deck-stat ${deck.id}`;
-    $('deck-stat').title = `${deck.name}: ${deck.desc} Te quedan ${game.decksLeft} de ${lives} mazos.`;
+    const extra = game.upgradeTotal('suerte') ? ` Mejora de Suerte: +${game.upgradeTotal('suerte')}%.` : '';
+    $('deck-stat').title = `${deck.name}: ${deck.desc} Te quedan ${game.decksLeft} de ${lives} mazos.${extra}`;
   }
 
   const DEALER_LINES = {
@@ -196,7 +197,13 @@
     $('shop-free-sub').hidden = !free;
     $('shop-sub').hidden = free;
     $('shop-owned-wrap').hidden = free;
-    $('btn-reroll').hidden = free;
+    $('btn-reroll').hidden = free || shopTab !== 'bonuses';
+    $('shop-tabs').hidden = free;
+    const tab = free ? 'bonuses' : shopTab;
+    $('tab-bonuses').hidden = tab !== 'bonuses';
+    $('tab-mejoras').hidden = tab !== 'mejoras';
+    document.querySelectorAll('#shop-tabs .tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
+    if (tab === 'mejoras') renderUpgradeTree();
     $('btn-leave').textContent = free ? 'Arrancar sin bonus' : 'Seguir jugando →';
     $('btn-leave').classList.toggle('primary', !free);
     $('shop-money').textContent = `$${game.money}`;
@@ -270,6 +277,39 @@
     const reroll = $('btn-reroll');
     reroll.textContent = `🔄 Cambiar ofertas ($${game.shop.rerollCost})`;
     reroll.disabled = game.money < game.shop.rerollCost;
+  }
+
+  // Pestaña de la tienda abierta ('bonuses' o 'mejoras').
+  let shopTab = 'bonuses';
+
+  function renderUpgradeTree() {
+    const branches = Upgrades.UPGRADES.map((u) => {
+      const level = game.upgrades[u.id];
+      const branch = document.createElement('div');
+      branch.className = 'branch';
+      branch.innerHTML = `
+        <div class="branch-head">
+          <span class="icon">${u.icon}</span>
+          <b>${u.name}</b>
+          <span class="total">+${game.upgradeTotal(u.id)}%</span>
+          <small>${u.desc}</small>
+        </div>`;
+      const nodes = document.createElement('div');
+      nodes.className = 'nodes';
+      for (let l = 1; l <= Upgrades.MAX_LEVEL; l++) {
+        const node = document.createElement('button');
+        const state = l <= level ? 'owned' : l === level + 1 ? 'next' : 'locked';
+        node.className = `node ${state}`;
+        node.innerHTML = `<span>Nv ${l}</span><b>+${Upgrades.gainAt(u, l)}%</b>` +
+          (state === 'owned' ? '<i>✔</i>' : `<i>$${Upgrades.costAt(l - 1)}</i>`);
+        node.disabled = state !== 'next' || !game.canUpgrade(u.id);
+        if (state === 'next') node.onclick = () => { game.upgrade(u.id); render(); };
+        nodes.appendChild(node);
+      }
+      branch.appendChild(nodes);
+      return branch;
+    });
+    $('upgrade-tree').replaceChildren(...branches);
   }
 
   function renderDeckLost() {
@@ -346,8 +386,11 @@
   $('btn-discard').addEventListener('click', () => { game.discard(); render(); });
   $('btn-split').addEventListener('click', () => { game.split(); render(); });
   $('btn-next').addEventListener('click', () => { game.nextHand(); render(); });
+  document.querySelectorAll('#shop-tabs .tab').forEach((t) => {
+    t.addEventListener('click', () => { shopTab = t.dataset.tab; renderShop(); });
+  });
   $('btn-reroll').addEventListener('click', () => { game.reroll(); render(); });
-  $('btn-leave').addEventListener('click', () => { game.leaveShop(); render(); });
+  $('btn-leave').addEventListener('click', () => { shopTab = 'bonuses'; game.leaveShop(); render(); });
   $('btn-continue').addEventListener('click', () => {
     game.continueWithNextDeck();
     $('bet-input').value = '';
