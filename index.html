@@ -21,20 +21,95 @@
 
   <section class="bonus-bar" id="bonus-bar" aria-label="Tus bonuses"></section>
 
-  <main class="table">
-    <div class="side">
-      <h2>Crupier <span class="score" id="dealer-score"></span></h2>
-      <div class="hand" id="dealer-hand"></div>
+  <main class="table-wrap">
+    <div class="dealer-zone">
+      <div class="dealer" id="dealer">
+        <svg viewBox="0 0 240 190" aria-hidden="true">
+          <defs>
+            <linearGradient id="vest" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3a1018"/>
+              <stop offset="1" stop-color="#1c060b"/>
+            </linearGradient>
+            <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2fbf71" stop-opacity="0.95"/>
+              <stop offset="1" stop-color="#0b6b3a" stop-opacity="0.85"/>
+            </linearGradient>
+          </defs>
+          <!-- brazos (detrás del torso) -->
+          <g class="arm arm-l">
+            <path d="M62 132 C44 146 36 168 34 196" stroke="#f4f1ea" stroke-width="22" stroke-linecap="round" fill="none"/>
+            <circle cx="34" cy="190" r="11" fill="#e8b38a"/>
+          </g>
+          <g class="arm arm-r">
+            <path d="M178 132 C196 146 204 168 206 196" stroke="#f4f1ea" stroke-width="22" stroke-linecap="round" fill="none"/>
+            <circle class="hand-r" cx="206" cy="190" r="11" fill="#e8b38a"/>
+          </g>
+          <!-- torso -->
+          <path d="M48 190 C48 150 64 128 98 120 L142 120 C176 128 192 150 192 190 Z" fill="#f4f1ea"/>
+          <path d="M48 190 C48 150 64 128 98 120 L112 120 L120 175 L128 120 L142 120 C176 128 192 150 192 190 Z" fill="url(#vest)"/>
+          <circle cx="120" cy="150" r="2.4" fill="#d4af37"/>
+          <circle cx="120" cy="166" r="2.4" fill="#d4af37"/>
+          <!-- cuello y moño -->
+          <rect x="106" y="98" width="28" height="26" rx="8" fill="#d9a07a"/>
+          <path d="M104 122 L120 128 L104 136 Z M136 122 L120 128 L136 136 Z" fill="#b3122e"/>
+          <circle cx="120" cy="128" r="4" fill="#8e0d24"/>
+          <!-- cabeza -->
+          <ellipse cx="84" cy="74" rx="7" ry="10" fill="#e3a982"/>
+          <ellipse cx="156" cy="74" rx="7" ry="10" fill="#e3a982"/>
+          <ellipse cx="120" cy="70" rx="35" ry="40" fill="#e8b38a"/>
+          <path d="M85 60 C84 30 104 22 122 22 C144 22 158 34 155 60 C150 46 138 40 120 41 C104 42 92 46 85 60 Z" fill="#2b1a12"/>
+          <path d="M80 50 Q120 30 160 50 L162 58 Q120 44 78 58 Z" fill="url(#visor)"/>
+          <path d="M78 58 Q120 44 162 58" stroke="#0b4f2b" stroke-width="2" fill="none"/>
+          <g class="brows" stroke="#2b1a12" stroke-width="3" stroke-linecap="round" fill="none">
+            <path class="brow" d="M98 64 Q106 60 113 63"/>
+            <path class="brow" d="M127 63 Q134 60 142 64"/>
+          </g>
+          <g class="eyes" fill="#1d1d1d">
+            <ellipse cx="106" cy="73" rx="4" ry="4.6"/>
+            <ellipse cx="134" cy="73" rx="4" ry="4.6"/>
+          </g>
+          <path d="M120 76 Q117 86 121 89" stroke="#c98d68" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M106 94 Q113 90 120 93 Q127 90 134 94 Q127 96 120 95 Q113 96 106 94 Z" fill="#2b1a12"/>
+          <path class="mouth" d="M110 100 Q120 108 130 100" stroke="#8a3b2b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path class="sweat" d="M155 58 Q160 66 157 70 Q152 70 152 65 Q153 61 155 58 Z" fill="#8fd3ff"/>
+        </svg>
+        <div class="speech" id="speech" hidden></div>
+      </div>
     </div>
 
-    <div class="center">
-      <div class="message" id="message">Hacé tu apuesta para empezar.</div>
-      <div class="intel" id="intel"></div>
-    </div>
+    <div class="table" id="table">
+      <div class="felt">
+        <div class="table-top">
+          <div class="discard" id="discard" title="Descarte"><div class="pile" id="discard-pile"></div></div>
+          <div class="chip-tray" aria-hidden="true">
+            <i class="c-black"></i><i class="c-green"></i><i class="c-blue"></i><i class="c-red"></i><i class="c-red"></i><i class="c-blue"></i><i class="c-green"></i><i class="c-black"></i>
+          </div>
+          <div class="shoe" id="shoe" title="Sabot"><div class="shoe-cards" id="shoe-cards"></div></div>
+        </div>
 
-    <div class="side">
-      <h2>Vos <span class="score" id="player-score"></span></h2>
-      <div class="hand" id="player-hand"></div>
+        <div class="seat dealer-seat">
+          <div class="hand" id="dealer-hand"></div>
+          <span class="score" id="dealer-score"></span>
+        </div>
+
+        <svg class="felt-print" viewBox="0 0 600 120" aria-hidden="true">
+          <path id="arc-1" d="M60 18 Q300 112 540 18" fill="none"/>
+          <path id="arc-2" d="M100 46 Q300 146 500 46" fill="none"/>
+          <text class="print-big"><textPath href="#arc-1" startOffset="50%" text-anchor="middle">BLACKJACK PAGA 3 A 2</textPath></text>
+          <text class="print-small"><textPath href="#arc-2" startOffset="50%" text-anchor="middle">EL CRUPIER PIDE HASTA 16 Y SE PLANTA EN 17</textPath></text>
+        </svg>
+
+        <div class="center">
+          <div class="message" id="message">Hacé tu apuesta para empezar.</div>
+          <div class="intel" id="intel"></div>
+        </div>
+
+        <div class="seat player-seat">
+          <div class="bet-spot" id="bet-spot"><div class="chips" id="bet-chips"></div><span class="bet-amount" id="bet-amount"></span></div>
+          <div class="hand" id="player-hand"></div>
+          <span class="score" id="player-score"></span>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -130,6 +205,7 @@
   <script src="js/bonuses.js"></script>
   <script src="js/decks.js"></script>
   <script src="js/game.js"></script>
+  <script src="js/table.js"></script>
   <script src="js/ui.js"></script>
 </body>
 </html>

@@ -7,49 +7,17 @@
   const game = new Game();
   const HIGHSCORE_KEY = 'luckjack.best';
 
+  // Primero se animan las cartas; el resto (dinero, mensajes, tienda) se muestra
+  // recién cuando terminan, para no adelantar el resultado.
+  let busy = false;
+  let queue = Promise.resolve();
+
   function loadBest() {
     try { return JSON.parse(localStorage.getItem(HIGHSCORE_KEY)) || null; } catch { return null; }
   }
 
   function saveBest(best) {
     try { localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(best)); } catch { /* sin storage */ }
-  }
-
-  // --- Render de cartas ---
-  function cardEl(card, hidden = false, peek = false) {
-    const el = document.createElement('div');
-    el.className = 'card';
-    if (hidden && !peek) {
-      el.classList.add('back');
-      return el;
-    }
-    if (Cards.isRed(card)) el.classList.add('red');
-    if (peek) el.classList.add('peek');
-    el.innerHTML = `<span class="tl">${card.rank}<br>${card.suit}</span><span class="mid">${card.suit}</span><span class="br">${card.rank}<br>${card.suit}</span>`;
-    return el;
-  }
-
-  function renderHands() {
-    const playing = game.phase === 'playing';
-    const dealerHand = $('dealer-hand');
-    const playerHand = $('player-hand');
-    dealerHand.replaceChildren(...game.dealer.map((c, i) =>
-      cardEl(c, playing && i === 1, playing && i === 1 && game.has('ojo'))));
-    playerHand.replaceChildren(...game.player.map((c) => cardEl(c)));
-
-    if (game.player.length) {
-      const pv = game.playerValue();
-      $('player-score').textContent = `${pv.total}${pv.soft && pv.total < game.bustLimit ? ' (suave)' : ''}`;
-    } else {
-      $('player-score').textContent = '';
-    }
-    if (game.dealer.length) {
-      $('dealer-score').textContent = playing && !game.has('ojo')
-        ? Cards.cardValue(game.dealer[0])
-        : game.dealerValue().total;
-    } else {
-      $('dealer-score').textContent = '';
-    }
   }
 
   function renderIntel() {
@@ -123,10 +91,50 @@
     $('deck-stat').title = `${deck.name}: ${deck.desc} Te quedan ${game.decksLeft} de ${lives} mazos.`;
   }
 
+  const DEALER_LINES = {
+    betting: ['Hagan sus apuestas.', '¿Cuánto apostamos?', 'Mesa abierta. Suerte.', 'Cuando quiera.'],
+    playing: ['¿Carta o se planta?', 'Usted decide.', '¿Otra?'],
+    blackjack: '¡Blackjack! Felicitaciones.',
+    win: 'Gana usted. Bien jugado.',
+    dealerBust: 'Uf... me pasé.',
+    charlie: '¡Cinco cartas! Impresionante.',
+    push: 'Empate. Nadie pierde.',
+    lose: 'La casa gana.',
+    bust: 'Se pasó, lo siento.',
+    shop: 'Pase por la tienda, lo espero.',
+    deckLost: 'Cambiamos de mazo...',
+    gameover: 'La casa siempre gana.',
+  };
+
+  function renderDealer() {
+    let line = null;
+    let mood = null;
+    if (game.phase === 'betting') line = pick(DEALER_LINES.betting);
+    else if (game.phase === 'playing') line = pick(DEALER_LINES.playing);
+    else if (game.phase === 'roundOver' && game.result) {
+      line = DEALER_LINES[game.result.outcome];
+      if (game.result.net > 0) mood = 'sad';
+      else if (game.result.net < 0) mood = 'happy';
+    } else line = DEALER_LINES[game.phase] || null;
+    Table.setSpeech(line);
+    Table.setMood(mood, game.has('nervioso'));
+  }
+
+  // Frase fija por mano, para que no cambie en cada render.
+  function pick(lines) {
+    return lines[game.handsPlayed % lines.length];
+  }
+
+  function renderBetSpot() {
+    if (game.phase === 'betting') Table.renderBet(Number($('bet-input').value) || 0);
+    else if (game.phase === 'playing' || game.phase === 'roundOver') Table.renderBet(game.bet);
+    else Table.renderBet(0);
+  }
+
   function renderControls() {
-    $('bet-controls').hidden = game.phase !== 'betting';
-    $('play-controls').hidden = game.phase !== 'playing';
-    $('next-controls').hidden = game.phase !== 'roundOver';
+    $('bet-controls').hidden = busy || game.phase !== 'betting';
+    $('play-controls').hidden = busy || game.phase !== 'playing';
+    $('next-controls').hidden = busy || game.phase !== 'roundOver';
     if (game.phase === 'betting') {
       const input = $('bet-input');
       input.min = game.minBet;
@@ -136,6 +144,7 @@
         input.value = Math.min(Math.max(game.lastBet, game.minBet), game.money);
       }
       $('btn-deal').disabled = !game.canBet(Number(input.value));
+      renderBetSpot();
     }
     if (game.phase === 'playing') {
       $('btn-double').disabled = !game.canDouble();
@@ -270,9 +279,22 @@
   }
 
   function render() {
+    queue = queue.then(doRender).catch((e) => console.error(e));
+    return queue;
+  }
+
+  async function doRender() {
+    busy = true;
+    renderControls();
+    // El crupier se calla mientras reparte o levanta las cartas.
+    if (game.phase === 'playing' || game.phase === 'roundOver' || game.player.length === 0) Table.setSpeech(null);
+    if (game.phase === 'playing' || game.phase === 'roundOver') Table.renderBet(game.bet);
+    await Table.sync(game);
+    busy = false;
     renderHud();
     renderBonusBar();
-    renderHands();
+    renderBetSpot();
+    renderDealer();
     renderIntel();
     renderMessage();
     renderControls();
@@ -320,6 +342,7 @@
 
   // Atajos de teclado
   document.addEventListener('keydown', (e) => {
+    if (busy) return;
     if (e.target.tagName === 'INPUT' && e.key !== 'Enter') return;
     const k = e.key.toLowerCase();
     if (game.phase === 'betting' && k === 'enter') $('btn-deal').click();

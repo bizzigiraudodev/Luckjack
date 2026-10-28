@@ -78,6 +78,7 @@ js/cards.js       # mazo y valor de manos
 js/bonuses.js     # catálogo de bonuses y sorteo de la tienda
 js/decks.js       # mazos y la suerte de cada uno
 js/game.js        # lógica del juego (sin DOM, testeable)
+js/table.js       # mesa animada: el crupier reparte desde el sabot
 js/ui.js          # render y eventos
 test/             # tests con node:test
 ```
