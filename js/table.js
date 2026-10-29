@@ -91,6 +91,7 @@
     }
     if (faceDown) shown.holeHidden = true;
     updateShoe();
+    Sound.sfx('card');
     await flyFrom(el, $('shoe'));
     dealer.classList.remove('toss');
     updateScores();
@@ -100,6 +101,7 @@
     const el = $('dealer-hand').children[1];
     const face = cardEl(shown.dealer[1]);
     if (el) {
+      Sound.sfx('flip');
       await animate(el, [{ transform: 'none' }, { transform: 'rotateY(90deg)' }], DEAL_MS / 2, { fill: 'forwards' });
       el.replaceWith(face);
       await animate(face, [{ transform: 'rotateY(90deg)' }, { transform: 'none' }], DEAL_MS / 2);
@@ -297,7 +299,17 @@
     $('bet-amount').textContent = amount ? `$${amount}` : '';
   }
 
-  $('dealer-sprite').innerHTML = Pixel.dealer();
+  // Quién reparte: 'crupier', 'gaucho', 'diablo' o 'santo'. El gaucho tiene su mate en la mesa.
+  let dealerId = null;
+  function setDealer(id) {
+    if (id === dealerId) return;
+    dealerId = id;
+    $('dealer-sprite').innerHTML = Pixel.character(id);
+    $('table-mate').hidden = id !== 'gaucho';
+    if (!$('table-mate').innerHTML) $('table-mate').innerHTML = Pixel.mate();
+  }
 
-  root.Table = { sync, setSpeech, setMood, renderBet };
+  setDealer('crupier');
+
+  root.Table = { sync, setSpeech, setMood, renderBet, setDealer };
 })(window);

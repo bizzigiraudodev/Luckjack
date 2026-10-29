@@ -60,8 +60,9 @@
   }
 
   // Elige `count` bonuses distintos que el jugador no tenga, ponderados por rareza.
-  function rollShop(ownedIds, count = 3, rng = Math.random) {
-    let pool = BONUSES.filter((b) => !ownedIds.includes(b.id));
+  // `rarities` limita las rarezas posibles (por ejemplo ['common']).
+  function rollShop(ownedIds, count = 3, rng = Math.random, rarities = null) {
+    let pool = BONUSES.filter((b) => !ownedIds.includes(b.id) && (!rarities || rarities.includes(b.rarity)));
     const picks = [];
     while (picks.length < count && pool.length > 0) {
       const total = pool.reduce((s, b) => s + RARITY[b.rarity].weight, 0);

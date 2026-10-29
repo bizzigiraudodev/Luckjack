@@ -314,7 +314,8 @@ test('superar la cuota a las 15 manos abre la tienda y se puede comprar', () => 
   g.deal(10);
   g.stand();
   g.nextHand();
-  assert.strictEqual(g.money, 250);
+  // 15 victorias de $10 + $5 en cada una de las 13 rondas que arrancaron con la cuota ($115) cumplida
+  assert.strictEqual(g.money, 250 + 13 * 5);
   assert.strictEqual(g.phase, 'shop');
   assert.ok(!g.shop.midCycle);
   assert.strictEqual(g.shop.offers.length, 3);
@@ -322,7 +323,7 @@ test('superar la cuota a las 15 manos abre la tienda y se puede comprar', () => 
   const price = g.priceOf(offer);
   g.buy(offer.id);
   assert.ok(g.has(offer.id));
-  assert.strictEqual(g.money, 250 - price);
+  assert.strictEqual(g.money, 315 - price);
   g.sell(offer.id);
   assert.ok(!g.has(offer.id));
   g.leaveShop();
@@ -375,7 +376,7 @@ test('mejoras: Suerte suma 0.15%, 0.25%, 0.35%... y cuesta $5, $7.5, $10...', ()
   const g = new Game({ startingPick: false });
   g.money = 100;
   g.phase = 'roundOver';
-  g.openShop(true);
+  g.openShop('mid');
   g.upgrade('suerte');
   g.upgrade('suerte');
   assert.strictEqual(g.money, 87.5);
@@ -390,7 +391,7 @@ test('mejoras: no se compran en la elección gratis ni pasando el nivel máximo'
   g.leaveShop();
   g.money = 10000;
   g.phase = 'roundOver';
-  g.openShop(true);
+  g.openShop('mid');
   for (let i = 0; i < 10; i++) g.upgrade('ganancia');
   assert.ok(!g.canUpgrade('ganancia'));
   assert.strictEqual(g.upgradeTotal('ganancia'), 32.5);
@@ -415,11 +416,151 @@ test('mejoras: Ganancia, Seguro y Descuento', () => {
 
   const g3 = new Game({ startingPick: false });
   g3.phase = 'roundOver';
-  g3.openShop(true);
+  g3.openShop('mid');
   const offer = g3.shop.offers[0];
   const full = g3.priceOf(offer);
   g3.upgrades.descuento = 10; // 32.5%
   assert.strictEqual(g3.priceOf(offer), Math.round(full * 0.675));
+});
+
+// --- Modos de juego ---
+
+function winHand(g, bet = 10) {
+  stack(g, [c('K'), c('9'), c('Q'), c('8')]);
+  g.deal(bet);
+  g.stand();
+}
+
+test('pasar de ciclo: solo con la cuota cumplida; +$5 por ronda con la cuota cumplida', () => {
+  const g = new Game({ startingPick: false });
+  assert.ok(!g.canAdvance());
+  winHand(g, 20); // $120 ≥ $115
+  g.nextHand();
+  assert.ok(g.canAdvance());
+  winHand(g, 10);
+  assert.ok(g.result.notes.some((n) => n.includes('cuota cumplida')));
+  assert.strictEqual(g.money, 120 + 10 + 5);
+  g.nextHand();
+  g.advanceCycle();
+  assert.strictEqual(g.phase, 'shop');
+  assert.strictEqual(g.shop.kind, 'end');
+});
+
+test('historia: 3 jefes, tienda gratis de comunes al final y árbol solo al final', () => {
+  const g = new Game({ mode: 'story', startingPick: false });
+  assert.strictEqual(g.boss, 'gaucho');
+  assert.strictEqual(g.pendingIntro, 1);
+  playHands(g, 4, [c('K'), c('9'), c('Q'), c('8')]);
+  winHand(g);
+  g.nextHand(); // mano 5: tienda intermedia
+  assert.strictEqual(g.shop.kind, 'mid');
+  assert.ok(!g.canUpgrade('suerte'), 'sin árbol en tiendas intermedias de la historia');
+  g.leaveShop();
+  playHands(g, 9, [c('K'), c('9'), c('Q'), c('8')]);
+  winHand(g);
+  g.nextHand();
+  assert.strictEqual(g.shop.kind, 'reward');
+  assert.ok(g.shop.offers.every((b) => b.rarity === 'common'));
+  assert.ok(g.canUpgrade('suerte'), 'árbol al final del ciclo');
+  const pick = g.shop.offers[0];
+  assert.strictEqual(g.priceOf(pick), 0);
+  g.buy(pick.id);
+  assert.strictEqual(g.shop.offers.length, 0, 'un solo bonus gratis');
+  assert.strictEqual(g.phase, 'shop', 'la tienda sigue abierta para el árbol');
+  g.leaveShop();
+  assert.strictEqual(g.cycle, 2);
+  assert.strictEqual(g.boss, 'diablo');
+  assert.strictEqual(g.pendingIntro, 2);
+});
+
+test('historia: pasar directo de ciclo hace la tienda del final paga', () => {
+  const g = new Game({ mode: 'story', startingPick: false });
+  winHand(g, 20);
+  g.nextHand();
+  g.advanceCycle();
+  assert.strictEqual(g.shop.kind, 'end');
+  assert.ok(!g.shop.free);
+});
+
+test('historia: perder un mazo reintenta el mismo ciclo con el dinero del inicio', () => {
+  const g = new Game({ mode: 'story', startingPick: false });
+  g.cycle = 2;
+  g.cycleStartMoney = 130;
+  g.money = 100; // menos que la cuota de $140
+  g.endCycle();
+  assert.strictEqual(g.phase, 'deckLost');
+  g.continueWithNextDeck();
+  assert.strictEqual(g.cycle, 2);
+  assert.strictEqual(g.handInCycle, 1);
+  assert.strictEqual(g.money, 130);
+});
+
+test('historia: ganarle a San Pedro es victoria; perder todos los mazos da un final según el ciclo', () => {
+  const g = new Game({ mode: 'story', startingPick: false });
+  g.cycle = 3;
+  g.money = 1000;
+  g.advanceCycle();
+  assert.strictEqual(g.phase, 'victory');
+
+  for (const [cycle, ending] of [[1, 'purgatorio'], [2, 'infierno'], [3, 'casi']]) {
+    const lose = new Game({ mode: 'story', startingPick: false });
+    lose.cycle = cycle;
+    lose.deckIndex = 2;
+    lose.money = 50;
+    lose.endCycle();
+    assert.strictEqual(lose.phase, 'gameover');
+    assert.strictEqual(lose.ending, ending);
+  }
+});
+
+test('jefes: el Diablo se queda con ~1/4 de los empates y San Pedro anula al Crupier Nervioso', () => {
+  let seed = 3;
+  const rng = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+  const g = new Game({ mode: 'story', startingPick: false, rng });
+  g.cycle = 2;
+  let stolen = 0;
+  const N = 2000;
+  for (let i = 0; i < N; i++) {
+    g.money = 1000;
+    g.phase = 'betting';
+    stack(g, [c('K'), c('K', '♥'), c('7'), c('7', '♥')]);
+    g.deal(20);
+    g.stand();
+    if (g.result.outcome === 'lose') stolen++;
+  }
+  assert.ok(Math.abs(stolen / N - 0.25) < 0.04, `se quedó con ${stolen}/${N}`);
+
+  const s = new Game({ mode: 'story', startingPick: false });
+  s.bonuses.push('nervioso');
+  assert.ok(s.active('nervioso'));
+  s.cycle = 3;
+  assert.strictEqual(s.boss, 'santo');
+  assert.ok(!s.active('nervioso'));
+});
+
+test('clásico: sin bonus inicial, sin cuotas, apuesta mínima fija y game over al fundirse', () => {
+  const g = new Game({ mode: 'classic' });
+  assert.strictEqual(g.phase, 'betting');
+  assert.strictEqual(g.boss, 'crupier');
+  assert.strictEqual(g.minBet, 10);
+  for (let i = 0; i < 20; i++) {
+    winHand(g);
+    g.nextHand();
+  }
+  assert.strictEqual(g.phase, 'betting', 'no hay ciclos ni tiendas');
+  assert.strictEqual(g.money, 300);
+  assert.strictEqual(g.bestMoney, 300);
+  stack(g, [c('K'), c('K'), c('7'), c('8')]);
+  g.deal(300);
+  g.stand();
+  g.nextHand();
+  assert.strictEqual(g.phase, 'gameover');
+});
+
+test('el Mazo Dorado desbloqueado reemplaza al primer mazo', () => {
+  const g = new Game({ startingPick: false, startDeck: 'dorado' });
+  assert.strictEqual(g.deckType, 'dorado');
+  assert.strictEqual(g.decksLeft, 3);
 });
 
 test('simulación: partidas aleatorias no rompen invariantes', () => {

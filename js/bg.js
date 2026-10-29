@@ -8,10 +8,16 @@
   let H = 90;
   let img = null;
 
-  // Paleta en bandas (posterizada): de oscuro a claro.
-  const PALETTE = [
-    [30, 16, 34], [58, 22, 48], [104, 30, 56], [168, 52, 62], [214, 84, 72], [52, 64, 120],
-  ].map(([r, g, b]) => (255 << 24) | (b << 16) | (g << 8) | r);
+  // Paletas en bandas (posterizadas), de oscuro a claro, según quién reparte.
+  const THEMES = {
+    gaucho: [[30, 16, 34], [58, 22, 48], [104, 30, 56], [168, 52, 62], [214, 84, 72], [52, 64, 120]],
+    crupier: [[12, 26, 30], [16, 44, 46], [22, 66, 62], [30, 96, 80], [52, 130, 96], [40, 58, 110]],
+    diablo: [[26, 4, 6], [60, 8, 10], [110, 16, 14], [170, 40, 16], [230, 100, 20], [90, 10, 20]],
+    santo: [[40, 70, 120], [60, 100, 160], [90, 140, 200], [140, 185, 230], [200, 220, 245], [230, 200, 110]],
+  };
+  const pack = ([r, g, b]) => (255 << 24) | (b << 16) | (g << 8) | r;
+  let PALETTE = THEMES.gaucho.map(pack);
+  window.setBackgroundTheme = (name) => { PALETTE = (THEMES[name] || THEMES.gaucho).map(pack); };
 
   function resize() {
     H = Math.max(60, Math.round((W * window.innerHeight) / window.innerWidth));

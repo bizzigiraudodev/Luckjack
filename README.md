@@ -4,6 +4,25 @@ Blackjack **roguelike** para el navegador. Ganá dinero mano a mano, superá la 
 
 Estética pixel art inspirada en Balatro: fondo en remolino pixelado con efecto CRT, cartas y crupier dibujados píxel a píxel y la fuente [Tiny5](https://github.com/Gissio/font_tiny5) (SIL Open Font License, ver `fonts/OFL-Tiny5.txt`).
 
+## Historia
+
+Fuiste el mejor timbero de tu época: ganaste fortunas y te retiraste a una casucha en la pampa. Cuando moriste de viejo, terminaste en el **Purgatorio de los Timberos**, a cargo de un gaucho tan viejo que se olvidó de su propio nombre. La primera vez que abrís el juego hay una cutscene que lo cuenta y te pide tu nombre.
+
+## Modos
+
+- **🃏 Blackjack clásico:** blackjack común contra el crupier. Sin bonuses, cuotas ni tienda. Jugás hasta fundirte; se guarda tu récord de dinero.
+- **📖 Modo historia:** tres ciclos de 15 manos contra tres jefes:
+  1. **El Viejo Timbero** (el gaucho): su cuota.
+  2. **El Diablo**: pagale o te vas al infierno. Se queda con 1 de cada 4 empates.
+  3. **San Pedro**: la entrada al Casino del Edén. En su mesa el Crupier Nervioso no tiene efecto.
+
+  Si no llegás a una cuota perdés un mazo y reintentás ese ciclo con el dinero con el que lo empezaste. Al final de cada ciclo jugado completo elegís **1 bonus común gratis**; el árbol de mejoras solo aparece en la tienda de fin de ciclo. Hay cutscenes al presentar cada jefe, al ganar y al perder. Pasar la historia desbloquea el **Mazo Dorado** para el modo infinito.
+- **♾️ Roguelike infinito:** cuotas cada vez más altas, sin final (con el Viejo Timbero repartiendo).
+
+En los dos modos roguelike, cuando ya cumpliste la cuota podés **pasar de ciclo** o seguir jugando y ganar **$5 por cada ronda** que arranque con la cuota cumplida. En la historia, si pasás directo, la tienda del final deja de ser gratis.
+
+La música y los efectos se generan en el momento con Web Audio (sin archivos de audio); se pueden silenciar con el botón 🔊.
+
 ## Cómo jugar
 
 Abrí `index.html` en el navegador (no necesita instalar nada). Si preferís un servidor local:
@@ -103,9 +122,12 @@ js/bonuses.js     # catálogo de bonuses y sorteo de la tienda
 js/decks.js       # mazos y la suerte de cada uno
 js/upgrades.js    # árbol de mejoras de la tienda
 js/game.js        # lógica del juego (sin DOM, testeable)
-js/pixel.js       # sprites pixel art (crupier y palos) generados como SVG
+js/pixel.js       # sprites pixel art (crupier, gaucho, Diablo, San Pedro, palos) generados como SVG
 js/bg.js          # fondo animado en remolino
 js/table.js       # mesa animada: el crupier reparte desde el sabot
+js/audio.js       # música chiptune y efectos de sonido (Web Audio)
+js/cutscene.js    # cutscenes: fondos animados, personajes y texto
+js/story.js       # guion del modo historia
 js/ui.js          # render y eventos
 js/pwa.js         # instalación como app (service worker y botón Instalar)
 sw.js             # service worker: guarda los archivos para jugar offline

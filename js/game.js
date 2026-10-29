@@ -17,12 +17,36 @@
     return Math.round(n / 5) * 5;
   }
 
+  // Modos: 'infinite' (roguelike sin fin), 'story' (3 ciclos contra 3 jefes) y 'classic' (blackjack común).
+  const STORY_BOSSES = ['gaucho', 'diablo', 'santo'];
+  const CLASSIC_MIN_BET = 10;
+  const QUOTA_BONUS = 5; // por cada ronda jugada con la cuota ya cumplida
+
   class Game {
     // `startingPick: false` saltea la elección del bonus inicial (útil en tests).
-    constructor({ rng = Math.random, startingPick = true } = {}) {
+    // `startDeck` reemplaza al primer mazo (el Mazo Dorado se desbloquea al pasar la historia).
+    constructor({ rng = Math.random, startingPick = true, mode = 'infinite', startDeck = null } = {}) {
       this.rng = rng;
-      this.startingPick = startingPick;
+      this.mode = mode;
+      this.startingPick = startingPick && mode !== 'classic';
+      this.startDeck = startDeck;
       this.reset();
+    }
+
+    get isRoguelike() {
+      return this.mode !== 'classic';
+    }
+
+    // Quién reparte: el crupier en el clásico, el gaucho en el infinito y un jefe por ciclo en la historia.
+    get boss() {
+      if (this.mode === 'classic') return 'crupier';
+      if (this.mode === 'story') return STORY_BOSSES[Math.min(this.cycle, STORY_BOSSES.length) - 1];
+      return 'gaucho';
+    }
+
+    // Un bonus activo: en el ciclo de San Pedro el Crupier Nervioso no tiene efecto.
+    active(id) {
+      return this.has(id) && !(id === 'nervioso' && this.boss === 'santo');
     }
 
     reset() {
@@ -36,8 +60,14 @@
       this.shieldUsed = false;
       this.phase = 'betting'; // betting | playing | roundOver | shop | deckLost | gameover
       this.deckIndex = 0; // posición en Decks.DECK_SEQUENCE (cuántos mazos perdiste)
-      this.deckType = Decks.DECK_SEQUENCE[0];
+      this.deckType = this.startDeck || Decks.DECK_SEQUENCE[0];
       this.maxCleared = 0;
+      this.bestMoney = START_MONEY;
+      this.cycleStartMoney = START_MONEY;
+      this.advancedEarly = false;
+      this.quotaBonus = false;
+      this.pendingIntro = this.mode === 'story' ? 1 : null; // ciclo cuya presentación falta mostrar
+      this.ending = null;
       this.deckLostReason = null;
       this.hands = [];
       this.handIndex = 0;
@@ -56,7 +86,7 @@
     // Al empezar la partida elegís 1 bonus gratis entre 3.
     openStartingPick() {
       this.phase = 'shop';
-      this.shop = { offers: Bonuses.rollShop([], 3, this.rng), free: true, deckOffer: null };
+      this.shop = { kind: 'start', offers: Bonuses.rollShop([], 3, this.rng), free: true, deckOffer: null, allowUpgrades: false };
     }
 
     // --- Parámetros que escalan con el ciclo ---
@@ -69,6 +99,7 @@
     }
 
     get minBet() {
+      if (this.mode === 'classic') return CLASSIC_MIN_BET;
       return this.minBetFor(this.cycle);
     }
 
@@ -103,7 +134,7 @@
     }
 
     canUpgrade(id) {
-      return this.phase === 'shop' && !this.shop.free && this.upgrades[id] < Upgrades.MAX_LEVEL &&
+      return this.phase === 'shop' && this.shop.allowUpgrades && this.upgrades[id] < Upgrades.MAX_LEVEL &&
         this.money >= this.upgradeCost(id);
     }
 
@@ -226,6 +257,8 @@
 
     deal(amount) {
       if (!this.canBet(amount)) throw new Error('Apuesta inválida');
+      // Cada ronda que arranca con la cuota ya cumplida suma $5, ganes o pierdas.
+      this.quotaBonus = this.isRoguelike && this.money >= this.quota;
       this.lastBet = amount;
       this.money -= amount;
       this.discardUsed = false;
@@ -360,7 +393,7 @@
     }
 
     playDealer() {
-      const standOn = this.has('nervioso') ? 18 : 17;
+      const standOn = this.active('nervioso') ? 18 : 17;
       while (this.dealerValue().total < standOn) this.dealer.push(this.draw());
     }
 
@@ -391,6 +424,12 @@
       const bet = hand.bet;
       const notes = [];
       let payout = 0; // dinero que vuelve al jugador (incluye la apuesta)
+
+      // El Diablo se queda con 1 de cada 4 empates (25% de chance en cada uno).
+      if (outcome === 'push' && this.boss === 'diablo' && this.rng() < 0.25) {
+        notes.push('😈 El Diablo se quedó con el empate');
+        outcome = 'lose';
+      }
 
       if ((outcome === 'lose' || outcome === 'bust') && this.has('escudo') && !this.shieldUsed) {
         this.shieldUsed = true;
@@ -448,10 +487,15 @@
         flat += 15;
         notes.push('👯 +$15');
       }
+      if (this.quotaBonus) {
+        flat += QUOTA_BONUS;
+        notes.push(`🎯 +$${QUOTA_BONUS} por cuota cumplida`);
+      }
 
       const bet = results.reduce((s, r) => s + r.bet, 0);
       const payout = results.reduce((s, r) => s + r.payout, 0) + flat;
       this.money += payout;
+      this.bestMoney = Math.max(this.bestMoney, this.money);
       this.handsPlayed++;
       this.phase = 'roundOver';
       const outcome = results.length === 1 ? results[0].outcome : 'split';
@@ -474,12 +518,16 @@
       this.handIndex = 0;
       this.dealer = [];
 
+      if (this.mode === 'classic') {
+        if (this.money < this.minBet) return this.gameOver('Te fundiste: no te alcanza para la apuesta mínima.');
+        return this.startNextHand();
+      }
       if (this.handInCycle >= HANDS_PER_CYCLE) return this.endCycle();
       if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
       // A mitad de ciclo también hay tienda, pero sin chequear la cuota.
       if (this.handInCycle % SHOP_EVERY === 0) {
         this.addLog('🛒 ¡Tienda de mitad de ciclo!');
-        this.openShop(true);
+        this.openShop('mid');
         return this.phase;
       }
       return this.startNextHand();
@@ -492,6 +540,18 @@
       return this.phase;
     }
 
+    // Con la cuota cumplida podés pasar de ciclo sin jugar las manos que faltan.
+    canAdvance() {
+      return this.phase === 'betting' && this.isRoguelike && this.money >= this.quota;
+    }
+
+    advanceCycle() {
+      if (!this.canAdvance()) throw new Error('Todavía no cumpliste la cuota');
+      this.advancedEarly = true;
+      this.addLog(`⏩ Pasaste de ciclo en la mano ${this.handInCycle}.`);
+      return this.endCycle();
+    }
+
     endCycle() {
       if (this.has('interes')) {
         const gain = Math.min(50, Math.floor(this.money * 0.1));
@@ -502,8 +562,14 @@
         return this.loseDeck(`No llegaste a la cuota de $${this.quota} del ciclo ${this.cycle}.`);
       }
       this.maxCleared = Math.max(this.maxCleared, this.cycle);
+      if (this.mode === 'story' && this.cycle >= STORY_BOSSES.length) {
+        this.phase = 'victory';
+        this.addLog('🌟 ¡Pagaste las tres cuotas! Las puertas del Edén se abren.');
+        return this.phase;
+      }
       this.addLog(`✅ Ciclo ${this.cycle} superado. ¡A la tienda!`);
-      this.openShop();
+      // En la historia, si jugaste el ciclo completo la tienda del final es gratis (solo comunes).
+      this.openShop(this.mode === 'story' && !this.advancedEarly ? 'reward' : 'end');
       return this.phase;
     }
 
@@ -518,6 +584,7 @@
     loseDeck(reason) {
       const lost = this.deckInfo;
       if (this.deckIndex >= Decks.DECK_SEQUENCE.length - 1) {
+        if (this.mode === 'story') this.ending = ['purgatorio', 'infierno', 'casi'][this.cycle - 1];
         return this.gameOver(`${reason} Perdiste tu último mazo.`);
       }
       this.deckIndex++;
@@ -528,11 +595,18 @@
       return this.phase;
     }
 
-    // Arranca de nuevo desde el ciclo 1 con $100 y el mazo nuevo. Los bonuses se conservan.
+    // Infinito: arranca de nuevo desde el ciclo 1 con $100. Historia: reintenta el mismo ciclo
+    // con el dinero que tenías al empezarlo. Los bonuses y mejoras se conservan.
     continueWithNextDeck() {
       if (this.phase !== 'deckLost') throw new Error('No perdiste un mazo');
-      this.money = START_MONEY;
-      this.cycle = 1;
+      if (this.mode === 'story') {
+        this.money = this.cycleStartMoney;
+      } else {
+        this.money = START_MONEY;
+        this.cycle = 1;
+        this.cycleStartMoney = START_MONEY;
+      }
+      this.advancedEarly = false;
       this.handInCycle = 1;
       this.streak = 0;
       this.shieldUsed = false;
@@ -554,9 +628,20 @@
     }
 
     // --- Tienda ---
-    openShop(midCycle = false) {
+    // Tipos de tienda: 'mid' (manos 5 y 10), 'end' (fin de ciclo, paga) y
+    // 'reward' (fin de ciclo en la historia: 1 bonus común gratis entre 3).
+    openShop(kind = 'end') {
       this.phase = 'shop';
-      this.shop = { offers: Bonuses.rollShop(this.bonuses, 3, this.rng), rerollCost: 5, midCycle };
+      if (kind === 'reward') {
+        this.shop = {
+          kind, midCycle: false, free: true, deckOffer: null, allowUpgrades: true,
+          offers: Bonuses.rollShop(this.bonuses, 3, this.rng, ['common']),
+        };
+        return;
+      }
+      // En la historia el árbol de mejoras solo aparece al final del ciclo.
+      const allowUpgrades = kind === 'end' || this.mode !== 'story';
+      this.shop = { kind, midCycle: kind === 'mid', free: false, allowUpgrades, offers: Bonuses.rollShop(this.bonuses, 3, this.rng), rerollCost: 5 };
       this.rollDeckOffer();
     }
 
@@ -599,9 +684,15 @@
       this.money -= this.priceOf(bonus);
       this.bonuses.push(bonus.id);
       this.shop.offers = this.shop.offers.filter((b) => b !== bonus);
-      if (this.shop.free) {
+      if (this.shop.kind === 'start') {
         this.addLog(`🎁 Elegiste ${bonus.icon} ${bonus.name} como bonus inicial.`);
         this.leaveShop();
+        return;
+      }
+      if (this.shop.free) {
+        // Un solo bonus gratis: las otras ofertas desaparecen.
+        this.shop.offers = [];
+        this.addLog(`🎁 Elegiste ${bonus.icon} ${bonus.name} gratis.`);
         return;
       }
       this.addLog(`🛒 Compraste ${bonus.icon} ${bonus.name}.`);
@@ -612,7 +703,7 @@
     }
 
     sell(bonusId) {
-      if (this.phase !== 'shop' || this.shop.free || !this.has(bonusId)) throw new Error('No podés vender eso');
+      if (this.phase !== 'shop' || this.shop.kind === 'start' || !this.has(bonusId)) throw new Error('No podés vender eso');
       const value = this.sellValue(bonusId);
       this.money += value;
       this.bonuses = this.bonuses.filter((id) => id !== bonusId);
@@ -629,9 +720,9 @@
 
     leaveShop() {
       if (this.phase !== 'shop') throw new Error('No estás en la tienda');
-      const { midCycle, free } = this.shop;
+      const { midCycle, kind } = this.shop;
       this.shop = null;
-      if (free) {
+      if (kind === 'start') {
         this.phase = 'betting';
         return this.phase;
       }
@@ -642,6 +733,9 @@
       this.cycle++;
       this.handInCycle = 1;
       this.shieldUsed = false;
+      this.advancedEarly = false;
+      this.cycleStartMoney = this.money;
+      if (this.mode === 'story') this.pendingIntro = this.cycle;
       this.newDeck();
       if (this.money < this.minBet) return this.loseDeck('Te quedaste sin dinero para la apuesta mínima.');
       this.phase = 'betting';
@@ -665,7 +759,7 @@
     return n >= 0 ? `+$${n}` : `-$${-n}`;
   }
 
-  const GameModule = { Game, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, START_MONEY, OUTCOME_TEXT, formatNet };
+  const GameModule = { Game, STORY_BOSSES, QUOTA_BONUS, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, START_MONEY, OUTCOME_TEXT, formatNet };
   if (typeof module !== 'undefined' && module.exports) module.exports = GameModule;
   else root.GameModule = GameModule;
 })(typeof window !== 'undefined' ? window : globalThis);

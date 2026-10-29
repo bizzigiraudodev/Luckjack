@@ -25,22 +25,26 @@
     <div class="blind panel">
       <div class="blind-title">CICLO <b id="cycle">1</b></div>
       <div class="blind-goal">
-        <small>Llegá a</small>
+        <small id="quota-label">Llegá a</small>
         <strong id="quota">$0</strong>
       </div>
       <div class="quota-bar"><i id="quota-fill"></i></div>
     </div>
     <div class="money-box panel"><small>Dinero</small><strong id="money">$0</strong></div>
     <div class="stats">
-      <div class="stat panel"><small>Mano</small><strong id="hand">1/15</strong></div>
+      <div class="stat panel"><small id="hand-label">Mano</small><strong id="hand">1/15</strong></div>
       <div class="stat panel"><small>Apuesta mín.</small><strong id="minbet">$0</strong></div>
-      <div class="stat panel deck-stat" id="deck-stat"><small>Mazo</small><strong id="deck"></strong></div>
+      <div class="stat panel deck-stat roguelike-only" id="deck-stat"><small>Mazo</small><strong id="deck"></strong></div>
+    </div>
+    <div class="hud-actions">
+      <button class="btn-red" id="btn-menu" title="Volver al menú">Menú</button>
+      <button class="sound-btn" id="btn-sound" title="Sonido">🔊</button>
     </div>
     <button class="install-btn btn-blue" id="btn-install" hidden>Instalar app</button>
   </header>
   <div class="play">
 
-  <section class="bonus-tray panel">
+  <section class="bonus-tray panel roguelike-only">
     <div class="bonus-bar" id="bonus-bar" aria-label="Tus bonuses"></div>
     <small class="tray-label" id="bonus-count">0/5</small>
   </section>
@@ -56,7 +60,7 @@
     <div class="table" id="table">
       <div class="felt">
         <div class="table-top">
-          <div class="discard" id="discard" title="Descarte"><div class="pile" id="discard-pile"></div></div>
+          <div class="discard" id="discard" title="Descarte"><div class="pile" id="discard-pile"></div><div class="table-mate" id="table-mate" hidden></div></div>
           <div class="chip-tray" aria-hidden="true">
             <i class="c-black"></i><i class="c-green"></i><i class="c-blue"></i><i class="c-red"></i><i class="c-red"></i><i class="c-blue"></i><i class="c-green"></i><i class="c-black"></i>
           </div>
@@ -97,6 +101,7 @@
       <button class="chip" data-delta="10">+10</button>
       <button class="chip" id="bet-max">Máx</button>
       <button class="btn-blue big" id="btn-deal">Repartir</button>
+      <button class="btn-purple" id="btn-advance" hidden>⏩ Pasar de ciclo</button>
     </div>
     <div class="play-controls" id="play-controls">
       <button class="btn-blue" id="btn-hit">Pedir</button>
@@ -152,20 +157,54 @@
       <h2>🃏 Perdiste el mazo</h2>
       <p id="decklost-reason"></p>
       <p id="decklost-next"></p>
-      <p class="sub">Volvés al ciclo 1 con $100. Tus bonuses se quedan con vos.</p>
+      <p class="sub" id="decklost-retry"></p>
       <div class="modal-actions">
         <button class="primary" id="btn-continue">Seguir con el nuevo mazo</button>
       </div>
     </div>
   </div>
 
+  <div class="menu" id="menu" hidden>
+    <div class="menu-box">
+      <h1 class="logo big-logo"><span class="l1">LUCK</span><span class="l2">JACK</span></h1>
+      <p class="tagline">El purgatorio de los timberos</p>
+      <div class="menu-chars" id="menu-chars"></div>
+      <div class="menu-modes">
+        <button class="btn-green big" data-mode="classic">🃏 Blackjack clásico<small id="rec-classic"></small></button>
+        <button class="btn-red big" data-mode="story">📖 Modo historia<small id="rec-story"></small></button>
+        <button class="btn-blue big" data-mode="infinite">♾️ Roguelike infinito<small id="rec-infinite"></small></button>
+      </div>
+      <div class="menu-extra">
+        <button id="btn-intro">🎬 Ver intro</button>
+        <button id="btn-menu-help">❓ Cómo se juega</button>
+        <button class="sound-btn" id="btn-menu-sound">🔊</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cutscene" id="cutscene" hidden>
+    <canvas id="cs-bg" aria-hidden="true"></canvas>
+    <div class="cs-chars" id="cs-chars"></div>
+    <button class="cs-skip" id="cs-skip">Saltar ⏭</button>
+    <div class="cs-box" id="cs-box">
+      <div class="cs-speaker" id="cs-speaker" hidden></div>
+      <div class="cs-text" id="cs-text"></div>
+      <form class="cs-input" id="cs-input" hidden>
+        <input id="cs-name" maxlength="16" placeholder="Tu nombre" autocomplete="off" aria-label="Tu nombre">
+        <button class="btn-orange" type="submit">OK</button>
+      </form>
+      <span class="cs-next" id="cs-next" hidden>▼</span>
+    </div>
+  </div>
+
   <div class="overlay" id="gameover" hidden>
     <div class="modal">
-      <h2>💀 Fin de la partida</h2>
+      <h2 id="gameover-title">💀 Fin de la partida</h2>
       <p id="gameover-reason"></p>
       <p id="gameover-stats"></p>
       <div class="modal-actions">
-        <button class="primary" id="btn-restart">Nueva partida</button>
+        <button class="btn-red" id="btn-to-menu">Menú</button>
+        <button class="primary" id="btn-restart">Jugar de nuevo</button>
       </div>
     </div>
   </div>
@@ -173,16 +212,21 @@
   <div class="overlay" id="help" hidden>
     <div class="modal">
       <h2>Cómo se juega</h2>
+      <h3>Modos</h3>
       <ul class="rules">
-        <li>Es blackjack contra el crupier: llegá más cerca de 21 que él sin pasarte. El crupier se planta en 17.</li>
+        <li><b>Blackjack clásico:</b> blackjack común contra el crupier, sin bonuses ni cuotas. Jugá hasta fundirte.</li>
+        <li><b>Modo historia:</b> pagá tres cuotas de 15 manos cada una: la del Viejo Timbero, la del Diablo y la de San Pedro. Si no llegás, perdés un mazo y reintentás ese ciclo.</li>
+        <li><b>Roguelike infinito:</b> cuotas cada vez más altas, sin final. ¿Hasta qué ciclo llegás?</li>
+      </ul>
+      <h3>Reglas</h3>
+      <ul class="rules">
+        <li>Llegá más cerca de 21 que el que reparte sin pasarte. La banca se planta en 17.</li>
         <li>Ganar paga 1:1 (apostás $10, cobrás $20) y el blackjack paga 3:2 (cobrás $25). Podés <b>doblar</b> con tus dos primeras cartas y <b>dividir</b> pares del mismo rango.</li>
-        <li>La partida se divide en <b>ciclos de 15 manos</b>. Al final de cada ciclo tenés que tener al menos la <b>cuota</b> o perdés.</li>
-        <li>Al empezar la partida elegís <b>1 bonus gratis</b> entre 3.</li>
-        <li>Cada <b>5 manos</b> aparece la <b>tienda</b> para comprar bonuses aleatorios (máximo 5). Podés vender los que no quieras por la mitad de su precio.</li>
-        <li>Cada ciclo sube la cuota y la apuesta mínima. ¿Hasta qué ciclo llegás?</li>
-        <li>Tenés <b>3 mazos</b>. Si perdés con el 🂠 Mazo Clásico, pasás al 🥀 Mazo Gastado (15% menos de chances de buenas cartas) y después al ☠️ Mazo Maldito (30% menos). Perder con el último es <b>game over</b>.</li>
-        <li>En la pestaña <b>Mejoras</b> de la tienda subís de nivel stats permanentes: Suerte, Ganancia, Seguro y Descuento.</li>
-        <li>Muy de vez en cuando (5%) la tienda ofrece un carísimo ✨ <b>Mazo Dorado</b>, con 5% más de chances que el clásico.</li>
+        <li>En los roguelike, al final de cada ciclo de <b>15 manos</b> tenés que tener al menos la <b>cuota</b>. Si la cumplís antes, podés <b>pasar de ciclo</b> o seguir jugando y ganar <b>$5 por ronda</b>.</li>
+        <li>Cada <b>5 manos</b> aparece la <b>tienda</b> de bonuses (máximo 5). En la historia, si jugás el ciclo completo, al final elegís un bonus común gratis.</li>
+        <li>Tenés <b>3 mazos</b>: 🂠 Clásico, 🥀 Gastado (15% menos de chances de buenas cartas) y ☠️ Maldito (30% menos). Perder con el último termina la partida.</li>
+        <li>En la pestaña <b>Mejoras</b> subís stats permanentes: Suerte, Ganancia, Seguro y Descuento. En la historia solo aparece al final de cada ciclo.</li>
+        <li>Muy de vez en cuando (5%) la tienda ofrece un carísimo ✨ <b>Mazo Dorado</b>, con 5% más de chances.</li>
       </ul>
       <div class="modal-actions">
         <button class="primary" id="btn-close-help">¡A jugar!</button>
@@ -219,9 +263,12 @@
   <script src="js/upgrades.js"></script>
   <script src="js/game.js"></script>
   <script src="js/pixel.js"></script>
+  <script src="js/audio.js"></script>
   <script src="js/table.js"></script>
+  <script src="js/cutscene.js"></script>
+  <script src="js/story.js"></script>
+  <script src="js/bg.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/pwa.js"></script>
-  <script src="js/bg.js"></script>
 </body>
 </html>

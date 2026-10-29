@@ -1,25 +1,88 @@
-// Interfaz: dibuja el estado de Game y conecta los botones.
+// Interfaz: menú, modos de juego, flujo de la historia y render del estado de Game.
 (function () {
-  const { Game, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, OUTCOME_TEXT, formatNet } = GameModule;
+  const { Game, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, QUOTA_BONUS, OUTCOME_TEXT, formatNet } = GameModule;
   const { RARITY, getBonus } = Bonuses;
 
   const $ = (id) => document.getElementById(id);
-  const game = new Game();
-  const HIGHSCORE_KEY = 'luckjack.best';
 
+  // --- Datos guardados en el navegador ---
+  const KEYS = {
+    best: 'luckjack.best', // infinito: { cycles, money }
+    classic: 'luckjack.bestClassic', // clásico: dinero máximo
+    storyDone: 'luckjack.storyDone', // historia terminada → Mazo Dorado
+    name: 'luckjack.name',
+    seenIntro: 'luckjack.seenIntro',
+  };
+  const store = {
+    get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* sin storage */ } },
+  };
+
+  const vars = { name: store.get(KEYS.name) || 'Timbero' };
+  const fill = (text) => text.replace(/\{name\}/g, vars.name);
+
+  let game = null;
   // Primero se animan las cartas; el resto (dinero, mensajes, tienda) se muestra
   // recién cuando terminan, para no adelantar el resultado.
   let busy = false;
   let queue = Promise.resolve();
+  let inCutscene = false;
+  let lastPhase = null;
+  let lastResult = null;
+  let shopTab = 'bonuses'; // pestaña abierta de la tienda
 
-  function loadBest() {
-    try { return JSON.parse(localStorage.getItem(HIGHSCORE_KEY)) || null; } catch { return null; }
-  }
+  // --- Personajes que reparten ---
+  const BOSS_INFO = {
+    crupier: { title: 'CLÁSICO', goal: 'Récord', music: 'classic',
+      print: ['BLACKJACK PAGA 3 A 2', 'EL CRUPIER PIDE HASTA 16 Y SE PLANTA EN 17'] },
+    gaucho: { title: 'EL VIEJO TIMBERO', goal: 'Deuda con el Viejo', music: 'gaucho',
+      print: ['PURGATORIO DE LOS TIMBEROS', 'LA CASA NO PERDONA, CHAMIGO'] },
+    diablo: { title: 'EL DIABLO', goal: 'Tributo al Diablo', music: 'diablo',
+      print: ['LA MESA DEL DIABLO', 'UNO DE CADA CUATRO EMPATES ES MÍO'] },
+    santo: { title: 'SAN PEDRO', goal: 'Entrada al Edén', music: 'santo',
+      print: ['PUERTAS DEL EDÉN', 'ACÁ ARRIBA NADIE SE PONE NERVIOSO'] },
+  };
 
-  function saveBest(best) {
-    try { localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(best)); } catch { /* sin storage */ }
-  }
+  const DEALER_LINES = {
+    crupier: {
+      betting: ['Hagan sus apuestas.', '¿Cuánto apostamos?', 'Mesa abierta. Suerte.', 'Cuando quiera.'],
+      playing: ['¿Carta o se planta?', 'Usted decide.', '¿Otra?'],
+      blackjack: '¡Blackjack! Felicitaciones.', win: 'Gana usted. Bien jugado.', dealerBust: 'Uf... me pasé.',
+      charlie: '¡Cinco cartas! Impresionante.', push: 'Empate. Nadie pierde.', lose: 'La casa gana.',
+      bust: 'Se pasó, lo siento.', split: ['Bueno, veamos esas manos.', 'Manos divididas, cuentas claras.'],
+      bustPending: '¿Quiere otra oportunidad?', shop: 'Pase por la tienda.', deckLost: 'Cambiamos de mazo...',
+      gameover: 'La casa siempre gana.',
+    },
+    gaucho: {
+      betting: ['¿Cuánto vas a jugar, {name}?', 'Dale nomás, que el mate se enfría.', 'Hagan juego, chamigos.', 'A ver esa mano, m\'hijo.'],
+      playing: ['¿Pedís o te plantás?', 'Pensalo bien, chamigo...', '¿Otra cartita?'],
+      blackjack: '¡Aura sí! ¡Blackjack, m\'hijo!', win: 'Bien jugado, {name}.', dealerBust: '¡Ah, la pucha! Me pasé.',
+      charlie: '¡Cinco cartas! Ni en mis tiempos.', push: 'Empate. Ni pa\' vos ni pa\' mí.', lose: 'La casa no perdona, chamigo.',
+      bust: 'Te pasaste de rosca, m\'hijo.', split: ['Dos manos, dos mates.', 'Eso es tener agallas.'],
+      bustPending: '¿Querés otra oportunidad, gaucho?', shop: 'Pasá por la pulpería.', deckLost: 'Se te gastó el mazo...',
+      gameover: 'Acá te quedás, m\'hijo.',
+    },
+    diablo: {
+      betting: ['Apostá, {name}... apostá todo.', 'El infierno está lleno de apostadores prudentes.', 'Hagan su apuesta... je, je.'],
+      playing: ['¿Te tentás con otra carta?', 'Dale, pedí. ¿Qué podría salir mal?', 'Tic, tac...'],
+      blackjack: 'Bah. Suerte de principiante.', win: 'Disfrutalo mientras dure.', dealerBust: '¡Maldición! Literalmente.',
+      charlie: '¿Cinco cartas? Eso es trampa... me gusta.', push: 'Empate... por ahora.', lose: 'Mmm, delicioso.',
+      bust: '¡Ja! Te quemaste.', split: ['Más manos, más almas.', 'Dividir... qué tentador.'],
+      bustPending: '¿Querés hacer un trato?', shop: 'Comprá, comprá...', deckLost: 'Un mazo menos. Ya falta poco.',
+      gameover: 'Bienvenido a casa.',
+    },
+    santo: {
+      betting: ['Apostá con fe, {name}.', 'Paz y bien. ¿Cuánto ofrendás?', 'Que la gracia te acompañe.'],
+      playing: ['¿Pedís otra, hijo?', 'Escuchá a tu corazón.', 'Sin apuro, hay toda la eternidad.'],
+      blackjack: '¡Aleluya! ¡Blackjack!', win: 'Bendita mano.', dealerBust: 'Hasta los santos se pasan.',
+      charlie: '¡Un milagro de cinco cartas!', push: 'Empate. Paz entre hermanos.', lose: 'El Señor da y el Señor quita.',
+      bust: 'La codicia, hijo... la codicia.', split: ['Compartir es una virtud.', 'Dos manos para el Señor.'],
+      bustPending: 'Todos merecen una segunda oportunidad.', shop: 'Elegí con sabiduría.', deckLost: 'Arrepentite y probá de nuevo.',
+      gameover: 'Las puertas siguen cerradas.',
+    },
+  };
 
+  // --- Render ---
   function renderIntel() {
     const parts = [];
     if (game.phase === 'playing') {
@@ -35,6 +98,7 @@
     }
     if (game.has('escudo')) parts.push(game.shieldUsed ? '🛡️ Escudo usado' : '🛡️ Escudo listo');
     if (game.has('racha') && game.streak > 0) parts.push(`🔥 Racha: ${game.streak}`);
+    if (game.boss === 'santo' && game.has('nervioso')) parts.push('😇 Crupier Nervioso sin efecto');
     $('intel').innerHTML = parts.join(' · ');
   }
 
@@ -42,10 +106,18 @@
     const msg = $('message');
     msg.className = 'message';
     if (game.phase === 'betting') {
+      if (!game.isRoguelike) {
+        msg.textContent = `Hacé tu apuesta. Tu récord: $${Math.max(game.bestMoney, store.get(KEYS.classic) || 0)}.`;
+        return;
+      }
       const left = game.quota - game.money;
-      msg.textContent = left > 0
-        ? `Te faltan $${left} para la cuota. Quedan ${HANDS_PER_CYCLE - game.handInCycle + 1} manos.`
-        : '¡Ya superaste la cuota de este ciclo! Seguí sumando para la tienda.';
+      const handsLeft = HANDS_PER_CYCLE - game.handInCycle + 1;
+      if (left > 0) {
+        msg.textContent = `Te faltan $${left} para la cuota. Quedan ${handsLeft} manos.`;
+      } else {
+        const warning = game.mode === 'story' ? ' (si pasás ahora, la tienda del final no es gratis)' : '';
+        msg.textContent = `¡Cuota cumplida! Seguí jugando (+$${QUOTA_BONUS} por ronda) o pasá de ciclo${warning}.`;
+      }
     } else if (game.phase === 'playing') {
       const which = game.hands.length > 1 ? `Mano ${game.handIndex + 1} de ${game.hands.length}. ` : '';
       msg.textContent = game.bustPending
@@ -74,7 +146,6 @@
   }
 
   function renderBonusBar() {
-    const bar = $('bonus-bar');
     const tiles = game.bonuses.map((id) => bonusTile(id));
     for (let i = game.bonuses.length; i < MAX_BONUSES; i++) {
       const empty = document.createElement('div');
@@ -82,58 +153,71 @@
       empty.textContent = 'vacío';
       tiles.push(empty);
     }
-    bar.replaceChildren(...tiles);
+    $('bonus-bar').replaceChildren(...tiles);
     $('bonus-count').textContent = `${game.bonuses.length}/${MAX_BONUSES}`;
   }
 
   function renderHud() {
+    const info = BOSS_INFO[game.boss];
+    document.body.dataset.mode = game.mode;
+    document.body.dataset.boss = game.boss;
     $('money').textContent = `$${game.money}`;
-    $('cycle').textContent = game.cycle;
-    $('hand').textContent = `${Math.min(game.handInCycle, HANDS_PER_CYCLE)}/${HANDS_PER_CYCLE}`;
+    $('minbet').textContent = `$${game.minBet}`;
+
+    if (!game.isRoguelike) {
+      const best = Math.max(game.bestMoney, store.get(KEYS.classic) || 0);
+      $('cycle').parentElement.innerHTML = 'BLACKJACK <b id="cycle">CLÁSICO</b>';
+      $('quota-label').textContent = 'Récord';
+      $('quota').textContent = `$${best}`;
+      $('quota').className = 'ok';
+      $('hand-label').textContent = 'Manos';
+      $('hand').textContent = game.handsPlayed;
+      return;
+    }
+    const title = game.mode === 'story'
+      ? `CICLO <b id="cycle">${game.cycle}/3</b><span class="boss-name">${info.title}</span>`
+      : `CICLO <b id="cycle">${game.cycle}</b>`;
+    $('cycle').parentElement.innerHTML = title;
+    $('quota-label').textContent = game.mode === 'story' ? info.goal : 'Llegá a';
     $('quota').textContent = `$${game.quota}`;
     $('quota').className = game.money >= game.quota ? 'ok' : 'warn';
-    const fill = Math.min(100, Math.round((game.money / game.quota) * 100));
-    $('quota-fill').style.setProperty('--fill', `${fill}%`);
-    $('quota-fill').classList.toggle('full', fill >= 100);
-    $('minbet').textContent = `$${game.minBet}`;
+    const pct = Math.min(100, Math.round((game.money / game.quota) * 100));
+    $('quota-fill').style.setProperty('--fill', `${pct}%`);
+    $('quota-fill').classList.toggle('full', pct >= 100);
+    $('hand-label').textContent = 'Mano';
+    $('hand').textContent = `${Math.min(game.handInCycle, HANDS_PER_CYCLE)}/${HANDS_PER_CYCLE}`;
     const deck = game.deckInfo;
     const lives = Decks.DECK_SEQUENCE.length;
     $('deck').textContent = `${deck.icon} ${'●'.repeat(game.decksLeft)}${'○'.repeat(lives - game.decksLeft)}`;
-    $('deck-stat').className = `stat deck-stat ${deck.id}`;
+    $('deck-stat').className = `stat panel deck-stat roguelike-only ${deck.id}`;
     const extra = game.upgradeTotal('suerte') ? ` Mejora de Suerte: +${game.upgradeTotal('suerte')}%.` : '';
     $('deck-stat').title = `${deck.name}: ${deck.desc} Te quedan ${game.decksLeft} de ${lives} mazos.${extra}`;
   }
 
-  const DEALER_LINES = {
-    betting: ['Hagan sus apuestas.', '¿Cuánto apostamos?', 'Mesa abierta. Suerte.', 'Cuando quiera.'],
-    playing: ['¿Carta o se planta?', 'Usted decide.', '¿Otra?'],
-    blackjack: '¡Blackjack! Felicitaciones.',
-    win: 'Gana usted. Bien jugado.',
-    dealerBust: 'Uf... me pasé.',
-    charlie: '¡Cinco cartas! Impresionante.',
-    push: 'Empate. Nadie pierde.',
-    lose: 'La casa gana.',
-    bust: 'Se pasó, lo siento.',
-    split: ['Bueno, veamos esas manos.', 'Manos divididas, cuentas claras.'],
-    bustPending: '¿Quiere otra oportunidad?',
-    shop: 'Pase por la tienda, lo espero.',
-    deckLost: 'Cambiamos de mazo...',
-    gameover: 'La casa siempre gana.',
-  };
+  // Personaje, mate, paño, fondo y música según quién reparte.
+  function renderTheme() {
+    const info = BOSS_INFO[game.boss];
+    Table.setDealer(game.boss);
+    if (window.setBackgroundTheme) window.setBackgroundTheme(game.boss);
+    document.querySelector('.print-big textPath').textContent = info.print[0];
+    document.querySelector('.print-small textPath').textContent = info.print[1];
+    if (!inCutscene) Sound.music(info.music);
+  }
 
   function renderDealer() {
+    const lines = DEALER_LINES[game.boss];
     let line = null;
     let mood = null;
-    if (game.phase === 'betting') line = pick(DEALER_LINES.betting);
-    else if (game.phase === 'playing') line = game.bustPending ? DEALER_LINES.bustPending : pick(DEALER_LINES.playing);
+    if (game.phase === 'betting') line = pick(lines.betting);
+    else if (game.phase === 'playing') line = game.bustPending ? lines.bustPending : pick(lines.playing);
     else if (game.phase === 'roundOver' && game.result) {
-      line = DEALER_LINES[game.result.outcome];
+      line = lines[game.result.outcome];
       if (Array.isArray(line)) line = pick(line);
       if (game.result.net > 0) mood = 'sad';
       else if (game.result.net < 0) mood = 'happy';
-    } else line = DEALER_LINES[game.phase] || null;
-    Table.setSpeech(line);
-    Table.setMood(mood, game.has('nervioso'));
+    } else line = lines[game.phase] || null;
+    Table.setSpeech(line && fill(line));
+    Table.setMood(mood, game.active('nervioso'));
   }
 
   // Frase fija por mano, para que no cambie en cada render.
@@ -148,18 +232,20 @@
   }
 
   function renderControls() {
+    if (!game) return;
     $('bet-controls').hidden = busy || game.phase !== 'betting';
     $('play-controls').hidden = busy || game.phase !== 'playing';
     $('next-controls').hidden = busy || game.phase !== 'roundOver';
     if (game.phase === 'betting') {
       const input = $('bet-input');
       input.min = game.minBet;
-      input.max = game.money;
+      input.max = Math.floor(game.money);
       const current = Number(input.value);
       if (!current || current < game.minBet || current > game.money) {
-        input.value = Math.min(Math.max(game.lastBet, game.minBet), game.money);
+        input.value = Math.min(Math.max(game.lastBet, game.minBet), Math.floor(game.money));
       }
       $('btn-deal').disabled = !game.canBet(Number(input.value));
+      $('btn-advance').hidden = !game.canAdvance();
       renderBetSpot();
     }
     if (game.phase === 'playing') {
@@ -175,8 +261,9 @@
       $('btn-discard').classList.toggle('primary', pending);
     }
     if (game.phase === 'roundOver') {
-      $('btn-next').textContent = game.handInCycle >= HANDS_PER_CYCLE ? 'Terminar ciclo'
-        : game.handInCycle % SHOP_EVERY === 0 ? 'Ir a la tienda' : 'Siguiente mano';
+      $('btn-next').textContent = !game.isRoguelike ? 'Siguiente mano'
+        : game.handInCycle >= HANDS_PER_CYCLE ? 'Terminar ciclo'
+          : game.handInCycle % SHOP_EVERY === 0 ? 'Ir a la tienda' : 'Siguiente mano';
     }
   }
 
@@ -189,23 +276,28 @@
   }
 
   function renderShop() {
-    const shop = $('shop');
-    shop.hidden = game.phase !== 'shop';
+    $('shop').hidden = game.phase !== 'shop';
     if (game.phase !== 'shop') return;
-    const free = !!game.shop.free;
-    $('shop-title').textContent = free ? '🎁 Bonus inicial gratis' : '🛒 Tienda';
+    const { kind, free } = game.shop;
+    const start = kind === 'start';
+    $('shop-title').textContent = start ? '🎁 Bonus inicial gratis'
+      : kind === 'reward' ? `🎁 Recompensa del ciclo ${game.cycle}`
+        : game.boss === 'gaucho' ? '🛒 Pulpería' : '🛒 Tienda';
     $('shop-free-sub').hidden = !free;
-    $('shop-sub').hidden = free;
-    $('shop-owned-wrap').hidden = free;
-    $('btn-reroll').hidden = free || shopTab !== 'bonuses';
-    $('shop-tabs').hidden = free;
-    const tab = free ? 'bonuses' : shopTab;
+    $('shop-free-sub').textContent = start ? 'Elegí 1 bonus gratis para arrancar la partida.'
+      : game.shop.offers.length ? 'Jugaste el ciclo completo: elegí 1 bonus común de regalo.'
+        : 'Ya elegiste tu bonus gratis. En la pestaña Mejoras podés subir tus stats.';
+    $('shop-sub').hidden = start;
+    $('shop-owned-wrap').hidden = start;
+    $('shop-tabs').hidden = !game.shop.allowUpgrades;
+    const tab = game.shop.allowUpgrades ? shopTab : 'bonuses';
+    $('btn-reroll').hidden = free || tab !== 'bonuses';
     $('tab-bonuses').hidden = tab !== 'bonuses';
     $('tab-mejoras').hidden = tab !== 'mejoras';
     document.querySelectorAll('#shop-tabs .tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
     if (tab === 'mejoras') renderUpgradeTree();
-    $('btn-leave').textContent = free ? 'Arrancar sin bonus' : 'Seguir jugando →';
-    $('btn-leave').classList.toggle('primary', !free);
+    $('btn-leave').textContent = start ? 'Arrancar sin bonus' : 'Seguir jugando →';
+    $('btn-leave').classList.toggle('primary', !start);
     $('shop-money').textContent = `$${game.money}`;
     // A mitad de ciclo se muestra la cuota actual; al final, la del próximo ciclo.
     const nextCycle = game.shop.midCycle ? game.cycle : game.cycle + 1;
@@ -217,24 +309,23 @@
     const offers = game.shop.offers.map((b) => {
       const el = document.createElement('div');
       el.className = `offer ${b.rarity}`;
-      const price = game.priceOf(b);
       el.innerHTML = `
         <div class="icon">${b.icon}</div>
         <div class="name">${b.name}</div>
         <div class="rarity">${RARITY[b.rarity].label}</div>
         <p>${b.desc}</p>`;
       const btn = document.createElement('button');
-      btn.textContent = free ? 'Elegir' : `Comprar $${price}`;
+      btn.textContent = free ? 'Elegir' : `Comprar $${game.priceOf(b)}`;
       btn.disabled = !game.canBuy(b);
       if (game.bonuses.length >= MAX_BONUSES) btn.title = 'No tenés lugar: vendé un bonus primero';
-      btn.onclick = () => { game.buy(b.id); render(); };
+      btn.onclick = () => { game.buy(b.id); Sound.sfx('coin'); render(); };
       el.appendChild(btn);
       return el;
     });
     if (!offers.length) {
       const p = document.createElement('p');
       p.className = 'sub';
-      p.textContent = 'No quedan ofertas. Podés cambiarlas o seguir jugando.';
+      p.textContent = free ? 'Ya elegiste tu bonus gratis.' : 'No quedan ofertas. Podés cambiarlas o seguir jugando.';
       offers.push(p);
     }
     $('shop-offers').replaceChildren(...offers);
@@ -250,7 +341,7 @@
       btn.className = 'primary';
       btn.textContent = `Comprar $${game.deckPrice()}`;
       btn.disabled = !game.canBuyDeck();
-      btn.onclick = () => { game.buyDeck(); render(); };
+      btn.onclick = () => { game.buyDeck(); Sound.sfx('coin'); render(); };
       $('shop-deck').appendChild(btn);
     }
 
@@ -259,7 +350,7 @@
       const btn = document.createElement('button');
       btn.className = 'sell';
       btn.textContent = `Vender $${game.sellValue(id)}`;
-      btn.onclick = () => { game.sell(id); render(); };
+      btn.onclick = () => { game.sell(id); Sound.sfx('coin'); render(); };
       const tile = bonusTile(id, btn);
       const desc = document.createElement('p');
       desc.textContent = getBonus(id).desc;
@@ -274,13 +365,12 @@
     }
     $('shop-owned').replaceChildren(...owned);
 
-    const reroll = $('btn-reroll');
-    reroll.textContent = `🔄 Cambiar ofertas ($${game.shop.rerollCost})`;
-    reroll.disabled = game.money < game.shop.rerollCost;
+    if (!free) {
+      const reroll = $('btn-reroll');
+      reroll.textContent = `🔄 Cambiar ofertas ($${game.shop.rerollCost})`;
+      reroll.disabled = game.money < game.shop.rerollCost;
+    }
   }
-
-  // Pestaña de la tienda abierta ('bonuses' o 'mejoras').
-  let shopTab = 'bonuses';
 
   function renderUpgradeTree() {
     const branches = Upgrades.UPGRADES.map((u) => {
@@ -303,7 +393,7 @@
         node.innerHTML = `<span>Nv ${l}</span><b>+${Upgrades.gainAt(u, l)}%</b>` +
           (state === 'owned' ? '<i>✔</i>' : `<i>$${Upgrades.costAt(l - 1)}</i>`);
         node.disabled = state !== 'next' || !game.canUpgrade(u.id);
-        if (state === 'next') node.onclick = () => { game.upgrade(u.id); render(); };
+        if (state === 'next') node.onclick = () => { game.upgrade(u.id); Sound.sfx('coin'); render(); };
         nodes.appendChild(node);
       }
       branch.appendChild(nodes);
@@ -319,24 +409,69 @@
     $('decklost-reason').textContent = game.deckLostReason;
     $('decklost-next').innerHTML = `Ahora jugás con el <b>${d.icon} ${d.name}</b>: ${d.desc} ` +
       (game.decksLeft === 1 ? '<b>Es tu último mazo.</b>' : `Te quedan ${game.decksLeft} mazos.`);
+    $('decklost-retry').textContent = game.mode === 'story'
+      ? `Reintentás el ciclo ${game.cycle} con $${game.cycleStartMoney}. Tus bonuses y mejoras se quedan con vos.`
+      : 'Volvés al ciclo 1 con $100. Tus bonuses y mejoras se quedan con vos.';
   }
 
   function renderGameOver() {
     const el = $('gameover');
-    el.hidden = game.phase !== 'gameover';
-    if (game.phase !== 'gameover') return;
+    const ended = game.phase === 'gameover' || game.phase === 'victory';
+    el.hidden = !ended || inCutscene;
+    if (!ended) return;
+    if (game.mode === 'classic') {
+      const best = store.get(KEYS.classic) || 0;
+      const record = game.bestMoney > best;
+      if (record) store.set(KEYS.classic, game.bestMoney);
+      $('gameover-title').textContent = '💸 Te fundiste';
+      $('gameover-reason').textContent = game.gameOverReason;
+      $('gameover-stats').innerHTML = `Máximo dinero: <b>$${game.bestMoney}</b> · Manos jugadas: <b>${game.handsPlayed}</b><br>` +
+        (record ? '🏆 ¡Nuevo récord!' : `Récord: $${best}`);
+      return;
+    }
+    if (game.mode === 'story') {
+      const won = game.phase === 'victory';
+      $('gameover-title').textContent = won ? '🌟 ¡Entraste al Edén!' : {
+        purgatorio: '🌫️ Te quedaste en el purgatorio', infierno: '🔥 Te fuiste al infierno', casi: '🚪 Tan cerca del Edén',
+      }[game.ending] || '💀 Fin de la partida';
+      $('gameover-reason').textContent = won
+        ? 'Pagaste las tres cuotas. ✨ El Mazo Dorado ya está desbloqueado en el modo Infinito.'
+        : game.gameOverReason;
+      $('gameover-stats').innerHTML = `Ciclos superados: <b>${game.maxCleared}/3</b> · Manos jugadas: <b>${game.handsPlayed}</b>`;
+      return;
+    }
     const cleared = game.maxCleared;
-    let best = loadBest();
+    let best = store.get(KEYS.best);
     const isRecord = !best || cleared > best.cycles || (cleared === best.cycles && game.money > best.money);
     if (isRecord && !el.dataset.saved) {
       best = { cycles: cleared, money: game.money };
-      saveBest(best);
+      store.set(KEYS.best, best);
     }
     el.dataset.saved = '1';
+    $('gameover-title').textContent = '💀 Fin de la partida';
     $('gameover-reason').textContent = game.gameOverReason;
     $('gameover-stats').innerHTML =
       `Ciclos superados: <b>${cleared}</b> · Manos jugadas: <b>${game.handsPlayed}</b><br>` +
       (isRecord ? '🏆 ¡Nuevo récord!' : `Récord: ${best.cycles} ciclos`);
+  }
+
+  // Sonidos de las transiciones (resultado, tienda, mazo perdido).
+  function playTransitionSounds() {
+    if (game.phase === 'roundOver' && game.result && game.result !== lastResult) {
+      lastResult = game.result;
+      const r = game.result;
+      const o = r.outcome;
+      if (o === 'blackjack') Sound.sfx('blackjack');
+      else if (o === 'split') Sound.sfx(r.net > 0 ? 'win' : r.net < 0 ? 'lose' : 'push');
+      else if (o === 'push') Sound.sfx('push');
+      else if (o === 'lose' || o === 'bust') Sound.sfx('lose');
+      else Sound.sfx('win');
+    }
+    if (game.phase !== lastPhase) {
+      if (game.phase === 'shop') Sound.sfx('shop');
+      if (game.phase === 'deckLost') Sound.sfx('deckLost');
+      lastPhase = game.phase;
+    }
   }
 
   function render() {
@@ -345,13 +480,21 @@
   }
 
   async function doRender() {
+    if (!game) return;
     busy = true;
     renderControls();
-    // El crupier se calla mientras reparte o levanta las cartas.
+    // El que reparte se calla mientras reparte o levanta las cartas.
     if (game.phase === 'playing' || game.phase === 'roundOver' || game.player.length === 0) Table.setSpeech(null);
     if (game.phase === 'playing' || game.phase === 'roundOver') Table.renderBet(game.bet);
     await Table.sync(game);
     busy = false;
+    renderAll();
+    playTransitionSounds();
+    await storyEvents();
+  }
+
+  function renderAll() {
+    renderTheme();
     renderHud();
     renderBonusBar();
     renderBetSpot();
@@ -365,20 +508,116 @@
     renderGameOver();
   }
 
+  // --- Historia: presentaciones de cada jefe y finales ---
+  async function cutscene(scenes) {
+    inCutscene = true;
+    $('gameover').hidden = true;
+    await Cutscene.play(scenes, vars);
+    store.set(KEYS.name, vars.name);
+    inCutscene = false;
+  }
+
+  async function storyEvents() {
+    if (game.mode !== 'story') return;
+    if (game.pendingIntro) {
+      const cycle = game.pendingIntro;
+      game.pendingIntro = null;
+      await cutscene(Story.cycleIntro(cycle, game.quotaFor(cycle)));
+      renderAll();
+    } else if ((game.phase === 'victory' || (game.phase === 'gameover' && game.ending)) && !game.endingShown) {
+      game.endingShown = true;
+      if (game.phase === 'victory') {
+        store.set(KEYS.storyDone, true);
+        Sound.sfx('victory');
+        await cutscene(Story.victory());
+      } else {
+        await cutscene(Story.defeat(game.ending));
+      }
+      renderAll();
+    }
+  }
+
+  // --- Menú ---
+  function showMenu() {
+    $('menu').hidden = false;
+    document.body.classList.add('in-menu');
+    $('gameover').hidden = true;
+    Sound.music('pampa');
+    const classic = store.get(KEYS.classic);
+    const inf = store.get(KEYS.best);
+    $('rec-classic').textContent = classic ? `Récord: $${classic}` : 'Blackjack común contra el crupier';
+    $('rec-story').textContent = store.get(KEYS.storyDone) ? '✔ Completado · ¿Otra vez?' : 'Tres cuotas, tres jefes';
+    $('rec-infinite').textContent = (inf ? `Récord: ${inf.cycles} ciclos` : 'Cuotas sin fin') +
+      (store.get(KEYS.storyDone) ? ' · ✨ Mazo Dorado' : '');
+    if (!$('menu-chars').innerHTML) {
+      $('menu-chars').innerHTML = ['diablo', 'gaucho', 'santo'].map((id) => `<div class="menu-char">${Pixel.character(id)}</div>`).join('');
+    }
+  }
+
+  function startGame(mode) {
+    const startDeck = mode === 'infinite' && store.get(KEYS.storyDone) ? 'dorado' : null;
+    game = new Game({ mode, startDeck });
+    $('menu').hidden = true;
+    document.body.classList.remove('in-menu');
+    shopTab = 'bonuses';
+    lastResult = null;
+    lastPhase = null;
+    delete $('gameover').dataset.saved;
+    $('bet-input').value = '';
+    render();
+  }
+
   // --- Eventos ---
+  document.querySelectorAll('.menu-modes button').forEach((btn) => {
+    btn.addEventListener('click', () => startGame(btn.dataset.mode));
+  });
+  $('btn-intro').addEventListener('click', async () => {
+    $('menu').hidden = true;
+    await cutscene(Story.intro());
+    showMenu();
+  });
+  $('btn-menu-help').addEventListener('click', () => { $('help').hidden = false; });
+  $('btn-menu').addEventListener('click', () => {
+    if (!game || game.phase === 'gameover' || game.phase === 'victory' ||
+      window.confirm('¿Abandonar la partida y volver al menú?')) showMenu();
+  });
+  $('btn-to-menu').addEventListener('click', showMenu);
+
+  function renderSoundButtons() {
+    const icon = Sound.muted ? '🔇' : '🔊';
+    $('btn-sound').textContent = icon;
+    $('btn-menu-sound').textContent = icon;
+  }
+  [$('btn-sound'), $('btn-menu-sound')].forEach((b) => b.addEventListener('click', () => {
+    Sound.toggleMute();
+    renderSoundButtons();
+  }));
+  renderSoundButtons();
+
+  // Sonido de clic en todos los botones (las fichas suenan distinto).
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.disabled || btn.closest('#cutscene')) return;
+    Sound.sfx(btn.classList.contains('chip') ? 'chip' : 'click');
+  });
+
   document.querySelectorAll('.chip[data-delta]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const input = $('bet-input');
       const v = Number(input.value) + Number(btn.dataset.delta);
-      input.value = Math.min(Math.max(v, game.minBet), game.money);
+      input.value = Math.min(Math.max(v, game.minBet), Math.floor(game.money));
       renderControls();
     });
   });
-  $('bet-max').addEventListener('click', () => { $('bet-input').value = game.money; renderControls(); });
+  $('bet-max').addEventListener('click', () => { $('bet-input').value = Math.floor(game.money); renderControls(); });
   $('bet-input').addEventListener('input', renderControls);
   $('btn-deal').addEventListener('click', () => {
     const amount = Number($('bet-input').value);
     if (game.canBet(amount)) { game.deal(amount); render(); }
+  });
+  $('btn-advance').addEventListener('click', () => {
+    const extra = game.mode === 'story' ? '\nOjo: la tienda del final de ciclo no va a ser gratis.' : '';
+    if (game.canAdvance() && window.confirm(`¿Pasar de ciclo ahora?${extra}`)) { game.advanceCycle(); render(); }
   });
   $('btn-hit').addEventListener('click', () => { game.hit(); render(); });
   $('btn-stand').addEventListener('click', () => { game.stand(); render(); });
@@ -396,18 +635,13 @@
     $('bet-input').value = '';
     render();
   });
-  $('btn-restart').addEventListener('click', () => {
-    game.reset();
-    delete $('gameover').dataset.saved;
-    $('bet-input').value = '';
-    render();
-  });
+  $('btn-restart').addEventListener('click', () => startGame(game.mode));
   $('btn-help').addEventListener('click', () => { $('help').hidden = false; });
   $('btn-close-help').addEventListener('click', () => { $('help').hidden = true; });
 
   // Atajos de teclado
   document.addEventListener('keydown', (e) => {
-    if (busy) return;
+    if (!game || busy || inCutscene || !$('menu').hidden) return;
     if (e.target.tagName === 'INPUT' && e.key !== 'Enter') return;
     const k = e.key.toLowerCase();
     if (game.phase === 'betting' && k === 'enter') $('btn-deal').click();
@@ -423,11 +657,12 @@
     }
   });
 
-  try {
-    if (!localStorage.getItem('luckjack.seenHelp')) {
-      $('help').hidden = false;
-      localStorage.setItem('luckjack.seenHelp', '1');
+  // --- Inicio: la intro la primera vez, después el menú ---
+  (async () => {
+    if (!store.get(KEYS.seenIntro)) {
+      await cutscene(Story.intro());
+      store.set(KEYS.seenIntro, true);
     }
-  } catch { $('help').hidden = false; }
-  render();
+    showMenu();
+  })();
 })();
