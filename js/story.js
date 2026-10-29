@@ -66,7 +66,7 @@
           lines: [
             { who: 'diablo', text: 'Ssssí... {name}. Hace años que te espero. Tantas apuestas, tantas trampas...' },
             { who: 'diablo', text: `Mi cuota es de $${quota}. Si no la pagás, te venís conmigo para abajo.` },
-            { who: 'diablo', text: 'Ah, un detallecito: de cada cuatro empates, uno me lo quedo yo. Je, je.' },
+            { who: 'diablo', text: 'Ah, un detallecito: en cada empate me quedo con un cuarto de tu apuesta. Je, je.' },
           ],
         },
       ];

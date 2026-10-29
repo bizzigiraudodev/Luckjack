@@ -21,6 +21,7 @@
   const STORY_BOSSES = ['gaucho', 'diablo', 'santo'];
   const CLASSIC_MIN_BET = 10;
   const QUOTA_BONUS = 5; // por cada ronda jugada con la cuota ya cumplida
+  const DEVIL_PUSH_CUT = 0.25; // parte de la apuesta que se lleva el Diablo en cada empate
 
   class Game {
     // `startingPick: false` saltea la elección del bonus inicial (útil en tests).
@@ -425,12 +426,6 @@
       const notes = [];
       let payout = 0; // dinero que vuelve al jugador (incluye la apuesta)
 
-      // El Diablo se queda con 1 de cada 4 empates (25% de chance en cada uno).
-      if (outcome === 'push' && this.boss === 'diablo' && this.rng() < 0.25) {
-        notes.push('😈 El Diablo se quedó con el empate');
-        outcome = 'lose';
-      }
-
       if ((outcome === 'lose' || outcome === 'bust') && this.has('escudo') && !this.shieldUsed) {
         this.shieldUsed = true;
         notes.push('🛡️ El Escudo convirtió la derrota en empate');
@@ -454,6 +449,11 @@
       } else if (outcome === 'push') {
         payout = bet;
         if (this.has('empate')) { payout += bet / 2; notes.push('🤝 +50%'); }
+        // En cada empate el Diablo se queda con el 25% de lo apostado.
+        if (this.boss === 'diablo') {
+          payout -= bet * DEVIL_PUSH_CUT;
+          notes.push(`😈 El Diablo se quedó con $${Math.ceil(bet * DEVIL_PUSH_CUT)}`);
+        }
       } else if (outcome === 'bust' && this.has('red')) {
         payout = bet / 2;
         notes.push('🕸️ recuperás la mitad');

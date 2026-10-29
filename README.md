@@ -13,7 +13,7 @@ Fuiste el mejor timbero de tu época: ganaste fortunas y te retiraste a una casu
 - **🃏 Blackjack clásico:** blackjack común contra el crupier. Sin bonuses, cuotas ni tienda. Jugás hasta fundirte; se guarda tu récord de dinero.
 - **📖 Modo historia:** tres ciclos de 15 manos contra tres jefes:
   1. **El Viejo Timbero** (el gaucho): su cuota.
-  2. **El Diablo**: pagale o te vas al infierno. Se queda con 1 de cada 4 empates.
+  2. **El Diablo**: pagale o te vas al infierno. En cada empate se queda con el 25% de tu apuesta.
   3. **San Pedro**: la entrada al Casino del Edén. En su mesa el Crupier Nervioso no tiene efecto.
 
   Si no llegás a una cuota perdés un mazo y reintentás ese ciclo con el dinero con el que lo empezaste. Al final de cada ciclo jugado completo elegís **1 bonus común gratis**; el árbol de mejoras solo aparece en la tienda de fin de ciclo. Hay cutscenes al presentar cada jefe, al ganar y al perder. Pasar la historia desbloquea el **Mazo Dorado** para el modo infinito.

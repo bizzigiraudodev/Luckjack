@@ -513,22 +513,27 @@ test('historia: ganarle a San Pedro es victoria; perder todos los mazos da un fi
   }
 });
 
-test('jefes: el Diablo se queda con ~1/4 de los empates y San Pedro anula al Crupier Nervioso', () => {
-  let seed = 3;
-  const rng = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
-  const g = new Game({ mode: 'story', startingPick: false, rng });
+test('jefes: el Diablo se lleva el 25% de la apuesta en cada empate y San Pedro anula al Crupier Nervioso', () => {
+  const g = new Game({ mode: 'story', startingPick: false });
   g.cycle = 2;
-  let stolen = 0;
-  const N = 2000;
-  for (let i = 0; i < N; i++) {
-    g.money = 1000;
+  for (let i = 0; i < 3; i++) {
+    g.money = 100; // menos que la cuota, para que no sume los $5 de cuota cumplida
     g.phase = 'betting';
     stack(g, [c('K'), c('K', '♥'), c('7'), c('7', '♥')]);
     g.deal(20);
     g.stand();
-    if (g.result.outcome === 'lose') stolen++;
+    assert.strictEqual(g.result.outcome, 'push');
+    assert.strictEqual(g.result.payout, 15, 'devuelve $15 de $20 en cada empate');
   }
-  assert.ok(Math.abs(stolen / N - 0.25) < 0.04, `se quedó con ${stolen}/${N}`);
+
+  const e = new Game({ mode: 'story', startingPick: false });
+  e.cycle = 2;
+  e.bonuses.push('empate');
+  e.money = 100;
+  stack(e, [c('K'), c('K', '♥'), c('7'), c('7', '♥')]);
+  e.deal(20);
+  e.stand();
+  assert.strictEqual(e.result.payout, 20 + 10 - 5, 'Empate a Favor suma y el Diablo igual cobra su parte');
 
   const s = new Game({ mode: 'story', startingPick: false });
   s.bonuses.push('nervioso');

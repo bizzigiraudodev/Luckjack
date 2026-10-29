@@ -38,7 +38,7 @@
     gaucho: { title: 'EL VIEJO TIMBERO', goal: 'Deuda con el Viejo', music: 'gaucho',
       print: ['PURGATORIO DE LOS TIMBEROS', 'LA CASA NO PERDONA, CHAMIGO'] },
     diablo: { title: 'EL DIABLO', goal: 'Tributo al Diablo', music: 'diablo',
-      print: ['LA MESA DEL DIABLO', 'UNO DE CADA CUATRO EMPATES ES MÍO'] },
+      print: ['LA MESA DEL DIABLO', 'EN CADA EMPATE ME LLEVO UN CUARTO'] },
     santo: { title: 'SAN PEDRO', goal: 'Entrada al Edén', music: 'santo',
       print: ['PUERTAS DEL EDÉN', 'ACÁ ARRIBA NADIE SE PONE NERVIOSO'] },
   };
