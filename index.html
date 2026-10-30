@@ -29,6 +29,7 @@
         <strong id="quota">$0</strong>
       </div>
       <div class="quota-bar"><i id="quota-fill"></i></div>
+      <div class="story-timer" id="story-timer" hidden>⏱️ 0:00</div>
     </div>
     <div class="money-box panel"><small>Dinero</small><strong id="money">$0</strong></div>
     <div class="stats">
@@ -175,6 +176,7 @@
         <button class="btn-blue big" data-mode="infinite">♾️ Roguelike infinito<small id="rec-infinite"></small></button>
       </div>
       <div class="menu-extra">
+        <button class="btn-orange" id="btn-ranks">🏆 Rankings</button>
         <button id="btn-intro">🎬 Ver intro</button>
         <button id="btn-menu-help">❓ Cómo se juega</button>
         <button class="sound-btn" id="btn-menu-sound">🔊</button>
@@ -197,12 +199,36 @@
     </div>
   </div>
 
+  <div class="overlay" id="leaderboard" hidden>
+    <div class="modal">
+      <h2>🏆 Rankings</h2>
+      <div class="tabs" id="lb-tabs" role="tablist">
+        <button class="tab active" data-board="story" role="tab">⏱️ Historia</button>
+        <button class="tab" data-board="chips" role="tab">💰 Fichas</button>
+        <button class="tab" data-board="cycles" role="tab">♾️ Ciclos</button>
+      </div>
+      <h3 id="lb-title"></h3>
+      <p class="sub" id="lb-status"></p>
+      <ol class="lb-list" id="lb-list"></ol>
+      <form class="lb-name" id="lb-name-form">
+        <label for="lb-name">Tu nombre en los rankings:</label>
+        <input id="lb-name" maxlength="16" autocomplete="off">
+        <button class="btn-green" type="submit">Guardar</button>
+      </form>
+      <div class="modal-actions">
+        <button class="primary" id="btn-close-ranks">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="gameover" hidden>
     <div class="modal">
       <h2 id="gameover-title">💀 Fin de la partida</h2>
       <p id="gameover-reason"></p>
       <p id="gameover-stats"></p>
+      <div class="ranks-result" id="gameover-ranks" hidden></div>
       <div class="modal-actions">
+        <button class="btn-orange" id="btn-gameover-ranks">🏆 Rankings</button>
         <button class="btn-red" id="btn-to-menu">Menú</button>
         <button class="primary" id="btn-restart">Jugar de nuevo</button>
       </div>
@@ -267,6 +293,7 @@
   <script src="js/table.js"></script>
   <script src="js/cutscene.js"></script>
   <script src="js/story.js"></script>
+  <script src="js/leaderboard.js"></script>
   <script src="js/bg.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/pwa.js"></script>

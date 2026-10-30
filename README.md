@@ -23,6 +23,26 @@ En los dos modos roguelike, cuando ya cumpliste la cuota podés **pasar de ciclo
 
 La música y los efectos se generan en el momento con Web Audio (sin archivos de audio); se pueden silenciar con el botón 🔊.
 
+## Rankings
+
+Desde el menú (🏆 Rankings) hay tres rankings:
+
+- **⏱️ Historia más rápida:** tiempo de juego hasta entrar al Edén (sin contar cutscenes, menú ni pestaña en segundo plano).
+- **💰 Más fichas (infinito):** el máximo de dinero alcanzado en una partida.
+- **♾️ Más ciclos (infinito):** ciclos superados en una partida.
+
+Las marcas se mandan solas al terminar (o al abandonar una partida de infinito). Cada jugador tiene una sola fila por ranking: su mejor marca. El nombre es el que escribiste en la intro y se puede cambiar desde la pantalla de rankings.
+
+**Rankings globales (Vercel + Upstash Redis, gratis):** la API está en `api/leaderboard.js`. Para activarla:
+
+1. En el proyecto de Vercel: **Storage → Create Database → Upstash (Redis)**, plan gratis, y conectarla al proyecto.
+2. Vercel agrega solas las variables `KV_REST_API_URL` y `KV_REST_API_TOKEN` (también sirven `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`).
+3. Hacer un redeploy.
+
+Mientras no esté configurada (o jugando desde GitHub Pages / sin internet), cada dispositivo guarda sus 10 mejores partidas.
+
+> Como el juego corre en el navegador, alguien que sepa programar podría mandar marcas falsas. La API valida rangos y limita los envíos, pero no es a prueba de tramposos.
+
 ## Cómo jugar
 
 Abrí `index.html` en el navegador (no necesita instalar nada). Si preferís un servidor local:
@@ -132,6 +152,8 @@ js/ui.js          # render y eventos
 js/pwa.js         # instalación como app (service worker y botón Instalar)
 sw.js             # service worker: guarda los archivos para jugar offline
 manifest.webmanifest, icons/  # nombre, colores e íconos de la app
+js/leaderboard.js # rankings: API global o copia local
+api/leaderboard.js  # API de rankings (Vercel Function + Upstash Redis)
 test/             # tests con node:test
 ```
 

@@ -733,6 +733,43 @@ body[data-boss="diablo"] .table { background: #2a2433; box-shadow: inset 0 6px 0
 .table-mate { position: absolute; left: calc(100% + 10px); bottom: -2px; width: 30px; height: 34px; }
 .table-mate svg { width: 100%; height: 100%; }
 
+/* --- Rankings --- */
+/* Se abren desde el menú o el fin de partida: tienen que quedar por encima. */
+#leaderboard, #help, #install-help { z-index: 45; }
+.story-timer { margin-top: 8px; font-size: 1.05rem; color: var(--gold); }
+.ranks-result { margin: 10px 0; padding: 10px 12px; background: var(--inset); border: var(--px) solid var(--outline); border-radius: 8px; line-height: 1.5; }
+.ranks-result b { color: var(--gold); }
+.lb-list { list-style: none; margin: 8px 0 14px; padding: 0; }
+.lb-list li {
+  display: grid;
+  grid-template-columns: 44px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  background: var(--inset);
+  border: var(--px) solid var(--outline);
+  border-radius: 8px;
+}
+.lb-list li.me { border-color: var(--gold); background: rgba(245, 197, 66, 0.15); }
+.lb-list li.empty { display: block; color: var(--muted); text-align: center; }
+.lb-list .pos { font-weight: 700; color: var(--muted); }
+.lb-list .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-list small { color: var(--muted); font-size: 0.8rem; }
+.lb-list b { color: var(--money); }
+.lb-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.lb-name label { width: 100%; color: var(--muted); font-size: 0.9rem; }
+.lb-name input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: var(--px) solid var(--outline);
+  background: var(--inset);
+  color: var(--money);
+}
+
 /* --- Menú principal --- */
 body.in-menu .app, body.in-menu .help-btn { visibility: hidden; }
 .menu {

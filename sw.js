@@ -1,6 +1,6 @@
 // Service worker: guarda el juego para poder jugar sin internet.
 // Primero intenta la red (así siempre ves la última versión) y si no hay conexión usa la copia guardada.
-const CACHE = 'luckjack-v4';
+const CACHE = 'luckjack-v5';
 const ASSETS = [
   './',
   'index.html',
@@ -17,6 +17,7 @@ const ASSETS = [
   'js/table.js',
   'js/cutscene.js',
   'js/story.js',
+  'js/leaderboard.js',
   'js/pwa.js',
   'js/ui.js',
   'js/bg.js',
@@ -41,7 +42,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  // Los rankings siempre van a la red (no se guardan para jugar offline).
+  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.includes('/api/')) return;
   event.respondWith(
     fetch(req)
       .then((res) => {

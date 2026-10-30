@@ -30,6 +30,7 @@
   let lastPhase = null;
   let lastResult = null;
   let shopTab = 'bonuses'; // pestaña abierta de la tienda
+  let lbBoard = 'story'; // ranking abierto
 
   // --- Personajes que reparten ---
   const BOSS_INFO = {
@@ -174,6 +175,7 @@
       $('hand').textContent = game.handsPlayed;
       return;
     }
+    $('story-timer').hidden = game.mode !== 'story';
     const title = game.mode === 'story'
       ? `CICLO <b id="cycle">${game.cycle}/3</b><span class="boss-name">${info.title}</span>`
       : `CICLO <b id="cycle">${game.cycle}</b>`;
@@ -418,7 +420,9 @@
     const el = $('gameover');
     const ended = game.phase === 'gameover' || game.phase === 'victory';
     el.hidden = !ended || inCutscene;
+    $('btn-gameover-ranks').hidden = game.mode === 'classic';
     if (!ended) return;
+    if (!inCutscene) submitScores();
     if (game.mode === 'classic') {
       const best = store.get(KEYS.classic) || 0;
       const record = game.bestMoney > best;
@@ -437,7 +441,8 @@
       $('gameover-reason').textContent = won
         ? 'Pagaste las tres cuotas. ✨ El Mazo Dorado ya está desbloqueado en el modo Infinito.'
         : game.gameOverReason;
-      $('gameover-stats').innerHTML = `Ciclos superados: <b>${game.maxCleared}/3</b> · Manos jugadas: <b>${game.handsPlayed}</b>`;
+      $('gameover-stats').innerHTML = `Ciclos superados: <b>${game.maxCleared}/3</b> · Manos jugadas: <b>${game.handsPlayed}</b>` +
+        (won ? ` · Tiempo: <b>${Leaderboard.formatTime(game.playMs)}</b>` : '');
       return;
     }
     const cleared = game.maxCleared;
@@ -537,6 +542,85 @@
     }
   }
 
+  // --- Rankings ---
+  // Manda las marcas de la partida (una sola vez) y muestra en qué puesto quedaste.
+  async function submitScores() {
+    if (game.submitted) return;
+    const subs = [];
+    if (game.mode === 'story' && game.phase === 'victory') {
+      subs.push(['story', Math.round(game.playMs)]);
+    } else if (game.mode === 'infinite' && game.handsPlayed > 0) {
+      subs.push(['chips', Math.floor(game.bestMoney)]);
+      if (game.maxCleared > 0) subs.push(['cycles', game.maxCleared]);
+    }
+    game.submitted = true;
+    if (!subs.length) return;
+    const g = game;
+    const box = $('gameover-ranks');
+    box.hidden = false;
+    box.textContent = 'Guardando en los rankings...';
+    const lines = [];
+    for (const [board, value] of subs) {
+      const res = await Leaderboard.submit(board, { name: vars.name, value, hands: g.handsPlayed });
+      const info = Leaderboard.BOARDS[board];
+      const where = res.global ? 'global' : 'de este dispositivo';
+      lines.push(res.rank && res.rank <= Leaderboard.TOP
+        ? `${info.icon} ${Leaderboard.BOARDS[board].format(value)} → <b>puesto #${res.rank}</b> del ranking ${where}`
+        : `${info.icon} ${Leaderboard.BOARDS[board].format(value)}${res.improved ? '' : ' (no superó tu mejor marca)'}`);
+    }
+    if (game === g) box.innerHTML = lines.join('<br>');
+  }
+
+  async function showRanks(board = lbBoard) {
+    lbBoard = board;
+    $('leaderboard').hidden = false;
+    $('lb-name').value = vars.name;
+    document.querySelectorAll('#lb-tabs .tab').forEach((t) => t.classList.toggle('active', t.dataset.board === board));
+    const info = Leaderboard.BOARDS[board];
+    $('lb-title').textContent = `${info.icon} ${info.title}`;
+    $('lb-status').textContent = 'Cargando...';
+    $('lb-list').replaceChildren();
+    const { entries, global } = await Leaderboard.load(board);
+    if (board !== lbBoard) return;
+    $('lb-status').textContent = global ? '🌐 Ranking global' : '📱 Tus mejores partidas en este dispositivo (el ranking global no está disponible ahora).';
+    const me = Leaderboard.playerId();
+    const items = entries.map((e, i) => {
+      const li = document.createElement('li');
+      li.className = e.pid === me ? 'me' : '';
+      const pos = document.createElement('span');
+      pos.className = 'pos';
+      pos.textContent = i < 3 ? ['🥇', '🥈', '🥉'][i] : `#${i + 1}`;
+      const name = document.createElement('span');
+      name.className = 'who';
+      name.textContent = e.name || 'Timbero';
+      const val = document.createElement('b');
+      val.textContent = info.format(e.value);
+      const extra = document.createElement('small');
+      extra.textContent = e.hands ? `${e.hands} manos` : '';
+      li.append(pos, name, extra, val);
+      return li;
+    });
+    if (!items.length) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = board === 'story' ? 'Todavía nadie terminó la historia. ¿Serás el primero?' : 'Todavía no hay marcas. ¡Jugá una partida de infinito!';
+      items.push(li);
+    }
+    $('lb-list').replaceChildren(...items);
+  }
+
+  // Cronómetro de la historia: cuenta solo mientras jugás (sin cutscenes, menú ni pestaña oculta).
+  let lastTick = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    const dt = now - lastTick;
+    lastTick = now;
+    if (!game || game.mode !== 'story' || inCutscene || document.hidden || !$('menu').hidden) return;
+    if (game.phase === 'victory' || game.phase === 'gameover') return;
+    game.playMs = (game.playMs || 0) + dt;
+    $('story-timer').textContent = `⏱️ ${Leaderboard.formatTime(game.playMs)}`;
+  }, 250);
+
   // --- Menú ---
   function showMenu() {
     $('menu').hidden = false;
@@ -557,6 +641,9 @@
   function startGame(mode) {
     const startDeck = mode === 'infinite' && store.get(KEYS.storyDone) ? 'dorado' : null;
     game = new Game({ mode, startDeck });
+    game.playMs = 0;
+    $('story-timer').textContent = '⏱️ 0:00';
+    $('gameover-ranks').hidden = true;
     $('menu').hidden = true;
     document.body.classList.remove('in-menu');
     shopTab = 'bonuses';
@@ -579,7 +666,22 @@
   $('btn-menu-help').addEventListener('click', () => { $('help').hidden = false; });
   $('btn-menu').addEventListener('click', () => {
     if (!game || game.phase === 'gameover' || game.phase === 'victory' ||
-      window.confirm('¿Abandonar la partida y volver al menú?')) showMenu();
+      window.confirm('¿Abandonar la partida y volver al menú?')) {
+      // Abandonar una partida de infinito igual cuenta para los rankings.
+      if (game && game.mode === 'infinite') submitScores();
+      showMenu();
+    }
+  });
+  $('btn-ranks').addEventListener('click', () => showRanks());
+  $('btn-gameover-ranks').addEventListener('click', () => showRanks(game.mode === 'story' ? 'story' : 'cycles'));
+  $('btn-close-ranks').addEventListener('click', () => { $('leaderboard').hidden = true; });
+  document.querySelectorAll('#lb-tabs .tab').forEach((t) => t.addEventListener('click', () => showRanks(t.dataset.board)));
+  $('lb-name-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    vars.name = $('lb-name').value.trim().slice(0, 16) || 'Timbero';
+    store.set(KEYS.name, vars.name);
+    $('lb-name').value = vars.name;
+    Sound.sfx('coin');
   });
   $('btn-to-menu').addEventListener('click', showMenu);
 
