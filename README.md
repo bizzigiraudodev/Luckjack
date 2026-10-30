@@ -23,6 +23,16 @@ En los dos modos roguelike, cuando ya cumpliste la cuota podés **pasar de ciclo
 
 La música y los efectos se generan en el momento con Web Audio (sin archivos de audio); se pueden silenciar con el botón 🔊.
 
+## Truco
+
+Desde el menú (pestaña **🗡️ Truco**) se juega **truco clásico**: mano a mano contra el Viejo Timbero, sin flor, a 15 puntos. Las cartas son del mazo español en pixel art y se juegan tocándolas.
+
+- Envido, Real envido y Falta envido (el envido está primero); Truco, Retruco y Vale cuatro; irse al mazo.
+- El rival canta, quiere, sube y a veces miente según su personalidad (`js/truco-ai.js`).
+- Se guardan tus partidas ganadas y perdidas.
+
+Próximamente: modo historia e infinito de truco, con su propia tienda de bonuses y rankings.
+
 ## Rankings
 
 Desde el menú (🏆 Rankings) hay tres rankings:
@@ -154,6 +164,9 @@ sw.js             # service worker: guarda los archivos para jugar offline
 manifest.webmanifest, icons/  # nombre, colores e íconos de la app
 js/leaderboard.js # rankings: API global o copia local
 api/leaderboard.js  # API de rankings (Vercel Function + Upstash Redis)
+js/truco.js       # motor del truco (reglas, cantos, puntaje)
+js/truco-ai.js    # rival de truco
+js/truco-ui.js    # mesa de truco
 test/             # tests con node:test
 ```
 

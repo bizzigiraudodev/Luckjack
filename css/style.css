@@ -733,6 +733,56 @@ body[data-boss="diablo"] .table { background: #2a2433; box-shadow: inset 0 6px 0
 .table-mate { position: absolute; left: calc(100% + 10px); bottom: -2px; width: 30px; height: 34px; }
 .table-mate svg { width: 100%; height: 100%; }
 
+/* --- Truco --- */
+body[data-game="truco"] .blackjack-only { display: none !important; }
+body:not([data-game="truco"]) .truco-only { display: none !important; }
+.menu-games { margin-bottom: 12px; }
+.tr-hand { display: flex; justify-content: center; gap: 8px; min-height: 104px; }
+.tr-hand.rival { min-height: 80px; }
+.tr-hand.rival .card { width: 56px; height: 80px; }
+.tr-hand.rival .card + .card { margin-left: -18px; }
+.tr-board { display: flex; justify-content: center; gap: 14px; }
+.tr-baza { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tr-baza .slot {
+  width: 74px;
+  height: 104px;
+  border: var(--px) dashed rgba(245, 197, 66, 0.3);
+  border-radius: 8px;
+}
+.tr-baza .slot:has(.card) { border-color: transparent; }
+.tr-baza .slot .card { animation: none; }
+.tr-baza .mark { min-height: 22px; font-weight: 700; font-size: 1.1rem; }
+.tr-baza .mark.won { color: var(--good); }
+.tr-baza .mark.lost { color: var(--bad); }
+.tr-baza .mark.parda { color: var(--gold); }
+.card.spanish .tl, .card.spanish .br { font-size: 1.25rem; }
+.card.spanish .mid svg { width: 40px; height: 40px; }
+.card.playable { cursor: pointer; }
+.card.playable:hover { translate: 0 -10px; animation: none; box-shadow: 0 0 0 var(--px) var(--gold), 0 8px 0 rgba(0, 0, 0, 0.4); }
+.truco-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  min-height: 64px;
+  padding: 10px;
+  /* fijos al pie de la pantalla para responder sin tener que bajar */
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(900px, calc(100% - 24px));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 6;
+  background: rgba(20, 28, 31, 0.92);
+  border: var(--px) solid var(--outline);
+  border-radius: 12px;
+}
+.truco-controls:empty::after { content: '...'; color: var(--muted); }
+
+body[data-game="truco"] { padding-bottom: 120px; }
+body[data-game="truco"] .help-btn { bottom: 96px; }
+
 /* --- Rankings --- */
 /* Se abren desde el menú o el fin de partida: tienen que quedar por encima. */
 #leaderboard, #help, #install-help { z-index: 45; }
@@ -914,6 +964,13 @@ body.in-menu .app, body.in-menu .help-btn { visibility: hidden; }
   .node { font-size: 0.72rem; padding: 3px 5px; }
 }
 @media (max-width: 560px) {
+  .tr-baza .slot { width: 56px; height: 80px; }
+  .tr-board { gap: 8px; }
+  .tr-hand { min-height: 80px; }
+  .tr-hand.rival .card { width: 44px; height: 62px; }
+  .tr-hand.rival { min-height: 62px; }
+  .card.spanish .mid svg { width: 30px; height: 30px; }
+  .card.spanish .tl, .card.spanish .br { font-size: 1rem; }
   .cs-chars { bottom: 170px; height: 28vh; }
   .cs-char[data-pos="left"] { left: 26%; }
   .cs-char[data-pos="right"] { left: 74%; }

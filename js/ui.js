@@ -163,6 +163,7 @@
     document.body.dataset.mode = game.mode;
     document.body.dataset.boss = game.boss;
     $('money').textContent = `$${game.money}`;
+    $('minbet-label').textContent = 'Apuesta mín.';
     $('minbet').textContent = `$${game.minBet}`;
 
     if (!game.isRoguelike) {
@@ -623,6 +624,8 @@
 
   // --- Menú ---
   function showMenu() {
+    TrucoUI.stop();
+    delete document.body.dataset.game;
     $('menu').hidden = false;
     document.body.classList.add('in-menu');
     $('gameover').hidden = true;
@@ -633,6 +636,8 @@
     $('rec-story').textContent = store.get(KEYS.storyDone) ? '✔ Completado · ¿Otra vez?' : 'Tres cuotas, tres jefes';
     $('rec-infinite').textContent = (inf ? `Récord: ${inf.cycles} ciclos` : 'Cuotas sin fin') +
       (store.get(KEYS.storyDone) ? ' · ✨ Mazo Dorado' : '');
+    const truco = TrucoUI.record();
+    $('rec-truco').textContent = truco ? `Ganadas: ${truco.wins} · Perdidas: ${truco.losses}` : 'Mano a mano contra el Viejo, a 15 puntos';
     if (!$('menu-chars').innerHTML) {
       $('menu-chars').innerHTML = ['diablo', 'gaucho', 'santo'].map((id) => `<div class="menu-char">${Pixel.character(id)}</div>`).join('');
     }
@@ -640,6 +645,8 @@
 
   function startGame(mode) {
     const startDeck = mode === 'infinite' && store.get(KEYS.storyDone) ? 'dorado' : null;
+    TrucoUI.stop();
+    document.body.dataset.game = 'blackjack';
     game = new Game({ mode, startDeck });
     game.playMs = 0;
     $('story-timer').textContent = '⏱️ 0:00';
@@ -654,9 +661,27 @@
     render();
   }
 
+  function startTruco(mode) {
+    game = null; // el blackjack queda en pausa
+    $('menu').hidden = true;
+    document.body.classList.remove('in-menu');
+    TrucoUI.start(mode, { vars });
+  }
+
   // --- Eventos ---
-  document.querySelectorAll('.menu-modes button').forEach((btn) => {
+  document.querySelectorAll('#modes-blackjack button').forEach((btn) => {
     btn.addEventListener('click', () => startGame(btn.dataset.mode));
+  });
+  document.querySelectorAll('#modes-truco button[data-truco]').forEach((btn) => {
+    btn.addEventListener('click', () => startTruco(btn.dataset.truco));
+  });
+  // Elegir juego en el menú: Blackjack o Truco.
+  document.querySelectorAll('#menu-games .tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#menu-games .tab').forEach((t) => t.classList.toggle('active', t === tab));
+      $('modes-blackjack').hidden = tab.dataset.game !== 'blackjack';
+      $('modes-truco').hidden = tab.dataset.game !== 'truco';
+    });
   });
   $('btn-intro').addEventListener('click', async () => {
     $('menu').hidden = true;
@@ -665,6 +690,10 @@
   });
   $('btn-menu-help').addEventListener('click', () => { $('help').hidden = false; });
   $('btn-menu').addEventListener('click', () => {
+    if (TrucoUI.active) {
+      if (!TrucoUI.playing || window.confirm('¿Abandonar la partida y volver al menú?')) showMenu();
+      return;
+    }
     if (!game || game.phase === 'gameover' || game.phase === 'victory' ||
       window.confirm('¿Abandonar la partida y volver al menú?')) {
       // Abandonar una partida de infinito igual cuenta para los rankings.
@@ -737,7 +766,10 @@
     $('bet-input').value = '';
     render();
   });
-  $('btn-restart').addEventListener('click', () => startGame(game.mode));
+  $('btn-restart').addEventListener('click', () => {
+    if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
+    else startGame(game.mode);
+  });
   $('btn-help').addEventListener('click', () => { $('help').hidden = false; });
   $('btn-close-help').addEventListener('click', () => { $('help').hidden = true; });
 

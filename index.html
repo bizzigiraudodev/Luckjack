@@ -31,10 +31,10 @@
       <div class="quota-bar"><i id="quota-fill"></i></div>
       <div class="story-timer" id="story-timer" hidden>⏱️ 0:00</div>
     </div>
-    <div class="money-box panel"><small>Dinero</small><strong id="money">$0</strong></div>
+    <div class="money-box panel blackjack-only"><small>Dinero</small><strong id="money">$0</strong></div>
     <div class="stats">
       <div class="stat panel"><small id="hand-label">Mano</small><strong id="hand">1/15</strong></div>
-      <div class="stat panel"><small>Apuesta mín.</small><strong id="minbet">$0</strong></div>
+      <div class="stat panel"><small id="minbet-label">Apuesta mín.</small><strong id="minbet">$0</strong></div>
       <div class="stat panel deck-stat roguelike-only" id="deck-stat"><small>Mazo</small><strong id="deck"></strong></div>
     </div>
     <div class="hud-actions">
@@ -68,7 +68,7 @@
           <div class="shoe" id="shoe" title="Sabot"><div class="shoe-cards" id="shoe-cards"></div></div>
         </div>
 
-        <div class="seat dealer-seat">
+        <div class="seat dealer-seat blackjack-only">
           <div class="hand" id="dealer-hand"></div>
           <span class="score" id="dealer-score"></span>
         </div>
@@ -80,21 +80,26 @@
           <text class="print-small"><textPath href="#arc-2" startOffset="50%" text-anchor="middle">EL CRUPIER PIDE HASTA 16 Y SE PLANTA EN 17</textPath></text>
         </svg>
 
+        <div class="tr-hand rival truco-only" id="tr-rival"></div>
+        <div class="tr-board truco-only" id="tr-board"></div>
+
         <div class="center">
           <div class="message" id="message">Hacé tu apuesta para empezar.</div>
           <div class="intel" id="intel"></div>
         </div>
 
-        <div class="seat player-seat">
+        <div class="seat player-seat blackjack-only">
           <div class="bet-spot" id="bet-spot"><div class="chips" id="bet-chips"></div><span class="bet-amount" id="bet-amount"></span></div>
           <div class="player-hands" id="player-hands"></div>
         </div>
+
+        <div class="tr-hand mine truco-only" id="tr-mine"></div>
       </div>
     </div>
   </main>
 
   <section class="controls">
-    <div class="bet-controls" id="bet-controls">
+    <div class="bet-controls blackjack-only" id="bet-controls">
       <button class="chip" data-delta="-10">-10</button>
       <button class="chip" data-delta="-5">-5</button>
       <input type="number" id="bet-input" min="1" step="1" aria-label="Apuesta">
@@ -104,16 +109,17 @@
       <button class="btn-blue big" id="btn-deal">Repartir</button>
       <button class="btn-purple" id="btn-advance" hidden>⏩ Pasar de ciclo</button>
     </div>
-    <div class="play-controls" id="play-controls">
+    <div class="play-controls blackjack-only" id="play-controls">
       <button class="btn-blue" id="btn-hit">Pedir</button>
       <button class="btn-red" id="btn-stand">Plantarse</button>
       <button class="btn-green" id="btn-double">Doblar</button>
       <button class="btn-purple" id="btn-split">Dividir</button>
       <button class="btn-orange" id="btn-discard">Descartar</button>
     </div>
-    <div class="next-controls" id="next-controls">
+    <div class="next-controls blackjack-only" id="next-controls">
       <button class="btn-orange big" id="btn-next">Siguiente mano</button>
     </div>
+    <div class="truco-controls truco-only" id="truco-controls"></div>
   </section>
   </div>
   <section class="log-wrap panel">
@@ -170,7 +176,16 @@
       <h1 class="logo big-logo"><span class="l1">LUCK</span><span class="l2">JACK</span></h1>
       <p class="tagline">El purgatorio de los timberos</p>
       <div class="menu-chars" id="menu-chars"></div>
-      <div class="menu-modes">
+      <div class="tabs menu-games" id="menu-games" role="tablist">
+        <button class="tab active" data-game="blackjack" role="tab">🃏 Blackjack</button>
+        <button class="tab" data-game="truco" role="tab">🗡️ Truco</button>
+      </div>
+      <div class="menu-modes" id="modes-truco" hidden>
+        <button class="btn-green big" data-truco="classic">🗡️ Truco clásico<small id="rec-truco">Mano a mano contra el Viejo, a 15 puntos</small></button>
+        <button class="btn-red big" disabled>📖 Modo historia<small>Próximamente</small></button>
+        <button class="btn-blue big" disabled>♾️ Roguelike infinito<small>Próximamente</small></button>
+      </div>
+      <div class="menu-modes" id="modes-blackjack">
         <button class="btn-green big" data-mode="classic">🃏 Blackjack clásico<small id="rec-classic"></small></button>
         <button class="btn-red big" data-mode="story">📖 Modo historia<small id="rec-story"></small></button>
         <button class="btn-blue big" data-mode="infinite">♾️ Roguelike infinito<small id="rec-infinite"></small></button>
@@ -244,7 +259,15 @@
         <li><b>Modo historia:</b> pagá tres cuotas de 15 manos cada una: la del Viejo Timbero, la del Diablo y la de San Pedro. Si no llegás, perdés un mazo y reintentás ese ciclo.</li>
         <li><b>Roguelike infinito:</b> cuotas cada vez más altas, sin final. ¿Hasta qué ciclo llegás?</li>
       </ul>
-      <h3>Reglas</h3>
+      <h3>Truco</h3>
+      <ul class="rules">
+        <li>Mano a mano contra el Viejo, sin flor, a 15 puntos. Se juegan 3 bazas: gana la mano el que gana 2 (si hay parda, decide la otra; si todo es pardo, gana el que es mano).</li>
+        <li>De mayor a menor: ancho de espadas, ancho de bastos, 7 de espadas, 7 de oro, los 3, los 2, anchos falsos (oro y copa), 12, 11, 10, 7 falsos, 6, 5 y 4.</li>
+        <li><b>Envido</b> (solo en la primera baza): dos cartas del mismo palo suman 20 + sus valores (las figuras valen 0). Envido 2, Real envido 3, Falta envido lo que le falta al que va ganando. Si no se quiere, el que cantó se lleva lo anterior (mínimo 1). El envido está primero: se puede responder un truco con envido.</li>
+        <li><b>Truco</b> 2, <b>Retruco</b> 3, <b>Vale cuatro</b> 4. Si no se quiere, el que cantó se lleva lo anterior. Solo puede subir el que dijo quiero. Sin cantos, la mano vale 1.</li>
+        <li>Tocá una carta para jugarla. Debajo de la mesa están los cantos y las respuestas.</li>
+      </ul>
+      <h3>Reglas del blackjack</h3>
       <ul class="rules">
         <li>Llegá más cerca de 21 que el que reparte sin pasarte. La banca se planta en 17.</li>
         <li>Ganar paga 1:1 (apostás $10, cobrás $20) y el blackjack paga 3:2 (cobrás $25). Podés <b>doblar</b> con tus dos primeras cartas y <b>dividir</b> pares del mismo rango.</li>
@@ -294,6 +317,9 @@
   <script src="js/cutscene.js"></script>
   <script src="js/story.js"></script>
   <script src="js/leaderboard.js"></script>
+  <script src="js/truco.js"></script>
+  <script src="js/truco-ai.js"></script>
+  <script src="js/truco-ui.js"></script>
   <script src="js/bg.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/pwa.js"></script>

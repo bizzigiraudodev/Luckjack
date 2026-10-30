@@ -241,7 +241,24 @@
     return svg(8, 9, rects(MATE, { K: P.K, G: '#c9ccd6', c: '#7a4a2a', C: '#a8683c' }), 'mate');
   }
 
-  const Pixel = { rects, svg, suit, dealer, character, mate, CHARACTERS, SUIT_COLORS };
+  // --- Palos españoles (9x9): '#' color principal, '+' detalle ---
+  const SPANISH = {
+    espada: { map: ['....#....', '....#....', '....#....', '....#....', '....#....', '..+++++..', '....+....', '....+....', '...+++...'],
+      colors: { '#': '#5f8fd8', '+': '#e0a84a' } },
+    basto: { map: ['...###...', '..#####..', '..##+##..', '...###...', '...#+#...', '...###...', '...#+#...', '...###...', '....#....'],
+      colors: { '#': '#9a6a36', '+': '#5e3a1a' } },
+    oro: { map: ['..#####..', '.#+++++#.', '#++###++#', '#+#+++#+#', '#+#+++#+#', '#+#+++#+#', '#++###++#', '.#+++++#.', '..#####..'],
+      colors: { '#': '#b8860b', '+': '#f5c542' } },
+    copa: { map: ['#########', '#+++++++#', '.#+++++#.', '..#+++#..', '...#+#...', '....#....', '....#....', '...###...', '..#####..'],
+      colors: { '#': '#a3202a', '+': '#e2383f' } },
+  };
+  const SPANISH_COLORS = { espada: '#2f5fae', basto: '#7a4a1e', oro: '#b8860b', copa: '#c8323c' };
+
+  function spanishSuit(s, cls = 'pip') {
+    return svg(9, 9, rects(SPANISH[s].map, SPANISH[s].colors), cls);
+  }
+
+  const Pixel = { rects, svg, suit, spanishSuit, dealer, character, mate, CHARACTERS, SUIT_COLORS, SPANISH_COLORS };
   if (typeof module !== 'undefined' && module.exports) module.exports = Pixel;
   else root.Pixel = Pixel;
 })(typeof window !== 'undefined' ? window : globalThis);

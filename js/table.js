@@ -311,5 +311,8 @@
 
   setDealer('crupier');
 
-  root.Table = { sync, setSpeech, setMood, renderBet, setDealer };
+  // Animaciones que reutiliza el truco.
+  const anim = { animate, offset, flyFrom, flyTo, wait, DEAL_MS, PAUSE_MS };
+
+  root.Table = { sync, setSpeech, setMood, renderBet, setDealer, anim };
 })(window);
