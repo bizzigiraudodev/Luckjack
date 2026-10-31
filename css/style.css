@@ -778,9 +778,21 @@ body:not([data-game="truco"]) .truco-only { display: none !important; }
   border: var(--px) solid var(--outline);
   border-radius: 12px;
 }
-.truco-controls:empty::after { content: '...'; color: var(--muted); }
 
 body[data-game="truco"] { padding-bottom: 120px; }
+/* Truco clásico no tiene apuestas; en el infinito, apostar y "siguiente mano" van fijos al pie como los cantos */
+body[data-game="truco"][data-mode="classic"] .run-controls,
+body[data-game="truco"][data-mode="classic"] .money-box { display: none !important; }
+body[data-game="truco"] .run-controls {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(900px, calc(100% - 24px));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 6;
+  background: rgba(20, 28, 31, 0.92);
+}
+.truco-controls:empty { display: none; }
 body[data-game="truco"] .help-btn { bottom: 96px; }
 
 /* --- Rankings --- */

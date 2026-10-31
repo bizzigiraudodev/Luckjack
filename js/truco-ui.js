@@ -100,11 +100,12 @@
   }
 
   // Ayudas: tu envido mientras se puede cantar, y lo que vale la mano.
-  function renderIntel(hand) {
+  function renderIntel(hand, opts = {}) {
     const parts = [];
     const envidoOpen = !hand.envido.done && hand.bazas.length === 0 &&
       (hand.truco.level === 0 || (hand.pending && hand.pending.kind === 'envido'));
-    if (envidoOpen) parts.push(`Tu envido: <b>${envidoOf(hand.dealt[0])}</b>`);
+    if (envidoOpen) parts.push(`Tu envido: <b>${hand.envidoValueOf(0)}</b>`);
+    if (envidoOpen && opts.rivalEnvido) parts.push(`🔖 Envido del Viejo: <b>${envidoOf(hand.dealt[1])}</b>`);
     if (hand.truco.level) parts.push(`${TRUCO_NAMES[hand.truco.level]} querido`);
     $('intel').innerHTML = parts.join(' · ');
   }
@@ -212,6 +213,12 @@
         log(text);
         Sound.sfx(e.winner === 0 ? 'coin' : 'push');
         await wait(1400);
+      } else if (e.type === 'flor') {
+        const text = `🌼 ¡Flor! ${nameOf(e.who)} +${e.points}`;
+        message(text);
+        log(text);
+        Sound.sfx('coin');
+        await wait(1200);
       } else if (e.type === 'mazo') {
         if (e.who === 1) Table.setSpeech('Me voy al mazo.');
         log(`${nameOf(e.who)} se fue al mazo.`);
@@ -220,17 +227,19 @@
     }
   }
 
+  async function flipRival(card) {
+    const el = els.get(card);
+    if (!el || !el.classList.contains('back')) return;
+    await animate(el, [{ transform: 'none' }, { transform: 'rotateY(90deg)' }], 120, { fill: 'forwards' });
+    const face = cardEl(card);
+    el.replaceWith(face);
+    els.set(card, face);
+    await animate(face, [{ transform: 'rotateY(90deg)' }, { transform: 'none' }], 120);
+  }
+
   // Al terminar la mano se dan vuelta las cartas que le quedaban al rival.
   async function revealRival(hand) {
-    for (const card of hand.cards[1]) {
-      const el = els.get(card);
-      if (!el) continue;
-      await animate(el, [{ transform: 'none' }, { transform: 'rotateY(90deg)' }], 120, { fill: 'forwards' });
-      const face = cardEl(card);
-      el.replaceWith(face);
-      els.set(card, face);
-      await animate(face, [{ transform: 'rotateY(90deg)' }, { transform: 'none' }], 120);
-    }
+    for (const card of hand.cards[1]) await flipRival(card);
   }
 
   function waitButton(label, cls = 'btn-orange big') {
@@ -244,34 +253,44 @@
     });
   }
 
-  // --- Bucle de la partida ---
+  // --- Una mano: repartir, turnos, cantos y al final dar vuelta las cartas del rival ---
+  // `opts.reveal`: índice de una carta del rival que se ve (bonus Ojo de Halcón).
+  // `opts.rivalEnvido`: mostrar el envido del rival (bonus Mazo Marcado).
+  async function playHand(hand, t, persona, opts = {}) {
+    seen = 0;
+    Table.setSpeech(null);
+    Table.setMood(null, false);
+    $('intel').textContent = '';
+    message(hand.mano === 0 ? 'Sos mano.' : `${RIVAL.Name} es mano.`);
+    await deal(hand, t);
+    if (opts.reveal !== undefined) await flipRival(hand.dealt[1][opts.reveal]);
+    await showEvents(hand, t); // la flor se anuncia al repartir
+    while (!hand.finished && t === token) {
+      renderIntel(hand, opts);
+      message(describe(hand));
+      let action;
+      if (hand.actor === 1) {
+        await wait(650);
+        action = TrucoAI.decide(hand, 1, persona);
+      } else {
+        action = await waitHuman(hand);
+      }
+      if (t !== token || !action) return false;
+      if (hand.actor === 1 && action.type !== 'play') Table.setSpeech(null);
+      hand.act(hand.actor, action);
+      await showEvents(hand, t);
+    }
+    if (t !== token) return false;
+    await revealRival(hand);
+    return true;
+  }
+
+  // --- Bucle de la partida clásica ---
   async function loop(t) {
     while (!match.over && t === token) {
       const hand = match.newHand();
-      seen = 0;
       renderHud();
-      Table.setSpeech(null);
-      Table.setMood(null, false);
-      $('intel').textContent = '';
-      message(hand.mano === 0 ? 'Sos mano.' : `${RIVAL.Name} es mano.`);
-      await deal(hand, t);
-      while (!hand.finished && t === token) {
-        renderIntel(hand);
-        message(describe(hand));
-        let action;
-        if (hand.actor === 1) {
-          await wait(650);
-          action = TrucoAI.decide(hand, 1, RIVAL.persona);
-        } else {
-          action = await waitHuman(hand);
-        }
-        if (t !== token || !action) return;
-        if (hand.actor === 1 && action.type !== 'play') Table.setSpeech(null);
-        hand.act(hand.actor, action);
-        await showEvents(hand, t);
-      }
-      if (t !== token) return;
-      await revealRival(hand);
+      if (!(await playHand(hand, t, RIVAL.persona))) return;
       match.settle();
       renderHud();
       const won = hand.winner === 0;
@@ -308,6 +327,48 @@
     $('gameover').hidden = false;
   }
 
+  // --- Truco infinito: la progresión la maneja ui.js (como en el blackjack); acá se juega cada mano ---
+  let run = null;
+  let runToken = null;
+
+  function prepareRun(r, ctx = {}) {
+    stop();
+    run = r;
+    runToken = token;
+    playerName = (ctx.vars && ctx.vars.name) || 'Vos';
+    document.body.dataset.game = 'truco';
+    buildBoard();
+    Table.setDealer(RIVAL.id);
+    if (window.setBackgroundTheme) window.setBackgroundTheme(RIVAL.id);
+    document.querySelector('.print-big textPath').textContent = 'TRUCO INFINITO';
+    document.querySelector('.print-small textPath').textContent = 'SE COBRA APUESTA × PUNTOS · LA FALTA VALE 5';
+    Sound.music('gaucho');
+  }
+
+  // Juega la mano que acaba de repartir `run.deal()` y después llama a `onDone` (para que ui.js dibuje).
+  let handRunning = false;
+  async function playRunHand(onDone) {
+    if (handRunning || !run || !run.truco) return;
+    handRunning = true;
+    const t = runToken;
+    const hand = run.truco;
+    const opts = {
+      reveal: run.has('ojo') ? Math.floor(Math.random() * 3) : undefined,
+      rivalEnvido: run.has('mazo_marcado'),
+    };
+    const done = await playHand(hand, t, run.persona, opts);
+    handRunning = false;
+    if (!done || t !== token) return;
+    const r = run.settleHand();
+    const won = r.outcome === 'win';
+    message(r.summary);
+    $('message').classList.add(r.net > 0 ? 'good' : r.net < 0 ? 'bad' : 'neutral');
+    Table.setSpeech(r.outcome === 'push' ? 'Quedamos parejos.' : won ? pick(RIVAL.loseHand) : pick(RIVAL.winHand));
+    Table.setMood(won ? 'sad' : r.outcome === 'lose' ? 'happy' : null, false);
+    Sound.sfx(r.net > 0 ? 'win' : r.net < 0 ? 'lose' : 'push');
+    onDone();
+  }
+
   function start(mode = 'classic', ctx = {}) {
     stop();
     currentMode = mode;
@@ -328,6 +389,8 @@
 
   function stop() {
     token++;
+    run = null;
+    handRunning = false;
     if (waiter) {
       const w = waiter;
       waiter = null;
@@ -349,5 +412,9 @@
     get active() { return document.body.dataset.game === 'truco'; },
     get mode() { return currentMode; },
     get playing() { return !!match && !match.over; },
+    get handRunning() { return handRunning; },
+    prepareRun,
+    playRunHand,
+    message,
   };
 })(window);

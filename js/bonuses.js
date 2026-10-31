@@ -50,35 +50,40 @@
       desc: 'El crupier pide carta hasta llegar a 18 o más.' },
   ];
 
-  function getBonus(id) {
-    return BONUSES.find((b) => b.id === id);
-  }
-
   function priceOf(bonus, cycle = 1) {
     // Los precios suben un poco a medida que avanza la partida.
     return Math.round((RARITY[bonus.rarity].price * (1 + 0.1 * (cycle - 1))) / 5) * 5;
   }
 
-  // Elige `count` bonuses distintos que el jugador no tenga, ponderados por rareza.
-  // `rarities` limita las rarezas posibles (por ejemplo ['common']).
-  function rollShop(ownedIds, count = 3, rng = Math.random, rarities = null) {
-    let pool = BONUSES.filter((b) => !ownedIds.includes(b.id) && (!rarities || rarities.includes(b.rarity)));
-    const picks = [];
-    while (picks.length < count && pool.length > 0) {
-      const total = pool.reduce((s, b) => s + RARITY[b.rarity].weight, 0);
-      let r = rng() * total;
-      let chosen = pool[pool.length - 1];
-      for (const b of pool) {
-        r -= RARITY[b.rarity].weight;
-        if (r < 0) { chosen = b; break; }
-      }
-      picks.push(chosen);
-      pool = pool.filter((b) => b !== chosen);
+  // Un catálogo de bonuses con su tienda. El truco arma el suyo con la misma función.
+  function makeCatalog(list) {
+    function getBonus(id) {
+      return list.find((b) => b.id === id);
     }
-    return picks;
+
+    // Elige `count` bonuses distintos que el jugador no tenga, ponderados por rareza.
+    // `rarities` limita las rarezas posibles (por ejemplo ['common']).
+    function rollShop(ownedIds, count = 3, rng = Math.random, rarities = null) {
+      let pool = list.filter((b) => !ownedIds.includes(b.id) && (!rarities || rarities.includes(b.rarity)));
+      const picks = [];
+      while (picks.length < count && pool.length > 0) {
+        const total = pool.reduce((s, b) => s + RARITY[b.rarity].weight, 0);
+        let r = rng() * total;
+        let chosen = pool[pool.length - 1];
+        for (const b of pool) {
+          r -= RARITY[b.rarity].weight;
+          if (r < 0) { chosen = b; break; }
+        }
+        picks.push(chosen);
+        pool = pool.filter((b) => b !== chosen);
+      }
+      return picks;
+    }
+
+    return { RARITY, BONUSES: list, getBonus, priceOf, rollShop, makeCatalog };
   }
 
-  const Bonuses = { RARITY, BONUSES, getBonus, priceOf, rollShop };
+  const Bonuses = makeCatalog(BONUSES);
   if (typeof module !== 'undefined' && module.exports) module.exports = Bonuses;
   else root.Bonuses = Bonuses;
 })(typeof window !== 'undefined' ? window : globalThis);

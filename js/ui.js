@@ -1,7 +1,9 @@
 // Interfaz: menú, modos de juego, flujo de la historia y render del estado de Game.
 (function () {
   const { Game, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, QUOTA_BONUS, OUTCOME_TEXT, formatNet } = GameModule;
-  const { RARITY, getBonus } = Bonuses;
+  const { RARITY } = Bonuses;
+  // Catálogo de bonuses del juego actual (blackjack o truco).
+  const getBonus = (id) => (game ? game.catalog : Bonuses).getBonus(id);
 
   const $ = (id) => document.getElementById(id);
 
@@ -12,6 +14,7 @@
     storyDone: 'luckjack.storyDone', // historia terminada → Mazo Dorado
     name: 'luckjack.name',
     seenIntro: 'luckjack.seenIntro',
+    trucoBest: 'luckjack.trucoBest', // truco infinito: { cycles, money }
   };
   const store = {
     get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
@@ -124,6 +127,9 @@
       msg.textContent = game.bustPending
         ? `${which}Te pasaste. ¿Usás tu Segunda Oportunidad?`
         : `${which}Apostaste $${game.bet}. ¿Pedís o te plantás?`;
+    } else if (game.phase === 'roundOver' && game.result && game.isTruco) {
+      msg.textContent = game.result.summary;
+      msg.classList.add(game.result.net > 0 ? 'good' : game.result.net < 0 ? 'bad' : 'neutral');
     } else if (game.phase === 'roundOver' && game.result) {
       const r = game.result;
       const detail = r.hands.length > 1
@@ -447,11 +453,12 @@
       return;
     }
     const cleared = game.maxCleared;
-    let best = store.get(KEYS.best);
+    const bestKey = game.isTruco ? KEYS.trucoBest : KEYS.best;
+    let best = store.get(bestKey);
     const isRecord = !best || cleared > best.cycles || (cleared === best.cycles && game.money > best.money);
     if (isRecord && !el.dataset.saved) {
       best = { cycles: cleared, money: game.money };
-      store.set(KEYS.best, best);
+      store.set(bestKey, best);
     }
     el.dataset.saved = '1';
     $('gameover-title').textContent = '💀 Fin de la partida';
@@ -487,6 +494,7 @@
 
   async function doRender() {
     if (!game) return;
+    if (game.isTruco) return renderTruco();
     busy = true;
     renderControls();
     // El que reparte se calla mientras reparte o levanta las cartas.
@@ -497,6 +505,21 @@
     renderAll();
     playTransitionSounds();
     await storyEvents();
+  }
+
+  // Truco infinito: ui.js dibuja la progresión y la mesa de truco juega cada mano.
+  function renderTruco() {
+    busy = false;
+    renderHud();
+    renderBonusBar();
+    if (game.phase !== 'playing') renderMessage();
+    renderControls();
+    renderLog();
+    renderShop();
+    renderDeckLost();
+    renderGameOver();
+    playTransitionSounds();
+    if (game.phase === 'playing' && !TrucoUI.handRunning) TrucoUI.playRunHand(render);
   }
 
   function renderAll() {
@@ -550,7 +573,7 @@
     const subs = [];
     if (game.mode === 'story' && game.phase === 'victory') {
       subs.push(['story', Math.round(game.playMs)]);
-    } else if (game.mode === 'infinite' && game.handsPlayed > 0) {
+    } else if (game.mode === 'infinite' && game.handsPlayed > 0 && !game.isTruco) {
       subs.push(['chips', Math.floor(game.bestMoney)]);
       if (game.maxCleared > 0) subs.push(['cycles', game.maxCleared]);
     }
@@ -637,6 +660,8 @@
     $('rec-infinite').textContent = (inf ? `Récord: ${inf.cycles} ciclos` : 'Cuotas sin fin') +
       (store.get(KEYS.storyDone) ? ' · ✨ Mazo Dorado' : '');
     const truco = TrucoUI.record();
+    const tInf = store.get(KEYS.trucoBest);
+    $('rec-truco-infinite').textContent = tInf ? `Récord: ${tInf.cycles} ciclos` : 'Cuotas sin fin, bonuses de truco';
     $('rec-truco').textContent = truco ? `Ganadas: ${truco.wins} · Perdidas: ${truco.losses}` : 'Mano a mano contra el Viejo, a 15 puntos';
     if (!$('menu-chars').innerHTML) {
       $('menu-chars').innerHTML = ['diablo', 'gaucho', 'santo'].map((id) => `<div class="menu-char">${Pixel.character(id)}</div>`).join('');
@@ -662,10 +687,24 @@
   }
 
   function startTruco(mode) {
-    game = null; // el blackjack queda en pausa
     $('menu').hidden = true;
     document.body.classList.remove('in-menu');
-    TrucoUI.start(mode, { vars });
+    if (mode === 'classic') {
+      game = null; // el blackjack queda en pausa
+      TrucoUI.start(mode, { vars });
+      return;
+    }
+    // Truco infinito: la misma progresión que el blackjack, con su propia partida.
+    const startDeck = store.get(KEYS.storyDone) ? 'dorado' : null;
+    game = new TrucoRunModule.TrucoRun({ mode, startDeck });
+    TrucoUI.prepareRun(game, { vars });
+    shopTab = 'bonuses';
+    lastResult = null;
+    lastPhase = null;
+    delete $('gameover').dataset.saved;
+    $('gameover-ranks').hidden = true;
+    $('bet-input').value = '';
+    render();
   }
 
   // --- Eventos ---
@@ -690,7 +729,7 @@
   });
   $('btn-menu-help').addEventListener('click', () => { $('help').hidden = false; });
   $('btn-menu').addEventListener('click', () => {
-    if (TrucoUI.active) {
+    if (TrucoUI.active && !game) {
       if (!TrucoUI.playing || window.confirm('¿Abandonar la partida y volver al menú?')) showMenu();
       return;
     }
@@ -767,7 +806,8 @@
     render();
   });
   $('btn-restart').addEventListener('click', () => {
-    if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
+    if (game && game.isTruco) startTruco(game.mode);
+    else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
     else startGame(game.mode);
   });
   $('btn-help').addEventListener('click', () => { $('help').hidden = false; });
@@ -776,6 +816,7 @@
   // Atajos de teclado
   document.addEventListener('keydown', (e) => {
     if (!game || busy || inCutscene || !$('menu').hidden) return;
+    if (game.isTruco && game.phase === 'playing') return; // las manos de truco se juegan con el mouse/toque
     if (e.target.tagName === 'INPUT' && e.key !== 'Enter') return;
     const k = e.key.toLowerCase();
     if (game.phase === 'betting' && k === 'enter') $('btn-deal').click();

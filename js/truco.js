@@ -56,14 +56,23 @@
   const ENVIDO_POINTS = { envido: 2, real: 3 };
 
   class TrucoHand {
-    // `faltaPoints(ganador)` dice cuánto vale la falta envido.
-    constructor({ deck, mano, faltaPoints = () => 15 }) {
+    // `faltaPoints(ganador)` dice cuánto vale la falta envido. El resto de las opciones las usan los bonuses:
+    // `cards` (manos ya armadas), `envidoBonus` (tanto extra por jugador), `pie` (quién gana la primera
+    // baza si es parda), `rankOf(carta, jugador)` (valor de una carta) y `flor` (quién juega con flor).
+    constructor({ deck, mano, faltaPoints = () => 15, cards = null, envidoBonus = [0, 0], pie = null, rankOf = null, flor = [false, false] }) {
       this.mano = mano;
       this.cards = [[], []];
-      for (let i = 0; i < 3; i++) {
-        this.cards[mano].push(deck.pop());
-        this.cards[1 - mano].push(deck.pop());
+      if (cards) {
+        this.cards = [cards[0].slice(), cards[1].slice()];
+      } else {
+        for (let i = 0; i < 3; i++) {
+          this.cards[mano].push(deck.pop());
+          this.cards[1 - mano].push(deck.pop());
+        }
       }
+      this.envidoBonus = envidoBonus;
+      this.pie = pie;
+      this.rankOf = rankOf || ((card) => rank(card));
       this.dealt = [this.cards[0].slice(), this.cards[1].slice()];
       this.table = [[], []]; // cartas jugadas por cada uno, en orden
       this.bazas = [];
@@ -76,6 +85,18 @@
       this.winner = null;
       this.faltaPoints = faltaPoints;
       this.events = [];
+      // Flor: tres cartas del mismo palo valen 3 puntos y anulan el envido.
+      for (const p of [0, 1]) {
+        if (flor[p] && this.dealt[p].every((c) => c.s === this.dealt[p][0].s)) {
+          this.points[p] += 3;
+          this.envido = { done: true, chain: null, winner: p, points: 3, values: null, accepted: false, flor: true };
+          this.emit({ type: 'flor', who: p, points: 3 });
+        }
+      }
+    }
+
+    envidoValueOf(p) {
+      return envidoOf(this.dealt[p]) + (this.envidoBonus[p] || 0);
     }
 
     // Quién tiene que actuar: el que responde un canto, o al que le toca jugar.
@@ -194,7 +215,7 @@
 
     resolveEnvido(accepted) {
       const { chain, caller } = this.pending;
-      const values = [envidoOf(this.dealt[0]), envidoOf(this.dealt[1])];
+      const values = [this.envidoValueOf(0), this.envidoValueOf(1)];
       let winner;
       if (accepted) winner = values[0] > values[1] ? 0 : values[1] > values[0] ? 1 : this.mano;
       else winner = caller;
@@ -215,9 +236,10 @@
     }
 
     resolveBaza(i) {
-      const r0 = rank(this.table[0][i]);
-      const r1 = rank(this.table[1][i]);
-      const result = r0 > r1 ? 0 : r1 > r0 ? 1 : 'parda';
+      const r0 = this.rankOf(this.table[0][i], 0);
+      const r1 = this.rankOf(this.table[1][i], 1);
+      let result = r0 > r1 ? 0 : r1 > r0 ? 1 : 'parda';
+      if (result === 'parda' && i === 0 && this.pie !== null) result = this.pie;
       this.bazas.push(result);
       this.emit({ type: 'baza', index: i, result });
       const w = handWinner(this.bazas, this.mano);

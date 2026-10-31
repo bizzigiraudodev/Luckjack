@@ -31,7 +31,7 @@
       <div class="quota-bar"><i id="quota-fill"></i></div>
       <div class="story-timer" id="story-timer" hidden>⏱️ 0:00</div>
     </div>
-    <div class="money-box panel blackjack-only"><small>Dinero</small><strong id="money">$0</strong></div>
+    <div class="money-box panel"><small>Dinero</small><strong id="money">$0</strong></div>
     <div class="stats">
       <div class="stat panel"><small id="hand-label">Mano</small><strong id="hand">1/15</strong></div>
       <div class="stat panel"><small id="minbet-label">Apuesta mín.</small><strong id="minbet">$0</strong></div>
@@ -99,7 +99,7 @@
   </main>
 
   <section class="controls">
-    <div class="bet-controls blackjack-only" id="bet-controls">
+    <div class="bet-controls run-controls" id="bet-controls">
       <button class="chip" data-delta="-10">-10</button>
       <button class="chip" data-delta="-5">-5</button>
       <input type="number" id="bet-input" min="1" step="1" aria-label="Apuesta">
@@ -116,7 +116,7 @@
       <button class="btn-purple" id="btn-split">Dividir</button>
       <button class="btn-orange" id="btn-discard">Descartar</button>
     </div>
-    <div class="next-controls blackjack-only" id="next-controls">
+    <div class="next-controls run-controls" id="next-controls">
       <button class="btn-orange big" id="btn-next">Siguiente mano</button>
     </div>
     <div class="truco-controls truco-only" id="truco-controls"></div>
@@ -183,7 +183,7 @@
       <div class="menu-modes" id="modes-truco" hidden>
         <button class="btn-green big" data-truco="classic">🗡️ Truco clásico<small id="rec-truco">Mano a mano contra el Viejo, a 15 puntos</small></button>
         <button class="btn-red big" disabled>📖 Modo historia<small>Próximamente</small></button>
-        <button class="btn-blue big" disabled>♾️ Roguelike infinito<small>Próximamente</small></button>
+        <button class="btn-blue big" data-truco="infinite">♾️ Truco infinito<small id="rec-truco-infinite"></small></button>
       </div>
       <div class="menu-modes" id="modes-blackjack">
         <button class="btn-green big" data-mode="classic">🃏 Blackjack clásico<small id="rec-classic"></small></button>
@@ -266,6 +266,7 @@
         <li><b>Envido</b> (solo en la primera baza): dos cartas del mismo palo suman 20 + sus valores (las figuras valen 0). Envido 2, Real envido 3, Falta envido lo que le falta al que va ganando. Si no se quiere, el que cantó se lleva lo anterior (mínimo 1). El envido está primero: se puede responder un truco con envido.</li>
         <li><b>Truco</b> 2, <b>Retruco</b> 3, <b>Vale cuatro</b> 4. Si no se quiere, el que cantó se lleva lo anterior. Solo puede subir el que dijo quiero. Sin cantos, la mano vale 1.</li>
         <li>Tocá una carta para jugarla. Debajo de la mesa están los cantos y las respuestas.</li>
+        <li><b>Truco infinito:</b> cada mano es una ronda. Apostás antes de repartir y cobrás (o pagás) la apuesta × la diferencia de puntos de esa mano. La falta envido vale 5. Misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos y mejoras) con bonuses propios del truco.</li>
       </ul>
       <h3>Reglas del blackjack</h3>
       <ul class="rules">
@@ -319,6 +320,8 @@
   <script src="js/leaderboard.js"></script>
   <script src="js/truco.js"></script>
   <script src="js/truco-ai.js"></script>
+  <script src="js/truco-bonuses.js"></script>
+  <script src="js/truco-run.js"></script>
   <script src="js/truco-ui.js"></script>
   <script src="js/bg.js"></script>
   <script src="js/ui.js"></script>

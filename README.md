@@ -31,7 +31,34 @@ Desde el menú (pestaña **🗡️ Truco**) se juega **truco clásico**: mano a 
 - El rival canta, quiere, sube y a veces miente según su personalidad (`js/truco-ai.js`).
 - Se guardan tus partidas ganadas y perdidas.
 
-Próximamente: modo historia e infinito de truco, con su propia tienda de bonuses y rankings.
+### Truco infinito
+
+La misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos como vidas, árbol de mejoras, pasar de ciclo), pero cada ronda es una mano de truco:
+
+- Apostás antes de repartir y cobrás o pagás **apuesta × (tus puntos − los del Viejo)**. Un truco querido y ganado con envido (4–0) paga 4 veces lo apostado. El dinero no baja de $0.
+- La falta envido vale 5 puntos. Las cuotas crecen más rápido que en el blackjack (**$140, $195, $275...**) porque el truco tiene más varianza; están calibradas con simulaciones.
+- La suerte del mazo (y la mejora de Suerte) cambia la chance de recibir cartas buenas (anchos bravos, sietes bravos, treses y doses).
+
+| | Bonus | Rareza | Efecto |
+|-|-------|--------|--------|
+| 🗡️ | Ancho Bravo | Común | El ancho de espadas te sale mucho más seguido |
+| 🍖 | Envido Gordo | Común | +2 a tu envido |
+| 🫘 | Porotero | Común | +$3 por cada punto que ganás en la mano |
+| 🏳️ | Retirada Digna | Común | Irte al mazo no te cuesta fichas |
+| 🗣️ | Chamuyero | Común | El rival se achica más seguido ante tus cantos de truco |
+| 🧉 | Mate Cebado | Común | +$5 cada vez que ganás el envido |
+| 🦅 | Ojo de Halcón | Poco común | Ves una de las cartas del rival |
+| 🦶 | Pie | Poco común | Si la primera baza es parda, la ganás vos |
+| 😐 | Cara de Póker | Poco común | El rival te quiere menos los envidos |
+| ✌️ | Truco Doble | Poco común | Las manos ganadas con truco querido pagan x1.5 |
+| 🔥 | Racha Gaucha | Poco común | +20% de ganancia por cada mano ganada seguida |
+| 🔖 | Mazo Marcado | Poco común | Sabés el envido del rival |
+| 🌼 | Flor | Raro | Jugás con flor: tres del mismo palo te dan 3 puntos |
+| 7️⃣ | Siete Bravo | Raro | Tus 7 de copa y de basto valen como el 7 de oro |
+| 🛡️ | Poncho Protector | Raro | Una vez por ciclo, una mano perdida no te cuesta fichas |
+| 💥 | Falta Generosa | Raro | La falta envido vale 8 en vez de 5 |
+
+Próximamente: modo historia de truco y rankings del truco.
 
 ## Rankings
 
@@ -166,6 +193,8 @@ js/leaderboard.js # rankings: API global o copia local
 api/leaderboard.js  # API de rankings (Vercel Function + Upstash Redis)
 js/truco.js       # motor del truco (reglas, cantos, puntaje)
 js/truco-ai.js    # rival de truco
+js/truco-bonuses.js # bonuses del truco
+js/truco-run.js   # truco infinito (progresión roguelike)
 js/truco-ui.js    # mesa de truco
 test/             # tests con node:test
 ```

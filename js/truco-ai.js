@@ -64,13 +64,13 @@
       if (env >= 30 && has(acts, 'real') && rng() < 0.5) return { type: 'real' };
       if (env >= 28 && has(acts, 'envido') && rng() < 0.3) return { type: 'envido' };
       if (env < 22 && has(acts, 'real') && bluff() && rng() < 0.4) return { type: 'real' };
-      const need = 25 + chain.length * 1.5;
+      const need = 25 + chain.length * 1.5 + (persona.envidoNeed || 0);
       return { type: env >= need || (env >= need - 3 && rng() < 0.35) || bluff() ? 'quiero' : 'noquiero' };
     }
 
     if (pend && pend.kind === 'truco') {
       if (has(acts, 'envido') && env >= 27) return { type: env >= 30 && rng() < 0.5 ? 'real' : 'envido' };
-      const need = 9 + pend.level * 3;
+      const need = 9 + pend.level * 3 + (persona.trucoNeed || 0);
       if (has(acts, 'truco') && (pow >= need + 6 || (bluff() && rng() < 0.4))) return { type: 'truco' };
       return { type: pow >= need || (pow >= need - 3 && rng() < persona.aggression * 0.5) || bluff() ? 'quiero' : 'noquiero' };
     }

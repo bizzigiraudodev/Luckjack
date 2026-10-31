@@ -26,9 +26,10 @@
   class Game {
     // `startingPick: false` saltea la elección del bonus inicial (útil en tests).
     // `startDeck` reemplaza al primer mazo (el Mazo Dorado se desbloquea al pasar la historia).
-    constructor({ rng = Math.random, startingPick = true, mode = 'infinite', startDeck = null } = {}) {
+    constructor({ rng = Math.random, startingPick = true, mode = 'infinite', startDeck = null, catalog = Bonuses } = {}) {
       this.rng = rng;
       this.mode = mode;
+      this.catalog = catalog; // el truco usa su propio catálogo de bonuses
       this.startingPick = startingPick && mode !== 'classic';
       this.startDeck = startDeck;
       this.reset();
@@ -87,7 +88,7 @@
     // Al empezar la partida elegís 1 bonus gratis entre 3.
     openStartingPick() {
       this.phase = 'shop';
-      this.shop = { kind: 'start', offers: Bonuses.rollShop([], 3, this.rng), free: true, deckOffer: null, allowUpgrades: false };
+      this.shop = { kind: 'start', offers: this.catalog.rollShop([], 3, this.rng), free: true, deckOffer: null, allowUpgrades: false };
     }
 
     // --- Parámetros que escalan con el ciclo ---
@@ -635,13 +636,13 @@
       if (kind === 'reward') {
         this.shop = {
           kind, midCycle: false, free: true, deckOffer: null, allowUpgrades: true,
-          offers: Bonuses.rollShop(this.bonuses, 3, this.rng, ['common']),
+          offers: this.catalog.rollShop(this.bonuses, 3, this.rng, ['common']),
         };
         return;
       }
       // En la historia el árbol de mejoras solo aparece al final del ciclo.
       const allowUpgrades = kind === 'end' || this.mode !== 'story';
-      this.shop = { kind, midCycle: kind === 'mid', free: false, allowUpgrades, offers: Bonuses.rollShop(this.bonuses, 3, this.rng), rerollCost: 5 };
+      this.shop = { kind, midCycle: kind === 'mid', free: false, allowUpgrades, offers: this.catalog.rollShop(this.bonuses, 3, this.rng), rerollCost: 5 };
       this.rollDeckOffer();
     }
 
@@ -669,7 +670,7 @@
 
     priceOf(bonus) {
       if (this.shop && this.shop.free) return 0;
-      const base = Bonuses.priceOf(bonus, this.cycle);
+      const base = this.catalog.priceOf(bonus, this.cycle);
       return Math.round(base * (1 - this.upgradeTotal('descuento') / 100));
     }
 
@@ -699,7 +700,7 @@
     }
 
     sellValue(bonusId) {
-      return Math.floor(Bonuses.priceOf(Bonuses.getBonus(bonusId), this.cycle) / 2);
+      return Math.floor(this.catalog.priceOf(this.catalog.getBonus(bonusId), this.cycle) / 2);
     }
 
     sell(bonusId) {
@@ -707,13 +708,13 @@
       const value = this.sellValue(bonusId);
       this.money += value;
       this.bonuses = this.bonuses.filter((id) => id !== bonusId);
-      this.addLog(`💸 Vendiste ${Bonuses.getBonus(bonusId).name} por $${value}.`);
+      this.addLog(`💸 Vendiste ${this.catalog.getBonus(bonusId).name} por $${value}.`);
     }
 
     reroll() {
       if (this.phase !== 'shop' || this.shop.free || this.money < this.shop.rerollCost) throw new Error('No te alcanza');
       this.money -= this.shop.rerollCost;
-      this.shop.offers = Bonuses.rollShop(this.bonuses, 3, this.rng);
+      this.shop.offers = this.catalog.rollShop(this.bonuses, 3, this.rng);
       this.rollDeckOffer();
       this.shop.rerollCost += 3;
     }
