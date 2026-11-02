@@ -1,5 +1,7 @@
 # 🍀 Luckjack
 
+**Jugar online:** https://luckjack-puce.vercel.app
+
 Blackjack **roguelike** para el navegador. Ganá dinero mano a mano, superá la cuota de cada ciclo y comprá bonuses aleatorios en la tienda para romper la banca... hasta que la suerte se acabe.
 
 Estética pixel art inspirada en Balatro: fondo en remolino pixelado con efecto CRT, cartas y crupier dibujados píxel a píxel y la fuente [Tiny5](https://github.com/Gissio/font_tiny5) (SIL Open Font License, ver `fonts/OFL-Tiny5.txt`).
@@ -103,7 +105,7 @@ npm start   # sirve la carpeta con `serve`
 
 Luckjack es una app web instalable (PWA): no hace falta ninguna tienda de apps.
 
-- **Android (Chrome):** abrí https://bizzigiraudodev.github.io/Luckjack/ y tocá **📲 Instalar app** (o menú ⋮ → *Instalar app*).
+- **Android (Chrome):** abrí https://luckjack-puce.vercel.app y tocá **📲 Instalar app** (o menú ⋮ → *Instalar app*).
 - **iPhone/iPad (Safari):** abrí el link, tocá **Compartir** ⬆️ → *Agregar a pantalla de inicio*.
 
 Queda con su ícono, se abre a pantalla completa y funciona sin internet.
