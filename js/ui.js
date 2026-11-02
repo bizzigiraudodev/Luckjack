@@ -648,6 +648,7 @@
   // --- Menú ---
   function showMenu() {
     TrucoUI.stop();
+    TrucoOnline.stop();
     delete document.body.dataset.game;
     $('menu').hidden = false;
     document.body.classList.add('in-menu');
@@ -729,6 +730,13 @@
   });
   $('btn-menu-help').addEventListener('click', () => { $('help').hidden = false; });
   $('btn-menu').addEventListener('click', () => {
+    if (TrucoOnline.active) {
+      if (window.confirm('¿Salir de la sala? Tu amigo se va a quedar esperando.')) {
+        TrucoOnline.leave();
+        showMenu();
+      }
+      return;
+    }
     if (TrucoUI.active && !game) {
       if (!TrucoUI.playing || window.confirm('¿Abandonar la partida y volver al menú?')) showMenu();
       return;
@@ -751,7 +759,10 @@
     $('lb-name').value = vars.name;
     Sound.sfx('coin');
   });
-  $('btn-to-menu').addEventListener('click', showMenu);
+  $('btn-to-menu').addEventListener('click', () => {
+    if (TrucoOnline.active) TrucoOnline.leave();
+    showMenu();
+  });
 
   function renderSoundButtons() {
     const icon = Sound.muted ? '🔇' : '🔊';
@@ -806,7 +817,8 @@
     render();
   });
   $('btn-restart').addEventListener('click', () => {
-    if (game && game.isTruco) startTruco(game.mode);
+    if (TrucoOnline.active) TrucoOnline.rematch();
+    else if (game && game.isTruco) startTruco(game.mode);
     else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
     else startGame(game.mode);
   });
@@ -832,12 +844,26 @@
     }
   });
 
+  // --- Truco online ---
+  TrucoOnline.init({
+    getName: () => vars.name,
+    setName: (name) => { vars.name = name; store.set(KEYS.name, name); },
+    onEnter: () => { game = null; },
+  });
+  $('btn-online').addEventListener('click', () => TrucoOnline.openLobby());
+
   // --- Inicio: la intro la primera vez, después el menú ---
   (async () => {
-    if (!store.get(KEYS.seenIntro)) {
+    // Si entraste con un link de invitación (?sala=MATE-37), vas directo a la sala.
+    const invite = TrucoOnline.codeFromUrl();
+    if (!store.get(KEYS.seenIntro) && !invite) {
       await cutscene(Story.intro());
       store.set(KEYS.seenIntro, true);
     }
     showMenu();
+    if (invite) {
+      document.querySelector('#menu-games [data-game="truco"]').click();
+      TrucoOnline.openLobby(invite);
+    }
   })();
 })();

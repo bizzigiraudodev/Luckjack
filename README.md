@@ -31,6 +31,17 @@ Desde el menú (pestaña **🗡️ Truco**) se juega **truco clásico**: mano a 
 - El rival canta, quiere, sube y a veces miente según su personalidad (`js/truco-ai.js`).
 - Se guardan tus partidas ganadas y perdidas.
 
+### Jugar con un amigo (online)
+
+Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
+
+1. Creás una sala (a 15 o a 30 puntos) y te da un código, por ejemplo `MATE-37`, con botones para mandar el link por WhatsApp o copiarlo.
+2. Tu amigo abre el link (`.../?sala=MATE-37`), pone su nombre y arranca la partida, cada uno desde su celular.
+3. Cada uno ve solo sus cartas; los cantos del otro aparecen en el globo. Hay **frases rápidas** 💬 para cargarlo (sin chat libre) y **revancha** al final.
+4. Si se corta internet o se cierra la app, se vuelve a abrir el link (o el menú ofrece "Volver a la sala") y se sigue donde estaba. Las salas vencen a las 2 horas sin actividad.
+
+**Cómo funciona:** la partida vive en el servidor (`api/room.js`, Vercel Function + Upstash Redis). El motor del truco corre ahí, valida cada jugada y a cada jugador le manda solo lo que puede ver, así que nadie puede espiar las cartas del otro. Los celulares consultan cada ~1 segundo si hubo cambios. Necesita la misma base Upstash que los rankings globales (ver más abajo); con el plan gratis alcanza para unas 200 partidas por mes.
+
 ### Truco infinito
 
 La misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos como vidas, árbol de mejoras, pasar de ciclo), pero cada ronda es una mano de truco:
@@ -191,11 +202,14 @@ sw.js             # service worker: guarda los archivos para jugar offline
 manifest.webmanifest, icons/  # nombre, colores e íconos de la app
 js/leaderboard.js # rankings: API global o copia local
 api/leaderboard.js  # API de rankings (Vercel Function + Upstash Redis)
+api/room.js         # API de salas de truco online
+api/_redis.js       # conexión a Upstash compartida por las APIs
 js/truco.js       # motor del truco (reglas, cantos, puntaje)
 js/truco-ai.js    # rival de truco
 js/truco-bonuses.js # bonuses del truco
 js/truco-run.js   # truco infinito (progresión roguelike)
 js/truco-ui.js    # mesa de truco
+js/truco-online.js # truco online contra un amigo
 test/             # tests con node:test
 ```
 

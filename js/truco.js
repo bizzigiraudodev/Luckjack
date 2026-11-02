@@ -300,8 +300,22 @@
     }
   }
 
+  // Frases rápidas para cargar al rival en el juego online (sin chat libre).
+  const PHRASES = [
+    '¡Te voy a cantar vale cuatro!',
+    'Esa no te la creo',
+    'Andá a lavar los platos',
+    '¡Mirá que tengo!',
+    'Jugá, che, que se enfría el mate',
+    'Buena mano, buena mano',
+    'Me agarraste dormido',
+    '¡Qué suerte la tuya!',
+    '¡Aura sí!',
+    'Uh, me la hiciste',
+  ];
+
   const Truco = {
-    SUITS, NUMBERS, TRUCO_NAMES, ENVIDO_NAMES,
+    SUITS, NUMBERS, TRUCO_NAMES, ENVIDO_NAMES, PHRASES,
     buildDeck, rank, envidoOf, handWinner, TrucoHand, TrucoMatch,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Truco;

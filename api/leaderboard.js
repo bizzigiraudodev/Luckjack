@@ -11,27 +11,7 @@ const BOARDS = {
 const TOP = 10;
 const RATE_LIMIT = 10; // envíos por minuto por IP
 
-function config() {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  return url && token ? { url, token } : null;
-}
-
-async function redis(cfg, command) {
-  const res = await fetch(cfg.url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(command),
-  });
-  if (!res.ok) throw new Error(`Redis respondió ${res.status}`);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
-
-function cleanName(name) {
-  return String(name || '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 16) || 'Timbero';
-}
+const { config, redis, cleanName } = require('./_redis.js');
 
 // Valida lo que manda el juego. Devuelve { board, pid, entry, value } o { error }.
 function validate(body) {

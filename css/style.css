@@ -795,6 +795,58 @@ body[data-game="truco"] .run-controls {
 .truco-controls:empty { display: none; }
 body[data-game="truco"] .help-btn { bottom: 96px; }
 
+/* --- Truco online --- */
+#online { z-index: 45; }
+.online-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; color: var(--muted); }
+.online-field input, #online-code {
+  font: inherit;
+  font-size: 1.15rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: var(--px) solid var(--outline);
+  background: var(--inset);
+  color: var(--money);
+}
+#online-code { text-transform: uppercase; }
+.online-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.online-box { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.online-box h3 { margin: 0; }
+.target-pick { display: flex; gap: 8px; }
+.target-pick button { flex: 1; --c: var(--panel-dark); --c-dark: #15201f; color: var(--muted); }
+.target-pick button.active { --c: var(--orange); --c-dark: var(--orange-dark); color: var(--ink); }
+.bad-text { color: var(--bad); }
+.room-code { font-size: 1.6rem; letter-spacing: 2px; color: var(--gold); padding: 0 8px; }
+.btn-link {
+  display: inline-block;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 8px 16px;
+  border: var(--px) solid var(--outline);
+  border-radius: 8px;
+  background: var(--c);
+  box-shadow: 0 4px 0 var(--c-dark);
+  margin-bottom: 4px;
+}
+.phrase-menu {
+  position: fixed;
+  bottom: 96px;
+  left: max(12px, calc(50% - 450px));
+  z-index: 7;
+  width: 260px;
+  max-height: 50vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--panel);
+  border: var(--px) solid var(--outline);
+  border-radius: 10px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.5);
+}
+.phrase-menu button { text-align: left; font-size: 0.9rem; padding: 6px 10px; margin: 0; }
+
 /* --- Rankings --- */
 /* Se abren desde el menú o el fin de partida: tienen que quedar por encima. */
 #leaderboard, #help, #install-help { z-index: 45; }
@@ -976,6 +1028,12 @@ body.in-menu .app, body.in-menu .help-btn { visibility: hidden; }
   .node { font-size: 0.72rem; padding: 3px 5px; }
 }
 @media (max-width: 560px) {
+  /* una sola fila deslizable para que los cantos no tapen tus cartas */
+  .truco-controls { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding: 8px; min-height: 0; }
+  .truco-controls > button, .truco-controls > a { flex: none; font-size: 0.85rem; padding: 6px 10px; }
+  .phrase-menu { left: 12px; right: 12px; width: auto; bottom: 84px; }
+  .online-grid { grid-template-columns: 1fr; }
+  .room-code { font-size: 1.3rem; }
   .tr-baza .slot { width: 56px; height: 80px; }
   .tr-board { gap: 8px; }
   .tr-hand { min-height: 80px; }

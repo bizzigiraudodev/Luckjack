@@ -416,5 +416,7 @@
     prepareRun,
     playRunHand,
     message,
+    // Piezas de la mesa que reutiliza el truco online.
+    parts: { cardEl, log, LABELS, trucoLabel },
   };
 })(window);
