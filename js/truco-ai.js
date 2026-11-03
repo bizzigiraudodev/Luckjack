@@ -10,50 +10,72 @@
     santo: { bluff: 0, aggression: 0.35 }, // nunca miente
   };
 
-  // Qué tan buena es la mano para el truco, contando las bazas ya ganadas o perdidas.
-  function power(hand, p) {
-    const ranks = hand.cards[p].map(rank).sort((a, b) => b - a);
-    const won = hand.bazas.filter((r) => r === p).length;
-    const lost = hand.bazas.filter((r) => r === 1 - p).length;
-    // Si el rival ya jugó en esta baza, importa si la puedo ganar.
+  const teamOf = (hand, p) => (hand.team ? hand.team(p) : p);
+
+  // La carta más alta jugada hasta ahora en la baza actual, y de qué pareja es.
+  function currentBest(hand) {
     const i = hand.bazas.length;
+    let best = -1;
+    let team = null;
+    hand.table.forEach((cards, q) => {
+      if (cards.length > i) {
+        const r = rank(cards[i]);
+        if (r > best) { best = r; team = teamOf(hand, q); } else if (r === best && team !== teamOf(hand, q)) team = 'parda';
+      }
+    });
+    return best < 0 ? null : { rank: best, team };
+  }
+
+  // Qué tan buena es la mano para el truco, contando las bazas ya ganadas o perdidas.
+  // `hints`: lo que el compañero mostró con señas ({ strong, envido, nada }).
+  function power(hand, p, hints = {}) {
+    const t = teamOf(hand, p);
+    const ranks = hand.cards[p].map(rank).sort((a, b) => b - a);
+    const won = hand.bazas.filter((r) => r === t).length;
+    const lost = hand.bazas.filter((r) => r === 1 - t).length;
+    // Si ya se jugó en esta baza, importa si la puedo ganar (o si ya la gana mi compañero).
     let edge = 0;
-    if (hand.table[1 - p].length > i) {
-      const opp = rank(hand.table[1 - p][i]);
-      edge = ranks.some((r) => r > opp) ? 4 : -4;
-    }
-    return (ranks[0] || 0) + (ranks[1] || 0) * 0.5 + won * 8 - lost * 7 + edge;
+    const cur = currentBest(hand);
+    if (cur && cur.team === t) edge = 3;
+    else if (cur) edge = ranks.some((r) => r > cur.rank) ? 4 : -4;
+    const partner = (hints.strong ? 5 : 0) - (hints.nada ? 2 : 0);
+    return (ranks[0] || 0) + (ranks[1] || 0) * 0.5 + won * 8 - lost * 7 + edge + partner;
   }
 
   const has = (acts, type) => acts.some((a) => a.type === type);
 
   function chooseCard(hand, p) {
+    const t = teamOf(hand, p);
     const cards = hand.cards[p];
     const ranks = cards.map(rank);
     const order = ranks.map((r, i) => [r, i]).sort((a, b) => a[0] - b[0]); // de menor a mayor
     const i = hand.bazas.length;
-    // Juego segundo: la menor que gane; si no puedo ganar, la menor.
-    if (hand.table[1 - p].length > i) {
-      const opp = rank(hand.table[1 - p][i]);
-      const winner = order.find(([r]) => r > opp);
+    const cur = currentBest(hand);
+    if (cur) {
+      // La va ganando mi compañero: tiro la más baja.
+      if (cur.team === t) return order[0][1];
+      // Si no: la menor que gane; si no puedo ganar, la menor.
+      const winner = order.find(([r]) => r > cur.rank);
       if (winner) return winner[1];
-      const tie = order.find(([r]) => r === opp);
-      // Empatar sirve si ya gané la primera.
-      if (tie && hand.bazas[0] === p) return tie[1];
+      const tie = order.find(([r]) => r === cur.rank);
+      // Empatar sirve si ya ganamos la primera.
+      if (tie && hand.bazas[0] === t) return tie[1];
       return order[0][1];
     }
     // Juego primero.
     if (i === 0) return order.length >= 2 ? order[order.length - 2][1] : order[0][1]; // la del medio
-    if (hand.bazas[0] === p) return order[0][1]; // ya gané una: la más baja
-    return order[order.length - 1][1]; // necesito ganar: la más alta
+    if (hand.bazas[0] === t) return order[0][1]; // ya ganamos una: la más baja
+    return order[order.length - 1][1]; // necesitamos ganar: la más alta
   }
 
   // Devuelve la acción del rival ({ type, index? }).
-  function decide(hand, p, persona = PERSONAS.gaucho, rng = Math.random) {
+  // `hints`: señas del compañero (solo en parejas).
+  function decide(hand, p, persona = PERSONAS.gaucho, rng = Math.random, hints = {}) {
     const acts = hand.actions(p);
     if (!acts.length) return null;
-    const env = envidoOf(hand.dealt[p]);
-    const pow = power(hand, p);
+    // Con señas sabe si su compañero tiene envido (y lo trata como un 30).
+    const env = Math.max(envidoOf(hand.dealt[p]), hints.envido ? 30 : 0);
+    const pow = power(hand, p, hints);
     const pend = hand.pending;
     const bluff = () => rng() < persona.bluff;
 
@@ -98,7 +120,7 @@
     return { type: 'play', index: chooseCard(hand, p) };
   }
 
-  const TrucoAI = { decide, power, chooseCard, PERSONAS };
+  const TrucoAI = { decide, power, chooseCard, currentBest, PERSONAS };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrucoAI;
   else root.TrucoAI = TrucoAI;
 })(typeof window !== 'undefined' ? window : globalThis);

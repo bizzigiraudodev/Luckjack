@@ -1,6 +1,6 @@
 // Service worker: guarda el juego para poder jugar sin internet.
 // Primero intenta la red (así siempre ves la última versión) y si no hay conexión usa la copia guardada.
-const CACHE = 'luckjack-v8';
+const CACHE = 'luckjack-v9';
 const ASSETS = [
   './',
   'index.html',
@@ -24,6 +24,8 @@ const ASSETS = [
   'js/truco-run.js',
   'js/truco-ui.js',
   'js/truco-online.js',
+  'js/senas.js',
+  'js/truco4-ui.js',
   'js/pwa.js',
   'js/ui.js',
   'js/bg.js',

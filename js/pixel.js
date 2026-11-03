@@ -215,10 +215,26 @@
     },
   };
 
+  // Caras de las señas del truco: se dibujan encima de los ojos o la boca y se muestran con
+  // data-sena="..." en el contenedor del personaje.
+  const SENA_FACES = {
+    cejas: { x: 10, y: 6, map: ['KKK......KKK'] },
+    ceno: { x: 10, y: 6, map: ['KK........KK', '..K......K..'] },
+    ojos: { x: 11, y: 8, map: ['SS......SS', 'KK......KK'] },
+    guino: { x: 11, y: 8, map: ['........SS', '........KK'] },
+    boca_der: { x: 13, y: 13, map: ['....mmm', 'mmmm...'] },
+    boca_izq: { x: 13, y: 13, map: ['mmm....', '...mmmm'] },
+    labio: { x: 13, y: 13, map: ['..WW...', 'mmmmmmm'] },
+    trompa: { x: 14, y: 13, map: ['.mm.', 'm..m', '.mm.'] },
+  };
+
   function character(id) {
     const c = CHARACTERS[id] || CHARACTERS.crupier;
     const pal = c.palette;
     const armPal = { K: P.K, ...c.arm };
+    const facePal = { K: P.K, S: pal.S, m: pal.m || P.m, W: '#ffffff' };
+    const senas = Object.entries(SENA_FACES)
+      .map(([sid, f]) => `<g class="sena sena-${sid}">${rects(f.map, facePal, f.x, f.y)}</g>`).join('');
     return svg(32, 34, [
       `<g class="arm arm-l">${rects(ARM, armPal, 0, 19)}</g>`,
       `<g class="arm arm-r">${rects(ARM, armPal, 27, 19)}</g>`,
@@ -228,6 +244,7 @@
       `<g class="mouth mouth-happy">${rects(MOUTH_HAPPY, pal, 13, 14)}</g>`,
       `<g class="mouth mouth-sad">${rects(MOUTH_SAD, pal, 13, 14)}</g>`,
       `<g class="sweat">${rects(SWEAT, P, 27, 5)}</g>`,
+      senas,
     ].join(''), `dealer-sprite char-${id}`);
   }
 

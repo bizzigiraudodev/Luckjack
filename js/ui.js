@@ -647,6 +647,7 @@
 
   // --- Menú ---
   function showMenu() {
+    Truco4UI.stop();
     TrucoUI.stop();
     TrucoOnline.stop();
     delete document.body.dataset.game;
@@ -663,6 +664,8 @@
     const truco = TrucoUI.record();
     const tInf = store.get(KEYS.trucoBest);
     $('rec-truco-infinite').textContent = tInf ? `Récord: ${tInf.cycles} ciclos` : 'Cuotas sin fin, bonuses de truco';
+    const t4 = Truco4UI.record();
+    $('rec-truco4').textContent = t4 ? `Ganadas: ${t4.wins} · Perdidas: ${t4.losses}` : 'Vos y el Viejo contra el Diablo y San Pedro';
     $('rec-truco').textContent = truco ? `Ganadas: ${truco.wins} · Perdidas: ${truco.losses}` : 'Mano a mano contra el Viejo, a 15 puntos';
     if (!$('menu-chars').innerHTML) {
       $('menu-chars').innerHTML = ['diablo', 'gaucho', 'santo'].map((id) => `<div class="menu-char">${Pixel.character(id)}</div>`).join('');
@@ -730,6 +733,10 @@
   });
   $('btn-menu-help').addEventListener('click', () => { $('help').hidden = false; });
   $('btn-menu').addEventListener('click', () => {
+    if (Truco4UI.active) {
+      if (!Truco4UI.playing || window.confirm('¿Abandonar la partida y volver al menú?')) showMenu();
+      return;
+    }
     if (TrucoOnline.active) {
       if (window.confirm('¿Salir de la sala? Tu amigo se va a quedar esperando.')) {
         TrucoOnline.leave();
@@ -817,7 +824,8 @@
     render();
   });
   $('btn-restart').addEventListener('click', () => {
-    if (TrucoOnline.active) TrucoOnline.rematch();
+    if (Truco4UI.active) Truco4UI.start();
+    else if (TrucoOnline.active) TrucoOnline.rematch();
     else if (game && game.isTruco) startTruco(game.mode);
     else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
     else startGame(game.mode);
@@ -851,6 +859,14 @@
     onEnter: () => { game = null; },
   });
   $('btn-online').addEventListener('click', () => TrucoOnline.openLobby());
+  $('btn-truco4').addEventListener('click', () => {
+    game = null;
+    TrucoUI.stop();
+    TrucoOnline.stop();
+    $('menu').hidden = true;
+    document.body.classList.remove('in-menu');
+    Truco4UI.start();
+  });
 
   // --- Inicio: la intro la primera vez, después el menú ---
   (async () => {

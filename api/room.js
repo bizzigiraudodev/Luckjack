@@ -56,6 +56,8 @@ function revive(data) {
   const m = Object.assign(Object.create(TrucoMatch.prototype), data, { rng: Math.random });
   if (data.hand) {
     m.hand = Object.assign(Object.create(TrucoHand.prototype), data.hand);
+    // Salas creadas antes de que existiera el truco de a 4.
+    if (m.hand.n === undefined) Object.assign(m.hand, { n: 2, leader: m.hand.turn, bazaWinners: [] });
     m.hand.rankOf = (c) => rank(c);
     m.hand.faltaPoints = () => m.target - Math.max(...m.scores);
     m.hand.events = m.hand.events || [];

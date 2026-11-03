@@ -33,6 +33,26 @@ Desde el menú (pestaña **🗡️ Truco**) se juega **truco clásico**: mano a 
 - El rival canta, quiere, sube y a veces miente según su personalidad (`js/truco-ai.js`).
 - Se guardan tus partidas ganadas y perdidas.
 
+### Truco de a 4 (parejas)
+
+Pestaña **🗡️ Truco → 🃏 Truco de a 4**: vos y el Viejo contra el Diablo y San Pedro (bots).
+
+- Gana la baza la carta más alta de las 4: si empatan dos compañeros es de esa pareja; si empatan rivales, es parda.
+- Envido por pareja: vale el mejor tanto de cada una (si empatan, gana el más cerca de la mano).
+- A un canto responde cualquiera de la pareja desafiada (contra la tuya respondés vos) y sube la pareja que dijo quiero. Irse al mazo se lleva a la pareja entera.
+- **Señas** 🤫: solo las ve tu compañero (nunca las pesca un rival) y se puede mentir. El Viejo te hace las suyas al repartir y tiene en cuenta las tuyas.
+
+| Seña | Significa |
+|------|-----------|
+| 🤨 Levantar las cejas | Ancho de espadas |
+| 😉 Guiñar un ojo | Ancho de bastos |
+| 😏 Torcer la boca a la derecha | 7 de espadas |
+| 😒 Torcer la boca a la izquierda | 7 de oro |
+| 😬 Morder el labio | Un tres |
+| 😗 Hacer trompita | Un dos |
+| 😠 Fruncir el ceño | Tengo envido |
+| 😌 Cerrar los ojos | No tengo nada |
+
 ### Jugar con un amigo (online)
 
 Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
@@ -212,6 +232,8 @@ js/truco-bonuses.js # bonuses del truco
 js/truco-run.js   # truco infinito (progresión roguelike)
 js/truco-ui.js    # mesa de truco
 js/truco-online.js # truco online contra un amigo
+js/truco4-ui.js   # mesa de truco de a 4 con señas
+js/senas.js       # señas del truco de a 4
 test/             # tests con node:test
 ```
 
