@@ -41,9 +41,13 @@
     };
   }
 
+  // Nunca espera más que la duración (+ un margen): si el navegador pausa las animaciones (pestaña
+  // en segundo plano) o se borra el elemento, el juego sigue igual.
   function animate(el, keyframes, ms, opts = {}) {
     if (!ms || !el.animate) return Promise.resolve();
-    return el.animate(keyframes, { duration: ms, easing: 'cubic-bezier(.2,.7,.3,1)', ...opts }).finished;
+    const anim = el.animate(keyframes, { duration: ms, easing: 'cubic-bezier(.2,.7,.3,1)', ...opts });
+    const limit = ms + (opts.delay || 0) + 400;
+    return Promise.race([anim.finished.catch(() => {}), new Promise((r) => setTimeout(r, limit))]);
   }
 
   // Desplazamiento desde el centro de `el` hasta el centro de `target`.

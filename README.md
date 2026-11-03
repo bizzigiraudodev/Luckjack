@@ -62,6 +62,8 @@ Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
 3. Cada uno ve solo sus cartas; los cantos del otro aparecen en el globo. Hay **frases rápidas** 💬 para cargarlo (sin chat libre) y **revancha** al final.
 4. Si se corta internet o se cierra la app, se vuelve a abrir el link (o el menú ofrece "Volver a la sala") y se sigue donde estaba. Las salas vencen a las 2 horas sin actividad.
 
+**De a 4 online:** al crear la sala elegí **"De a 4"**. Compartí el link con hasta 3 amigos; en la sala, quien la creó arma las parejas tocando dos asientos para intercambiarlos (pareja A: asientos 1 y 3, pareja B: 2 y 4) y toca **Empezar**: los asientos vacíos los ocupan bots (el Viejo, el Diablo, San Pedro). Las señas 🤫 solo las ve tu compañero, el servidor nunca se las manda a los rivales. Al final, la revancha arranca cuando aceptan todos los humanos.
+
 **Cómo funciona:** la partida vive en el servidor (`api/room.js`, Vercel Function + Upstash Redis). El motor del truco corre ahí, valida cada jugada y a cada jugador le manda solo lo que puede ver, así que nadie puede espiar las cartas del otro. Los celulares consultan cada ~1 segundo si hubo cambios. Necesita la misma base Upstash que los rankings globales (ver más abajo); con el plan gratis alcanza para unas 200 partidas por mes.
 
 ### Truco infinito
@@ -233,6 +235,7 @@ js/truco-run.js   # truco infinito (progresión roguelike)
 js/truco-ui.js    # mesa de truco
 js/truco-online.js # truco online contra un amigo
 js/truco4-ui.js   # mesa de truco de a 4 con señas
+js/truco4-online.js # truco de a 4 online (salas con bots)
 js/senas.js       # señas del truco de a 4
 test/             # tests con node:test
 ```

@@ -88,6 +88,7 @@
           <div class="t4-opp" id="t4-right"></div>
         </div>
         <div class="t4-history truco4-only" id="t4-history"></div>
+        <div class="t4-lobby truco4-only" id="t4-lobby" hidden></div>
 
         <div class="center">
           <div class="message" id="message">Hacé tu apuesta para empezar.</div>
@@ -255,6 +256,10 @@
       <div class="online-grid">
         <div class="panel online-box">
           <h3>Crear sala</h3>
+          <div class="target-pick size-pick">
+            <button class="active" data-players="2">Mano a mano</button>
+            <button data-players="4">De a 4</button>
+          </div>
           <div class="target-pick">
             <button class="active" data-target="15">A 15</button>
             <button data-target="30">A 30</button>
@@ -305,6 +310,7 @@
         <li>Tocá una carta para jugarla. Debajo de la mesa están los cantos y las respuestas.</li>
         <li><b>Truco de a 4:</b> vos y el Viejo contra el Diablo y San Pedro. Gana la baza la carta más alta (empate entre compañeros: es de la pareja; entre rivales: parda), el envido es el mejor tanto de cada pareja y con 🤫 le hacés señas a tu compañero (los rivales nunca las ven): cejas = ancho de espadas, guiño = ancho de bastos, boca a la derecha = 7 de espadas, boca a la izquierda = 7 de oro, morder el labio = un tres, trompita = un dos, fruncir el ceño = envido, cerrar los ojos = nada.</li>
         <li><b>Jugar con un amigo:</b> creá una sala (a 15 o a 30), mandale el link por WhatsApp y juegan mano a mano, cada uno desde su celular. Podés cargarlo con frases rápidas 💬 y pedir revancha. Si se corta, abrí el link de nuevo y volvés a la sala.</li>
+        <li><b>De a 4 online:</b> al crear la sala elegí "De a 4", compartí el link y armá las parejas tocando dos asientos. Con "Empezar" los lugares vacíos los llenan bots. Tus señas solo las ve tu compañero.</li>
         <li><b>Truco infinito:</b> cada mano es una ronda. Apostás antes de repartir y cobrás (o pagás) la apuesta × la diferencia de puntos de esa mano. La falta envido vale 5. Misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos y mejoras) con bonuses propios del truco.</li>
       </ul>
       <h3>Reglas del blackjack</h3>
@@ -365,6 +371,7 @@
   <script src="js/truco-online.js"></script>
   <script src="js/senas.js"></script>
   <script src="js/truco4-ui.js"></script>
+  <script src="js/truco4-online.js"></script>
   <script src="js/bg.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/pwa.js"></script>

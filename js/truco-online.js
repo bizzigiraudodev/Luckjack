@@ -80,10 +80,11 @@
   }
 
   async function createRoom() {
-    const target = Number(document.querySelector('#online .target-pick .active').dataset.target);
+    const target = Number(document.querySelector('#online .target-pick:not(.size-pick) .active').dataset.target);
+    const players = Number(document.querySelector('#online .size-pick .active').dataset.players);
     lobbyStatus('Creando sala...');
     try {
-      const r = await api('POST', { action: 'create', name: lobbyName(), target });
+      const r = await api('POST', { action: 'create', name: lobbyName(), target, players });
       session = { code: r.code, token: r.token, seat: r.seat };
       saveSession();
       enter(r.view);
@@ -121,7 +122,10 @@
     document.body.dataset.boss = 'gaucho';
     Table.setDealer('timbero'); // tu amigo aparece como el timbero
     if (window.setBackgroundTheme) window.setBackgroundTheme('crupier');
-    document.querySelector('.print-big textPath').textContent = 'TRUCO ONLINE';
+    Truco4Online.reset();
+    if (view.size === 4) document.body.dataset.table = '4';
+    else delete document.body.dataset.table;
+    document.querySelector('.print-big textPath').textContent = view.size === 4 ? 'TRUCO DE A 4 ONLINE' : 'TRUCO ONLINE';
     document.querySelector('.print-small textPath').textContent = `SALA ${view.code} · A ${view.target} PUNTOS`;
     Sound.music('gaucho');
     $('log').replaceChildren();
@@ -147,7 +151,7 @@
     let delay = 1000;
     if (!v || v.status === 'waiting') delay = 1500;
     else if (v.status === 'over') delay = 2000;
-    else if (v.hand && v.hand.actor === 'me') delay = 2500; // espera tu jugada: hay poco que consultar
+    else if (v.hand && (v.size === 4 ? v.hand.turn === 0 && !v.hand.pending : v.hand.actor === 'me')) delay = 2500; // espera tu jugada
     if (document.hidden) delay = 5000;
     timer = setTimeout(poll, delay);
   }
@@ -178,8 +182,10 @@
       const view = await api('POST', { action, code: session.code, token: session.token, since: lastEvent, ...extra });
       await update(view);
     } catch (e) {
-      TrucoUI.message(e.message);
+      // De a 4, si los dos compañeros responden a la vez, el servidor acepta al primero.
+      TrucoUI.message(e.status === 400 && v && v.size === 4 ? 'Esa ya no vale: seguro respondió tu compañero.' : e.message);
       controlsSig = null;
+      Truco4Online.invalidate();
       if (v) await update({ ...v, events: [], chat: [] }); // vuelve a habilitar los controles
     } finally {
       sending = false;
@@ -459,9 +465,22 @@
     $('gameover').hidden = false;
   }
 
+  // Lo que necesita la mesa de 4 de esta sala.
+  const ctx4 = {
+    send: (action, extra) => send(action, extra),
+    inviteLink,
+    phraseButton: () => phraseButton(),
+    lastEvent: { get: () => lastEvent, set: (x) => { lastEvent = x; } },
+    lastChat: { get: () => lastChat, set: (x) => { lastChat = x; } },
+  };
+
   async function render(view) {
     if (!active || !view || view.same) return;
     v = view;
+    if (v.size === 4) {
+      await Truco4Online.render(v, ctx4);
+      return;
+    }
     renderHud();
     if (v.status === 'waiting') {
       showWaiting();
@@ -491,6 +510,7 @@
   function stop() {
     active = false;
     clearTimeout(timer);
+    Truco4Online.stop();
     session = null;
     v = null;
     ['tr-rival', 'tr-mine', 'tr-board', 'truco-controls'].forEach((id) => $(id).replaceChildren());
@@ -512,9 +532,12 @@
   // --- Eventos del formulario ---
   function init(context) {
     ctx = { ...ctx, ...context };
-    document.querySelectorAll('#online .target-pick button').forEach((b) => b.addEventListener('click', () => {
-      document.querySelectorAll('#online .target-pick button').forEach((x) => x.classList.toggle('active', x === b));
-    }));
+    // Cada selector (tamaño de la sala, puntos) marca solo sus propios botones.
+    document.querySelectorAll('#online .target-pick').forEach((group) => {
+      group.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+        group.querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
+      }));
+    });
     $('btn-create-room').addEventListener('click', createRoom);
     $('btn-join-room').addEventListener('click', () => joinRoom($('online-code').value.trim()));
     $('online-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinRoom($('online-code').value.trim()); });

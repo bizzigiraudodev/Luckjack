@@ -144,3 +144,92 @@ test('sin base de datos configurada responde 503', async () => {
   global.fetch = fakeRedis().fetch;
   assert.strictEqual((await get({ code: 'NADA-11', token: 'x' })).code, 404);
 });
+
+// --- Salas de 4 ---
+
+async function room4(humans = 2) {
+  const a = await post({ action: 'create', name: 'Coco', target: 15, players: 4 });
+  const tokens = [a.data.token];
+  for (let i = 1; i < humans; i++) tokens.push((await post({ action: 'join', code: a.data.code, name: `Amigo ${i}` })).data.token);
+  return { code: a.data.code, tokens, a: a.data };
+}
+
+test('sala de 4: espera al creador, arma parejas y completa con bots', async () => {
+  global.fetch = fakeRedis().fetch;
+  const r = await room4(2);
+  let v = (await get({ code: r.code, token: r.tokens[1] })).data;
+  assert.strictEqual(v.size, 4);
+  assert.strictEqual(v.status, 'waiting', 'de a 4 no arranca solo');
+  assert.strictEqual(v.seat, 1);
+  assert.strictEqual((await post({ action: 'start', code: r.code, token: r.tokens[1] })).code, 403, 'solo empieza el creador');
+  // el creador pone a su amigo de compañero (asiento 2)
+  let res = await post({ action: 'swap', code: r.code, token: r.tokens[0], a: 1, b: 2 });
+  assert.strictEqual(res.code, 200);
+  v = (await get({ code: r.code, token: r.tokens[1] })).data;
+  assert.strictEqual(v.seat, 2);
+  assert.strictEqual(v.players[2].pos, 0, 'cada uno se ve abajo');
+  assert.strictEqual(v.players[0].pos, 2, 'y a su compañero arriba');
+  res = await post({ action: 'start', code: r.code, token: r.tokens[0] });
+  assert.strictEqual(res.data.status, 'playing');
+  const bots = res.data.players.filter((p) => p.bot);
+  assert.strictEqual(bots.length, 2);
+  assert.strictEqual(res.data.hand.myCards.length, 3);
+  assert.strictEqual((await post({ action: 'join', code: r.code, name: 'Tarde' })).code, 409, 'ya empezó');
+});
+
+test('sala de 4: los bots juegan solos y nadie ve las cartas ajenas', async () => {
+  global.fetch = fakeRedis().fetch;
+  const r = await room4(1);
+  const res = await post({ action: 'start', code: r.code, token: r.tokens[0] });
+  const v = res.data;
+  assert.ok(v.hand.turn === 0 || v.hand.pending, 'los bots juegan hasta que le toca al humano');
+  assert.strictEqual(JSON.stringify(v).includes('"cards"'), false);
+  assert.deepStrictEqual(v.hand.counts[0], v.hand.myCards.length);
+});
+
+test('sala de 4: las señas solo las ve el compañero', async () => {
+  global.fetch = fakeRedis().fetch;
+  const r = await room4(4);
+  // parejas: 0 y 2 contra 1 y 3
+  await post({ action: 'start', code: r.code, token: r.tokens[0] });
+  const s = await post({ action: 'sena', code: r.code, token: r.tokens[0], sena: 'guino' });
+  assert.strictEqual(s.code, 200);
+  const view = async (i) => (await get({ code: r.code, token: r.tokens[i] })).data;
+  const partner = await view(2);
+  assert.ok(partner.senas.some((x) => x.sena === 'guino' && x.from === 2), 'el compañero la ve (desde arriba)');
+  for (const i of [1, 3]) assert.ok(!(await view(i)).senas.some((x) => x.sena === 'guino'), 'los rivales no');
+  assert.strictEqual((await post({ action: 'sena', code: r.code, token: r.tokens[0], sena: 'cualquiera' })).code, 400);
+});
+
+test('sala de 4 con bots: una partida completa termina y la revancha la piden solo los humanos', async () => {
+  global.fetch = fakeRedis().fetch;
+  const r = await room4(2);
+  await post({ action: 'start', code: r.code, token: r.tokens[0] });
+  let v;
+  for (let guard = 0; guard < 400; guard++) {
+    v = (await get({ code: r.code, token: r.tokens[0] })).data;
+    if (v.status === 'over') break;
+    if (v.hand.finished) { await post({ action: 'next', code: r.code, token: r.tokens[0] }); continue; }
+    let moved = false;
+    for (const t of r.tokens) {
+      const vv = (await get({ code: r.code, token: t })).data;
+      const acts = vv.hand.actions;
+      if (!acts.length) continue;
+      const move = acts.find((a) => a.type === 'quiero') || acts.find((a) => a.type === 'play') || acts[0];
+      const res = await post({ action: 'act', code: r.code, token: t, move });
+      assert.strictEqual(res.code, 200, JSON.stringify(res.data));
+      moved = true;
+      break;
+    }
+    assert.ok(moved || v.hand.finished, 'siempre hay alguien que puede jugar');
+  }
+  assert.strictEqual(v.status, 'over');
+  assert.ok(v.scores.us >= 15 || v.scores.them >= 15);
+  await post({ action: 'rematch', code: r.code, token: r.tokens[0] });
+  let w = (await get({ code: r.code, token: r.tokens[0] })).data;
+  assert.strictEqual(w.status, 'over');
+  assert.deepStrictEqual(w.rematch.waiting, ['Amigo 1']);
+  await post({ action: 'rematch', code: r.code, token: r.tokens[1] });
+  w = (await get({ code: r.code, token: r.tokens[0] })).data;
+  assert.strictEqual(w.status, 'playing');
+});

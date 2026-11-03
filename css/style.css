@@ -852,6 +852,16 @@ body[data-table="4"] #tr-board { display: none !important; }
 .t4-baza .mark.parda { color: var(--gold); }
 .sena-menu button small { display: block; color: var(--muted); font-size: 0.75rem; }
 
+.t4-lobby { width: 100%; max-width: 520px; text-align: center; }
+.t4-lobby p { color: var(--muted); }
+.t4-seats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.t4-seat { display: flex; flex-direction: column; gap: 2px; text-align: left; --c: var(--panel-dark); --c-dark: #15201f; }
+.t4-seat small { color: var(--muted); font-weight: 400; font-size: 0.75rem; }
+.t4-seat.pair-A { border-left: 6px solid var(--blue); }
+.t4-seat.pair-B { border-left: 6px solid var(--red); }
+.t4-seat.picked { --c: var(--orange); --c-dark: var(--orange-dark); }
+.t4-seat:disabled { filter: none; opacity: 1; cursor: default; }
+
 /* Caras de las señas (en el sprite del compañero) */
 .sena { display: none; }
 [data-sena="cejas"] .sena-cejas, [data-sena="ceno"] .sena-ceno, [data-sena="ojos"] .sena-ojos,
