@@ -47,7 +47,7 @@
       desc: 'Te pasás recién con más de 22. Un 22 cuenta como 21.' },
     { id: 'iman', name: 'Imán de Ases', icon: '🧲', rarity: 'common',
       desc: 'Se agregan 6 ases extra al mazo (se aplica al rebarajar).' },
-    { id: 'nervioso', name: 'Crupier Nervioso', icon: '😰', rarity: 'common',
+    { id: 'nervioso', name: 'Crupier Nervioso', icon: '😰', rarity: 'uncommon',
       desc: 'El crupier pide carta hasta llegar a 18 o más.' },
   ];
 

@@ -216,7 +216,7 @@ Una carta es "buena" si arma una buena mano: la primera carta es un As o vale 10
 | ⏫ | Doble o Nada | Común | Ganar doblado paga x1.5 |
 | 🖐️ | Charlie de Cinco | Común | 5 cartas sin pasarte = victoria automática x2 |
 | 🧲 | Imán de Ases | Común | +6 ases en el mazo |
-| 😰 | Crupier Nervioso | Común | El crupier pide hasta 18 |
+| 😰 | Crupier Nervioso | Poco común | El crupier pide hasta 18 |
 | 🍀 | Herradura | Poco común | +$5 extra por cada mano ganada |
 | 👁️ | Ojo del Crupier | Poco común | Ves la carta oculta del crupier |
 | 🤝 | Empate a Favor | Poco común | Los empates pagan +50% |
