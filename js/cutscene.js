@@ -240,7 +240,7 @@
     santo: { name: 'San Pedro', cls: 'santo' },
     timbero: { name: '{name}', cls: 'timbero' },
     luzmala: { name: 'La Luz Mala', cls: 'luzmala' },
-    lobison: { name: 'El Lobisón', cls: 'lobison' },
+    silbon: { name: 'El Silbón', cls: 'silbon' },
     futre: { name: 'El Futre', cls: 'futre' },
     familiar: { name: 'El Familiar', cls: 'familiar' },
     gil: { name: 'El Gauchito Gil', cls: 'gil' },

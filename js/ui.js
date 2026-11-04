@@ -48,6 +48,12 @@
       print: ['LA MESA DEL DIABLO', 'EN CADA EMPATE ME LLEVO UN CUARTO'] },
     santo: { title: 'SAN PEDRO', goal: 'Entrada al Edén', music: 'santo',
       print: ['PUERTAS DEL EDÉN', 'ACÁ ARRIBA NADIE SE PONE NERVIOSO'] },
+    // Historia del truco en la pampa
+    luzmala: { title: 'LA LUZ MALA', goal: 'Para que te deje en paz', music: 'triste', print: ['LA LUZ MALA', ''] },
+    silbon: { title: 'EL SILBÓN', goal: 'Para que siga de largo', music: 'diablo', print: ['EL SILBÓN', ''] },
+    futre: { title: 'EL FUTRE', goal: 'Para que no te atropelle', music: 'gaucho', print: ['EL FUTRE', ''] },
+    familiar: { title: 'EL FAMILIAR', goal: 'Para que no te devore', music: 'diablo', print: ['EL FAMILIAR', ''] },
+    gil: { title: 'EL GAUCHITO GIL', goal: 'Para ganarte el descanso', music: 'santo', print: ['EL GAUCHITO GIL', ''] },
   };
 
   const DEALER_LINES = {
@@ -189,7 +195,7 @@
     }
     $('story-timer').hidden = game.mode !== 'story';
     const title = game.mode === 'story'
-      ? `CICLO <b id="cycle">${game.cycle}/3</b><span class="boss-name">${info.title}</span>`
+      ? `${game.isTruco ? 'NOCHE' : 'CICLO'} <b id="cycle">${game.cycle}/${game.storyBosses.length}</b><span class="boss-name">${info.title}</span>`
       : `CICLO <b id="cycle">${game.cycle}</b>`;
     $('cycle').parentElement.innerHTML = title;
     $('quota-label').textContent = game.mode === 'story' ? info.goal : 'Llegá a';
@@ -202,7 +208,9 @@
     $('hand').textContent = `${Math.min(game.handInCycle, HANDS_PER_CYCLE)}/${HANDS_PER_CYCLE}`;
     const deck = game.deckInfo;
     const lives = Decks.DECK_SEQUENCE.length;
-    $('deck').textContent = `${deck.icon} ${'●'.repeat(game.decksLeft)}${'○'.repeat(lives - game.decksLeft)}`;
+    $('deck').textContent = game.mode === 'story' && game.suddenDeath
+      ? '💀 Muerte súbita'
+      : `${deck.icon} ${'●'.repeat(game.decksLeft)}${'○'.repeat(lives - game.decksLeft)}`;
     $('deck-stat').className = `stat panel deck-stat roguelike-only ${deck.id}`;
     const extra = game.upgradeTotal('suerte') ? ` Mejora de Suerte: +${game.upgradeTotal('suerte')}%.` : '';
     $('deck-stat').title = `${deck.name}: ${deck.desc} Te quedan ${game.decksLeft} de ${lives} mazos.${extra}`;
@@ -447,6 +455,22 @@
         (record ? '🏆 ¡Nuevo récord!' : `Récord: $${best}`);
       return;
     }
+    if (game.mode === 'story' && game.isTruco) {
+      const won = game.phase === 'victory';
+      const counts = game.countsForRecords;
+      $('gameover-title').textContent = won ? '🌄 ¡Sobreviviste a las cinco noches!' : {
+        luzmala: '💡 Te llevó la Luz Mala', silbon: '🎵 Te alcanzó el Silbón', futre: '🐎 Te atropelló el Futre',
+        familiar: '🐕 Te devoró el Familiar', gil: '🕯️ Te llegó la hora',
+      }[game.ending] || '💀 Fin de la partida';
+      $('gameover-reason').textContent = !won ? game.gameOverReason : counts
+        ? 'El Gauchito Gil te dio su bendición. ✨ El Mazo Dorado ya está desbloqueado en el truco infinito.'
+        : 'El Gauchito Gil te dio su bendición. Jugaste con 3 mazos: no hay Mazo Dorado ni rankings (probá con muerte súbita).';
+      $('gameover-stats').innerHTML = `Noches superadas: <b>${game.maxCleared}/${game.storyBosses.length}</b> · Manos jugadas: <b>${game.handsPlayed}</b>` +
+        (won ? ` · Tiempo: <b>${Leaderboard.formatTime(game.playMs)}</b>` : '') +
+        `<br>${game.suddenDeath ? '💀 Muerte súbita' : '🃏 Con 3 mazos (no cuenta para rankings)'}`;
+      $('btn-gameover-ranks').hidden = !counts;
+      return;
+    }
     if (game.mode === 'story') {
       const won = game.phase === 'victory';
       $('gameover-title').textContent = won ? '🌟 ¡Entraste al Edén!' : {
@@ -570,9 +594,10 @@
     } else if ((g.phase === 'victory' || (g.phase === 'gameover' && g.ending)) && !g.endingShown) {
       g.endingShown = true;
       if (g.phase === 'victory') {
-        store.set(g.isTruco ? KEYS.trucoStoryDone : KEYS.storyDone, true);
+        const golden = g.countsForRecords !== false;
+        if (golden) store.set(g.isTruco ? KEYS.trucoStoryDone : KEYS.storyDone, true);
         Sound.sfx('victory');
-        await cutscene(script.victory());
+        await cutscene(script.victory(golden));
       } else {
         await cutscene(script.defeat(g.ending));
       }
@@ -585,6 +610,7 @@
   async function submitScores() {
     if (game.submitted) return;
     const subs = [];
+    if (game.countsForRecords === false) { game.submitted = true; return; } // historia con 3 mazos: no cuenta
     if (game.mode === 'story' && game.phase === 'victory') {
       // En modo speedrun (sin animaciones) los tiempos van a rankings aparte.
       const board = game.speedrun ? (game.isTruco ? 'speedTrucoStory' : 'speedStory') : (game.isTruco ? 'trucoStory' : 'story');
@@ -704,7 +730,7 @@
     const truco = TrucoUI.record();
     const tInf = store.get(KEYS.trucoBest);
     $('rec-truco-infinite').textContent = tInf ? `Récord: ${tInf.cycles} ciclos` : 'Cuotas sin fin, bonuses de truco';
-    $('rec-truco-story').textContent = store.get(KEYS.trucoStoryDone) ? '✔ Completado · ¿Otra vez?' : 'El Viejo, el Diablo y San Pedro';
+    $('rec-truco-story').textContent = store.get(KEYS.trucoStoryDone) ? '✔ Completado · ¿Otra vez?' : 'Cinco noches en la pampa, jugándote la vida';
     const t4 = Truco4UI.record();
     $('rec-truco4').textContent = t4 ? `Ganadas: ${t4.wins} · Perdidas: ${t4.losses}` : 'Vos y el Viejo contra el Diablo y San Pedro';
     $('rec-truco').textContent = truco ? `Ganadas: ${truco.wins} · Perdidas: ${truco.losses}` : 'Mano a mano contra el Viejo, a 15 puntos';
@@ -733,7 +759,31 @@
     render();
   }
 
-  function startTruco(mode) {
+  // Historia del truco: muerte súbita (cuenta para rankings y da el Mazo Dorado) o 3 mazos (más fácil).
+  function chooseLives() {
+    return new Promise((resolve) => {
+      let box = $('lives-pick');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'lives-pick';
+        box.className = 'overlay';
+        box.innerHTML = `<div class="modal lives-modal">
+          <h2>🌙 Cinco noches en la pampa</h2>
+          <p class="sub">Cada noche viene alguien a jugarte un truco por tu vida. ¿Cómo jugás?</p>
+          <button class="btn-red big" data-lives="sudden">💀 Muerte súbita<small>Perder una noche es perder la vida. Da el Mazo Dorado y cuenta para los rankings.</small></button>
+          <button class="btn-blue big" data-lives="decks">🃏 Con 3 mazos<small>Más fácil: reintentás la noche. Sin Mazo Dorado ni rankings.</small></button>
+          <button data-lives="">Volver</button>
+        </div>`;
+        document.body.appendChild(box);
+      }
+      box.hidden = false;
+      box.querySelectorAll('button').forEach((b) => {
+        b.onclick = () => { box.hidden = true; resolve(b.dataset.lives || null); };
+      });
+    });
+  }
+
+  function startTruco(mode, lives) {
     $('menu').hidden = true;
     document.body.classList.remove('in-menu');
     if (mode === 'classic') {
@@ -744,7 +794,7 @@
     // Truco infinito e historia: la misma progresión que el blackjack, con su propia partida.
     const golden = store.get(KEYS.storyDone) || store.get(KEYS.trucoStoryDone);
     const startDeck = mode === 'infinite' && golden ? 'dorado' : null;
-    game = new TrucoRunModule.TrucoRun({ mode, startDeck });
+    game = new TrucoRunModule.TrucoRun({ mode, startDeck, lives });
     game.playMs = 0;
     game.speedrun = Speedrun.on;
     AntiBot.reset();
@@ -764,7 +814,11 @@
     btn.addEventListener('click', () => startGame(btn.dataset.mode));
   });
   document.querySelectorAll('#modes-truco button[data-truco]').forEach((btn) => {
-    btn.addEventListener('click', () => startTruco(btn.dataset.truco));
+    btn.addEventListener('click', async () => {
+      if (btn.dataset.truco !== 'story') return startTruco(btn.dataset.truco);
+      const lives = await chooseLives();
+      if (lives) startTruco('story', lives);
+    });
   });
   // Elegir juego en el menú: Blackjack o Truco.
   document.querySelectorAll('#menu-games .tab').forEach((tab) => {
@@ -884,7 +938,7 @@
   $('btn-restart').addEventListener('click', () => {
     if (Truco4UI.active) Truco4UI.start();
     else if (TrucoOnline.active) TrucoOnline.rematch();
-    else if (game && game.isTruco) startTruco(game.mode);
+    else if (game && game.isTruco) startTruco(game.mode, game.lives);
     else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
     else startGame(game.mode);
   });

@@ -167,14 +167,17 @@
         return [
           {
             bg: 'lunallena', music: 'diablo', chars: [],
-            lines: rules('narrador', ['La noche siguiente salió la luna llena. Del gallinero llegaban gruñidos.']),
+            lines: rules('narrador', [
+              'La noche siguiente se escuchó un silbido: do, re, mi, fa, sol, la, si... subiendo y subiendo.',
+              'Si lo escuchás lejos, está cerca. Si lo escuchás cerca... ya es tarde.',
+            ]),
           },
           {
-            bg: 'lunallena', chars: [{ id: 'lobison', pos: 'center' }],
+            bg: 'lunallena', chars: [{ id: 'silbon', pos: 'center' }],
             lines: [
-              { who: 'lobison', text: 'Grrr... Soy el séptimo hijo varón, {name}. Y tengo hambre.' },
-              { who: 'lobison', text: `Jugamos por $${quota}. Cuando brilla la luna llena, cada 4 manos, lo que perdés lo pagás una vez y media.` },
-              { who: 'lobison', text: 'Si perdés, te muerdo... y los viernes vas a aullar conmigo.' },
+              { who: 'silbon', text: 'Fiuuu... ¿Escuchaste, {name}? Son los huesos de mi tata, que traigo en la bolsa.' },
+              { who: 'silbon', text: `Jugamos por $${quota}. Cada 4 manos silbo bien cerquita... y lo que perdés lo pagás una vez y media.` },
+              { who: 'silbon', text: 'Si perdés, tus huesos van a hacerle compañía a los de él.' },
             ],
           },
         ];
@@ -246,7 +249,7 @@
     defeat(kind) {
       const ends = {
         luzmala: { bg: 'noche', who: 'luzmala', say: 'Vení, {name}. Seguime...', end: '{name} siguió a la luz por el campo. Nunca más lo vieron.' },
-        lobison: { bg: 'lunallena', who: 'lobison', say: '¡Grrr! Ahora sos de la manada.', end: 'Desde esa noche, los viernes de luna llena, {name} también aúlla.' },
+        silbon: { bg: 'lunallena', who: 'silbon', say: 'Fiuuu... Uno más para la bolsa.', end: 'Por los caminos se escucha el silbido... y el ruido de unos huesos nuevos en la bolsa.' },
         futre: { bg: 'noche', who: 'futre', say: 'Subí en ancas, {name}.', end: 'Dicen que los dos galopan por la cordillera, buscando cabezas.' },
         familiar: { bg: 'ingenio', who: 'familiar', say: 'Un peón más para el patrón.', end: 'El Familiar se lo llevó al ingenio. Las chimeneas siguieron humeando.' },
         gil: { bg: 'santuario', who: 'gil', say: 'No es castigo, hermano. Es tu hora.', end: '{name} cerró los ojos... y los abrió en un lugar gris, lleno de cartas flotando.' },

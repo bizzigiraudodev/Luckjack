@@ -165,8 +165,8 @@ test('simulación: partidas completas de truco infinito sin romper invariantes',
 
 test('historia de truco en la pampa: cinco rivales, uno por noche', () => {
   const r = run({ mode: 'story' });
-  const order = ['luzmala', 'lobison', 'futre', 'familiar', 'gil'];
-  const names = ['la Luz Mala', 'el Lobisón', 'el Futre', 'el Familiar', 'el Gauchito Gil'];
+  const order = ['luzmala', 'silbon', 'futre', 'familiar', 'gil'];
+  const names = ['la Luz Mala', 'el Silbón', 'el Futre', 'el Familiar', 'el Gauchito Gil'];
   order.forEach((id, i) => {
     r.cycle = i + 1;
     assert.strictEqual(r.boss, id);
@@ -192,7 +192,7 @@ test('la Luz Mala te muestra una carta pero te baja la suerte; el Futre es siemp
   }
 });
 
-test('el Lobisón: con luna llena (cada 4 manos) las manos perdidas cuestan x1.5', () => {
+test('el Silbón: cada 4 manos silba cerca y las manos perdidas cuestan x1.5', () => {
   const lose = (hand) => {
     const r = run({ mode: 'story' });
     r.cycle = 2;
@@ -239,7 +239,7 @@ test('muerte súbita: perder un ciclo termina la partida con el final de ese riv
   l.money = 10;
   l.endCycle();
   assert.strictEqual(l.phase, 'gameover', 'sin mazos de repuesto');
-  assert.strictEqual(l.ending, 'lobison');
+  assert.strictEqual(l.ending, 'silbon');
   const r = run({ mode: 'story' });
   r.cycle = 5;
   r.money = 100000;

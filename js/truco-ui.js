@@ -47,8 +47,8 @@
   Object.assign(RIVALS, {
     luzmala: pampa('luzmala', 'la Luz Mala', 'luzmala', 'triste', ['LA LUZ MALA', 'TE MUESTRA UNA CARTA · TE BAJA LA SUERTE'],
       ['Ji, ji... seguime.', 'Te encandilé, ¿eh?', 'Mi luz nunca falla.'], ['Ay, me apagaste un poquito.', 'Bien jugado, para ser vivo.'], 'Son buenas... por ahora.'),
-    lobison: pampa('lobison', 'el Lobisón', 'lobison', 'diablo', ['EL LOBISÓN', 'LUNA LLENA CADA 4 MANOS: PERDÉS X1.5'],
-      ['¡Auuuuu!', 'Grrr... sabroso.', 'Te olí el miedo.'], ['¡Grrr! Suerte de cristiano.', 'Esta me la cobro.'], 'Grrr... son buenas.'),
+    silbon: pampa('silbon', 'el Silbón', 'silbon', 'diablo', ['EL SILBÓN', 'CADA 4 MANOS SILBA CERCA: PERDÉS X1.5'],
+      ['Fiuuu...', 'Otro hueso para la bolsa.', '¿Me escuchaste cerca?'], ['Fiu... me desafinaste.', 'Los huesos no mienten... esta vez sí.'], 'Fiuuu... son buenas.'),
     futre: pampa('futre', 'el Futre', 'futre', 'gaucho', ['EL FUTRE', 'VA AL GALOPE: ES MANO EN TODAS LAS MANOS'],
       ['¡Al galope!', 'Sin cabeza y igual te gano.', 'Ni la vi venir, ¿eh?'], ['Perdí la cabeza... otra vez.', 'Me atropellaste vos.'], 'Son buenas.'),
     familiar: pampa('familiar', 'el Familiar', 'familiar', 'diablo', ['EL FAMILIAR', 'CADA 5 MANOS SE COME EL 15% DE TUS FICHAS'],
@@ -413,6 +413,8 @@
       reveal: run.revealsRivalCard ? Math.floor(Math.random() * 3) : undefined,
       rivalEnvido: run.has('mazo_marcado'),
     };
+    if (run.whistle) { log('🎵 Se escucha el silbido bien cerca: esta mano, lo que perdés cuesta x1.5.'); Table.setSpeech('Fiuuu...'); }
+    if (run.boss === 'familiar' && run.handInCycle % 5 === 0) log('🐕 El Familiar está hambriento: después de esta mano se come el 15% de tus fichas.');
     const done = await playHand(hand, t, run.persona, opts);
     handRunning = false;
     if (!done || t !== token) return;

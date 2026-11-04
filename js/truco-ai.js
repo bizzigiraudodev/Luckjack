@@ -10,7 +10,7 @@
     santo: { bluff: 0, aggression: 0.35 }, // nunca miente
     // Historia del truco en la pampa
     luzmala: { bluff: 0.25, aggression: 0.5 }, // te encandila
-    lobison: { bluff: 0.3, aggression: 0.85 }, // bravo, canta todo
+    silbon: { bluff: 0.3, aggression: 0.85 }, // te engaña con el silbido: canta todo
     futre: { bluff: 0.2, aggression: 0.7 }, // va al galope
     familiar: { bluff: 0.35, aggression: 0.6 }, // tramposo como su patrón
     gil: { bluff: 0, aggression: 0.55 }, // justo: nunca miente

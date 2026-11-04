@@ -14,16 +14,16 @@
 
   // Historia del truco: en su retiro en la pampa, el timbero se juega la vida contra cinco
   // personajes del campo, uno por noche (en el infinito siempre es el Viejo).
-  const TRUCO_STORY = ['luzmala', 'lobison', 'futre', 'familiar', 'gil'];
+  const TRUCO_STORY = ['luzmala', 'silbon', 'futre', 'familiar', 'gil'];
   const RIVAL_NAMES = {
-    gaucho: 'el Viejo', luzmala: 'la Luz Mala', lobison: 'el Lobisón', futre: 'el Futre',
+    gaucho: 'el Viejo', luzmala: 'la Luz Mala', silbon: 'el Silbón', futre: 'el Futre',
     familiar: 'el Familiar', gil: 'el Gauchito Gil',
   };
   // El Gauchito Gil es justo: no miente ni se deja mentir (no valen el Chamuyero ni la Cara de Póker).
   const HONEST_IMMUNE = ['chamuyo', 'mentiroso'];
   const LUZ_MALA_LUCK = 0.05; // la Luz Mala te muestra una carta suya, pero te tira la suerte abajo
-  const FULL_MOON_EVERY = 4; // el Lobisón: cada 4 manos hay luna llena y las manos perdidas cuestan x1.5
-  const FULL_MOON_MULT = 1.5;
+  const WHISTLE_EVERY = 4; // el Silbón: cada 4 manos silba cerca y las manos perdidas cuestan x1.5
+  const WHISTLE_MULT = 1.5;
   // En la pampa se arranca con más plata: con muerte súbita, una mala racha no puede ser el final.
   const STORY_START = 200;
   const STORY_QUOTA_GROWTH = 1.15; // $230, $265, $305, $350, $400 (calibrado con simulaciones)
@@ -106,9 +106,9 @@
       return this.has('ojo') || this.boss === 'luzmala';
     }
 
-    // Luna llena con el Lobisón: la mano en juego es de luna llena (las pérdidas cuestan x1.5).
-    get fullMoon() {
-      return this.boss === 'lobison' && this.handInCycle % FULL_MOON_EVERY === 0;
+    // El Silbón silba cerca: en esa mano las pérdidas cuestan x1.5.
+    get whistle() {
+      return this.boss === 'silbon' && this.handInCycle % WHISTLE_EVERY === 0;
     }
 
     // Personalidad del rival, ajustada por tus bonuses.
@@ -182,9 +182,9 @@
         if (this.has('racha') && this.streak > 0) { net *= 1 + 0.2 * Math.min(this.streak, 5); notes.push(`🔥 racha x${this.streak}`); }
         if (this.upgrades.ganancia) net *= 1 + this.upgradeTotal('ganancia') / 100;
       }
-      if (net < 0 && this.fullMoon) {
-        net *= FULL_MOON_MULT;
-        notes.push('🌕 luna llena: pagás x1.5');
+      if (net < 0 && this.whistle) {
+        net *= WHISTLE_MULT;
+        notes.push('🎵 el Silbón silbó cerca: pagás x1.5');
       }
       if (net < 0) {
         if (this.has('escudo') && !this.shieldUsed) {

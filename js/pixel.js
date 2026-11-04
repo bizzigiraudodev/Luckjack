@@ -121,14 +121,23 @@
     map[y] = map[y].slice(0, x) + ch + map[y].slice(x + 1);
   }
 
-  // La Luz Mala: una bola de luz de 32x34 (núcleo blanco, verde y un halo que titila).
-  function orb() {
+  // La Luz Mala: una mancha de oscuridad con dos ojos enormes que brillan, de pupilas como estrellas.
+  function darkEyes() {
     const out = [];
+    const eyes = [[9, 15], [22, 15]];
     for (let y = 0; y < 34; y++) {
       let row = '';
       for (let x = 0; x < 32; x++) {
-        const d = Math.hypot(x - 15.5, y - 13.5);
-        row += d < 4 ? 'W' : d < 7.5 ? 'L' : d < 10.5 ? 'G' : d < 12.5 && (x + y) % 2 === 0 ? 'g' : d < 14.5 && (x + y) % 4 === 0 ? 'g' : '.';
+        const mass = ((x - 15.5) / 16) ** 2 + ((y - 15.5) / 11) ** 2;
+        let ch = mass < 0.75 ? 'd' : mass < 1 && (x + y) % 2 === 0 ? 'D' : mass < 1.15 && (x * 3 + y) % 5 === 0 ? 'D' : '.';
+        for (const [cx, cy] of eyes) {
+          const e = ((x - cx) / 5.6) ** 2 + ((y - cy) / 3.1) ** 2;
+          const r = Math.hypot(x - cx, y - cy);
+          if (e < 1) ch = e > 0.7 ? 'w' : 'W';
+          if (r < 2.4) ch = 'K';
+          if ((Math.abs(x - cx) < 0.6 && Math.abs(y - cy) < 1.1) || (Math.abs(y - cy) < 0.6 && Math.abs(x - cx) < 1.1)) ch = 's';
+        }
+        row += ch;
       }
       out.push(row);
     }
@@ -217,99 +226,191 @@
 
     // --- Historia del truco en la pampa ---
 
-    // La Luz Mala: una bola de luz verdosa que flota, con una cara que da miedo.
+    // La Luz Mala: en la oscuridad, solo dos ojos enormes con pupilas de estrella.
     luzmala: {
-      body: orb(),
+      body: darkEyes(),
       noArms: true,
-      palette: { ...BASE, W: '#f6fff0', L: '#c9ffb4', G: '#6fdc6a', g: '#2f7a3a', E: '#123018', m: '#123018', S: '#c9ffb4' },
+      noFace: true,
+      palette: { ...BASE, d: '#0b0b0f', D: '#1c1c24', W: '#f4f4f0', w: '#9a9aa4', s: '#ffffff' },
       arm: {},
     },
 
-    // El Lobisón: cabeza de lobo peludo con orejas, ojos rojos y colmillos; poncho rotoso.
-    lobison: {
-      body: derive({
-        rows: {
-          0: '.......KK..............KK.......',
-          1: '......KfK..............KfK......',
-          2: '......KffK...KKKKKK...KffK......',
-          3: '.......KffffffffffffffffK.......',
-          4: '......KfFffffffffffffffFfK......',
-          5: '......KffffffffffffffffffK......',
-        },
-        swap: { H: 'F', h: 'F', V: 'f', v: 'F', S: 'f', s: 'F', R: 'P', r: 'p', W: 'F', B: 'p', G: 'p' },
-        post: (m) => {
-          for (const y of [12, 13, 14, 15]) for (let x = 12; x <= 19; x++) put(m, y, x, 'u'); // hocico claro
-          put(m, 11, 15, 'n'); put(m, 11, 16, 'n'); put(m, 12, 15, 'n'); put(m, 12, 16, 'n'); // nariz
-          put(m, 15, 12, 'W'); put(m, 15, 19, 'W'); // colmillos
-          put(m, 8, 9, 'F'); put(m, 9, 9, 'F'); put(m, 8, 22, 'F'); put(m, 9, 22, 'F'); // pelo en las mejillas
-          stripe(m, [26, 30], 'P', 'p');
-        },
-      }),
-      palette: { ...BASE, f: '#7a6a5c', F: '#4d4036', u: '#b8a48c', n: '#120c0a', E: '#ff3b2f', m: '#2a1410', W: '#f4efe6', P: '#5e4a36', p: '#3d2f22', S: '#7a6a5c' },
-      arm: { W: '#4d4036', w: '#3d2f22', S: '#7a6a5c', s: '#4d4036' },
-    },
-
-    // El Futre: jinete fantasma sin cabeza; el sombrero flota sobre el cuello cortado.
-    futre: {
-      body: derive({
-        rows: {
-          0: '................................',
-          1: '..........KKKKKKKKKKKK..........',
-          2: '.........KHHHHHHHHHHHHK.........',
-          3: '......KKKHHHHHHHHHHHHHHKKK......',
-          4: '.....KKKKKKKKKKKKKKKKKKKKKK.....',
-          5: '................................',
-          6: '................................',
-          7: '................................',
-          8: '................................',
-          9: '................................',
-          10: '................................',
-          11: '................................',
-          12: '................................',
-          13: '................................',
-          14: '................................',
-          15: '................................',
-          16: '.............KKKKKK.............',
-          17: '............KbbbbbbK............',
-        },
-        swap: { R: 'J', r: 'j', W: 'w', B: 'T', G: 'L' },
-        post: (m) => stripe(m, [24, 28], 'J', 'L'),
-      }),
+    // El Silbón: flaco y verdoso, sombrero de paja roto, ojos hundidos y la bolsa de huesos al hombro.
+    silbon: {
+      body: [
+        '................................',
+        '..........KKKKKKK...............',
+        '.........KYYyYYYYK..............',
+        '........KYYYyyyYYYK.............',
+        '...KKKKKYYYYYYYYYYYKKKKK........',
+        '..KYYyYYYYYYyYYYYYYYYyYYK.......',
+        '...KKKyKKKKKKKKKKKKKyKKK.....KKK',
+        '.........KhhhhhhhhK........KBBBK',
+        '.........KGkkGGkkGK.......KBBBBB',
+        '.........KGkeGGekGK......KBbBBBB',
+        '.........KGGGGGGGGK.....KBBBBbBB',
+        '.........KgGGGGGGgK.....KBBWWBBB',
+        '..........KGmmmmGK......KBWkWkBB',
+        '..........KgGGGGgK......KBWWWWBB',
+        '...........KgggggK......KBBWmWBB',
+        '..........KKGgggGKK.....KBBBBBbB',
+        '........KKCCKGGGKCCKK..KBBBBBBBK',
+        '.......KCCCCCKGKCCCCCKKBBBBBBBK.',
+        '......KCCcCCCCKCCCCCCGGKBBBBBK..',
+        '......KCCcCCCCCCCCCCCKGKBBBBK...',
+        '......KCKcCCCCCCCCCCcKGGKKKK....',
+        '......KCKcCCCCCCCCCCcKKGK.......',
+        '......KGKcCCCCCCCCCCcK.KK.......',
+        '......KGKcCCCCCCCCCCcK..........',
+        '......KGKPPPPPPPPPPPPK..........',
+        '......KGKPPPPKKPPPPPPK..........',
+        '.....KGGKPPPPK.KPPPPPK..........',
+        '.....KGGKPPPPK.KPPPPPK..........',
+        '......KK.KPPPK.KPPPPK...........',
+        '.........KPPPK..KPPPK...........',
+        '.........KpppK..KpppK...........',
+        '........KKKKKK..KKKKKK..........',
+        '................................',
+        '................................',
+      ],
+      noArms: true,
       noFace: true,
-      palette: { ...BASE, H: '#1c1a24', b: '#7a1020', J: '#2b3140', j: '#1b1f2a', w: '#c9d2dc', T: '#5a6a80', L: '#a9b8c8' },
-      arm: { W: '#2b3140', w: '#1b1f2a', S: '#c9d2dc', s: '#9aa6b4' },
+      palette: { ...BASE, Y: '#c9b46a', y: '#9a8640', h: '#2a3a1e', G: '#7fa05a', g: '#5a7a3e', k: '#141c10', e: '#e8e070',
+        m: '#2a1a10', C: '#7a8aa0', c: '#5a6a80', P: '#5e4430', p: '#3e2c1e', B: '#a8b07a', b: '#7a8050', W: '#e8e2c8' },
+      arm: {},
     },
 
-    // El Familiar: un perro negro enorme, ojos de brasa y collar rojo con medalla.
+    // El Futre: jinete sin cabeza de chaqueta roja con galones, cuello encendido, sable rojo en alto
+    // y la cabeza de su caballo, de ojo rojo, con un collar de calaveras.
+    futre: {
+      body: [
+        '............................RR..',
+        '...........................RrR..',
+        '..........................RrR...',
+        '.........................RrR....',
+        '............r..r........RrR.....',
+        '.............rOr.......RrR......',
+        '............KOOOK.....RrR.......',
+        '...........KjjOjjK...KNNK.......',
+        '.....KKKK.KJJJJJJJK.KNNK........',
+        '....KGGGGKJJJJJJJJJKNNK.........',
+        '....KGGGKJJGGGGGGGJJNK..........',
+        '.....KKJJJJJJGJJJJJJJK..........',
+        '......KJJGGGGGGGGGGJJK..........',
+        '......KJJJJJJGJJJJJJJK..........',
+        '......KJJGGGGGGGGGGJJK..........',
+        '......KJJJJJJGJJJJJJJK..........',
+        '......KJJGGGGGGGGGGJJK..........',
+        '......KjJJJJJGJJJJJJjK..........',
+        '......KKKNNNNNNNNNNKKK..........',
+        '.......KNNNNNNNNNNNNK...........',
+        '..KK...KNNNNNKNNNNNNK...........',
+        '.KhhK..KNNNNK.KNNNNNK...........',
+        'KhhhhKK.KNNNK.KNNNNK............',
+        'KhRhhhhK.KNNK..KNNNK............',
+        'KhhhhhhhKKNNK..KNNNK............',
+        '.KhhhhhhhhKKK...KKK.............',
+        '..KhhhhhhhhK....................',
+        '..KWKWKWKWKhK...................',
+        '..KhhhhhhhhhhK..................',
+        '...KhhKhhhKhhK..................',
+        '...KhhK...KhhK..................',
+        '...KKKK...KKKK..................',
+        '................................',
+        '................................',
+      ],
+      noArms: true,
+      noFace: true,
+      palette: { ...BASE, R: '#ff2a3a', r: '#a8101e', O: '#ff6a4a', J: '#9a1424', j: '#6a0c18', G: '#e0b040',
+        N: '#2a2430', h: '#5a5a66', W: '#e8e2c8' },
+      arm: {},
+    },
+
+    // El Familiar: bestia negra de cuello largo, orejas como cuernos, ojos rojos encendidos y babeando.
     familiar: {
-      body: derive({
-        rows: {
-          0: '......KK................KK......',
-          1: '.....KdDK..............KDdK.....',
-          2: '.....KdddK..KKKKKKKK..KdddK.....',
-          3: '......KddddddddddddddddddK......',
-          4: '......KdDddddddddddddddDdK......',
-          5: '......KddddddddddddddddddK......',
-        },
-        swap: { H: 'd', h: 'D', V: 'd', v: 'D', S: 'd', s: 'D', W: 'd', R: 'd', r: 'D', B: 'T', G: 'Y' },
-        post: (m) => {
-          put(m, 15, 12, 'W'); put(m, 15, 19, 'W'); // colmillos
-          for (const y of [12, 13, 14]) for (let x = 13; x <= 18; x++) put(m, y, x, 'D'); // hocico
-          put(m, 11, 15, 'n'); put(m, 11, 16, 'n'); put(m, 12, 15, 'n'); put(m, 12, 16, 'n'); // nariz
-        },
-      }),
-      palette: { ...BASE, d: '#1d1a22', D: '#33303c', E: '#ff5a1f', m: '#7a1020', W: '#f4efe6', T: '#c8323c', Y: '#e0a84a', n: '#000000', S: '#1d1a22' },
-      arm: { W: '#1d1a22', w: '#33303c', S: '#1d1a22', s: '#33303c' },
+      body: [
+        '.......KK.....KK................',
+        '......KdK....KdK................',
+        '.....KddK...KddK................',
+        '.....KdddK.KdddK................',
+        '....KddddKKddddK................',
+        '...KddddddddddddK...............',
+        '..KddRRddddddRRddK..............',
+        '..KdROrRddddROrRdK..............',
+        '.KddddRddddddRddddK.............',
+        'KddddddddddddddddddK............',
+        'KddDDddddddddddddddK............',
+        '.KddddddddddddddddddK...........',
+        '..KdWdKKKKKKdWddddddK...........',
+        '...KWKK....KWKdddddddK..........',
+        '...KsK......KsKdddddddK.........',
+        '....s........s.KdddddddK........',
+        '....s..........KddDdddddK.......',
+        '...............KdddDddddddK.....',
+        '................KdddDddddddK....',
+        '................KddddDdddddddK..',
+        '.................KddddDddddddddK',
+        '..................KddddddddddddK',
+        '..................KdddddddddddK.',
+        '.................KddddddddddddK.',
+        '................KdddKddddKddddK.',
+        '................KddK.KddK.KddK..',
+        '................KddK.KddK.KddK..',
+        '...............KdddK.KddK.KdddK.',
+        '...............KKKK..KKKK.KKKK..',
+        '................................',
+        '................................',
+        '................................',
+        '................................',
+        '................................',
+      ],
+      noArms: true,
+      noFace: true,
+      palette: { ...BASE, d: '#141016', D: '#2c2632', R: '#ff2a2a', r: '#a01010', O: '#ffd0a0', W: '#e8e2d8', s: '#8a8aa8' },
+      arm: {},
     },
 
-    // El Gauchito Gil: pelo y barba negros, vincha y pañuelo rojos, poncho rojo.
+    // El Gauchito Gil: pelo largo negro, vincha y pañuelo rojos, barba, camisa blanca y la cruz detrás.
     gil: {
-      body: derive({
-        swap: { V: 'H', v: 'T', h: 'H', R: 'T', r: 't', B: 'T', G: 'K' },
-        post: (m) => { for (const y of [13, 14, 15, 16]) m[y] = m[y].replace(/S/g, 'H'); },
-      }),
-      palette: { ...BASE, H: '#1a1418', S: '#d9a07a', s: '#b57f5c', W: '#f4efe6', T: '#c8102e', t: '#8c0b20', m: '#b04848' },
-      arm: { W: '#c8102e', w: '#8c0b20', S: '#d9a07a', s: '#b57f5c' },
+      body: [
+        '.............KXXXXK.............',
+        '.............KXxxXK.............',
+        '.............KXxxXK.............',
+        '.KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.',
+        '.KXXXXXXKHHHHHHHHHHHHHHKXXXXXXK.',
+        '.KxxxxxKHHHHHHHHHHHHHHHHKxxxxxK.',
+        '.KKKKKKKTTTTTTTTTTTTTTTTKKKKKKK.',
+        '.......KHKKKKKKKKKKKKKKHK.......',
+        '......KHHKSSSSSSSSSSSSKHHK......',
+        '......KHHSSSSSSSSSSSSSSHHK......',
+        '......KHHSSSSSSSSSSSSSSHHK......',
+        '......KHHKSSSSSSsSSSSSSKHHK.....',
+        '......KHHKSSSSSSsSSSSSSKHHK.....',
+        '......KHHKSSHHHHHHHHHSSKHHK.....',
+        '......KHHKSHHSSSSSSSHHSKHHK.....',
+        '......KHHKHHHHHHHHHHHHHKHHK.....',
+        '......KHHHKHHHHHHHHHHHKHHHK.....',
+        '......KHHHHKKHHHHHHHKKHHHHK.....',
+        '.......KHHHHKsssssssKHHHHK......',
+        '.......KKKKKWWTTKTTWWKKKKK......',
+        '.....KKWWWWKWWTTTTTWWKWWWWKK....',
+        '....KWWWWWWWKWWWTWWWKWWWWWWWK...',
+        '....KWWWWWWWWKWWWWWKWWWWWWWWK...',
+        '....KWwWWWWWWWKWWWKWWWWWWWwWK...',
+        '....KWwWWWWWWWWKWKWWWWWWWWwWK...',
+        '....KWwWWWWWWWWWKWWWWWWWWWwWK...',
+        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
+        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
+        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
+        '....KTTTTTTTTTTTTTTTTTTTTTTTK...',
+        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
+        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
+        '....KWWWWWWWWWWWWWWWWWWWWWWWK...',
+        '....KKKKKKKKKKKKKKKKKKKKKKKKK...',
+      ],
+      palette: { ...BASE, X: '#6a3a24', x: '#4a2616', H: '#1a1418', T: '#c8102e', S: '#d9a07a', s: '#b57f5c',
+        W: '#f0ebe0', w: '#c9c1b4', m: '#7a2a2a' },
+      arm: { W: '#f0ebe0', w: '#c9c1b4', S: '#d9a07a', s: '#b57f5c' },
     },
 
     // El jugador en la intro: un timbero viejo con sombrero.
