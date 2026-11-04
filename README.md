@@ -108,12 +108,26 @@ Próximamente: modo historia de truco y rankings del truco.
 
 ## Rankings
 
-Desde el menú (🏆 Rankings) hay cinco rankings:
+Desde el menú (🏆 Rankings) hay siete rankings:
 
 - **⏱️ Historia más rápida:** tiempo de juego hasta entrar al Edén (sin contar cutscenes, menú ni pestaña en segundo plano).
 - **💰 Más fichas (infinito):** el máximo de dinero alcanzado en una partida.
 - **♾️ Más ciclos (infinito):** ciclos superados en una partida.
 - **🗡️ Historia del truco más rápida** y **🗡️ Más ciclos (truco infinito):** los mismos rankings, para el truco.
+- **⚡ Speedrun BJ** y **⚡ Speedrun truco:** las historias jugadas en modo speedrun.
+
+### Modo speedrun
+
+En el menú, **⚡ Speedrun: sí** saca todas las animaciones, las esperas y las cutscenes de la historia. El cronómetro se marca con ⚡ y los tiempos van a sus propios rankings, para no competir con las partidas normales. Si cambiás el modo a mitad de una partida, ese tiempo no se manda.
+
+### Anti-bots y anti-trampas
+
+- Mientras jugás, `js/antibot.js` cuenta cómo tocás (cantidad de clics y teclas, ritmo, si el mouse se mueve, si los clics caen siempre en el centro exacto del botón y si el navegador está automatizado). No guarda qué tocaste.
+- Esas estadísticas viajan con cada marca y `api/leaderboard.js` descarta las que parecen de un programa: navegador automatizado, jugadas simuladas por código, menos jugadas que manos, clics siempre centrados, jugadas de menos de 120 ms o con ritmo constante, mouse quieto entre clics.
+- También rechaza marcas imposibles (una historia necesita al menos 15 manos y 2 segundos por mano, 0,7 en speedrun; no puede haber más ciclos que manos / 5).
+- Las marcas guardadas se vuelven a revisar cada vez que se pide un ranking: si alguna no pasa las reglas actuales, se borra sola.
+- Hay una **clave de prueba** (solo se guarda su hash en el servidor) para correr tests automáticos: sus marcas no las frena el anti-bot pero van a un ranking de pruebas aparte y nunca aparecen en los públicos. Se configura en el navegador con `localStorage.setItem('luckjack.testKey', JSON.stringify('<clave>'))`.
+- Como el juego corre en tu navegador, nada de esto es infalible contra alguien muy decidido; sí frena a los bots comunes.
 
 Las marcas se mandan solas al terminar (o al abandonar una partida de infinito). Cada jugador tiene una sola fila por ranking: su mejor marca. El nombre es el que escribiste en la intro y se puede cambiar desde la pantalla de rankings.
 
@@ -249,6 +263,8 @@ js/truco-online.js # truco online contra un amigo
 js/truco4-ui.js   # mesa de truco de a 4 con señas
 js/truco4-online.js # truco de a 4 online (salas con bots)
 js/senas.js       # señas del truco de a 4
+js/speedrun.js    # modo speedrun (sin animaciones)
+js/antibot.js     # estadísticas anti-bot para los rankings
 test/             # tests con node:test
 ```
 

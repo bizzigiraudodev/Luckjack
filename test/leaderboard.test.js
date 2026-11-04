@@ -2,6 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert');
 const Leaderboard = require('../js/leaderboard.js');
 const handler = require('../api/leaderboard.js');
+// Estadísticas de una partida jugada por una persona (ver js/antibot.js).
+const HUMAN = { webdriver: false, clicks: 200, keys: 0, untrusted: 0, centered: 3, moves: 900, mouseClicks: 200, medianGap: 800, cv: 0.6 };
 
 test('ranking local: ordena según el ranking y guarda una fila por jugador', () => {
   let list = [];
@@ -21,10 +23,10 @@ test('formato de tiempo', () => {
 });
 
 test('API: valida ranking, valor, jugador y limpia el nombre', () => {
-  assert.ok(handler.validate({ board: 'nada', value: 5, pid: 'abcdefgh12' }).error);
-  assert.ok(handler.validate({ board: 'cycles', value: 0, pid: 'abcdefgh12' }).error);
-  assert.ok(handler.validate({ board: 'cycles', value: 3, pid: 'x' }).error);
-  const ok = handler.validate({ board: 'cycles', value: 3.7, pid: 'abcdefgh12', name: '  <b>Coco</b> con un nombre larguísimo ', hands: 40 });
+  assert.ok(handler.validate({ proof: HUMAN, board: 'nada', value: 5, pid: 'abcdefgh12' }).error);
+  assert.ok(handler.validate({ proof: HUMAN, board: 'cycles', value: 0, pid: 'abcdefgh12' }).error);
+  assert.ok(handler.validate({ proof: HUMAN, board: 'cycles', value: 3, pid: 'x' }).error);
+  const ok = handler.validate({ proof: HUMAN, board: 'cycles', value: 3.7, pid: 'abcdefgh12', name: '  <b>Coco</b> con un nombre larguísimo ', hands: 40 });
   assert.strictEqual(ok.value, 3);
   assert.strictEqual(ok.entry.name, 'bCoco/b con un n');
   assert.strictEqual(ok.entry.hands, 40);
@@ -61,6 +63,8 @@ function fakeRedis() {
       }
       case 'HSET': (h[key] = h[key] || {})[args[0]] = args[1]; result = 1; break;
       case 'HGET': result = (h[key] || {})[args[0]] || null; break;
+      case 'ZREM': set.delete(args[0]); result = 1; break;
+      case 'HDEL': if (h[key]) delete h[key][args[0]]; result = 1; break;
       case 'HMGET': result = args.map((f) => (h[key] || {})[f] || null); break;
       case 'INCR': kv[key] = (kv[key] || 0) + 1; result = kv[key]; break;
       case 'EXPIRE': result = 1; break;
@@ -88,24 +92,24 @@ test('API: guarda la mejor marca de cada jugador y devuelve el puesto', async ()
   process.env.KV_REST_API_TOKEN = 'token';
   global.fetch = fakeRedis();
 
-  let r = await call('POST', { body: { board: 'story', pid: 'jugador0001', name: 'Coco', value: 300000, hands: 45 } });
+  let r = await call('POST', { body: { proof: HUMAN, board: 'story', pid: 'jugador0001', name: 'Coco', value: 300000, hands: 45 } });
   assert.deepStrictEqual(r.data, { improved: true, rank: 1 });
-  r = await call('POST', { body: { board: 'story', pid: 'jugador0002', name: 'Pepa', value: 200000, hands: 40 } });
+  r = await call('POST', { body: { proof: HUMAN, board: 'story', pid: 'jugador0002', name: 'Pepa', value: 200000, hands: 40 } });
   assert.strictEqual(r.data.rank, 1);
-  r = await call('POST', { body: { board: 'story', pid: 'jugador0001', name: 'Coco', value: 400000, hands: 50 } });
+  r = await call('POST', { body: { proof: HUMAN, board: 'story', pid: 'jugador0001', name: 'Coco', value: 400000, hands: 50 } });
   assert.deepStrictEqual(r.data, { improved: false, rank: 2 }, 'una marca peor no reemplaza la mejor');
 
   r = await call('GET', { query: { board: 'story' } });
   assert.deepStrictEqual(r.data.entries.map((e) => [e.name, e.value, e.hands]), [['Pepa', 200000, 40], ['Coco', 300000, 45]]);
 
-  r = await call('POST', { body: { board: 'chips', pid: 'jugador0001', name: 'Coco', value: 900, hands: 30 } });
-  r = await call('POST', { body: { board: 'chips', pid: 'jugador0002', name: 'Pepa', value: 500, hands: 30 } });
+  r = await call('POST', { body: { proof: HUMAN, board: 'chips', pid: 'jugador0001', name: 'Coco', value: 900, hands: 30 } });
+  r = await call('POST', { body: { proof: HUMAN, board: 'chips', pid: 'jugador0002', name: 'Pepa', value: 500, hands: 30 } });
   r = await call('GET', { query: { board: 'chips' } });
   assert.deepStrictEqual(r.data.entries.map((e) => e.value), [900, 500], 'en fichas gana el mayor');
 
-  assert.strictEqual((await call('POST', { body: { board: 'chips', pid: 'x' } })).code, 400);
-  for (let i = 0; i < 10; i++) await call('POST', { ip: '9.9.9.9', body: { board: 'cycles', pid: 'jugador0003', value: 2, hands: 20 } });
-  assert.strictEqual((await call('POST', { ip: '9.9.9.9', body: { board: 'cycles', pid: 'jugador0003', value: 2, hands: 20 } })).code, 429, 'límite de envíos');
+  assert.strictEqual((await call('POST', { body: { proof: HUMAN, board: 'chips', pid: 'x' } })).code, 400);
+  for (let i = 0; i < 10; i++) await call('POST', { ip: '9.9.9.9', body: { proof: HUMAN, board: 'cycles', pid: 'jugador0003', value: 2, hands: 20 } });
+  assert.strictEqual((await call('POST', { ip: '9.9.9.9', body: { proof: HUMAN, board: 'cycles', pid: 'jugador0003', value: 2, hands: 20 } })).code, 429, 'límite de envíos');
 
   delete process.env.KV_REST_API_URL;
   assert.strictEqual((await call('GET', { query: { board: 'story' } })).code, 503, 'sin base de datos configurada');
@@ -115,16 +119,39 @@ test('API: no expone los ids de los jugadores y rechaza marcas imposibles', asyn
   process.env.KV_REST_API_URL = 'https://redis.example';
   process.env.KV_REST_API_TOKEN = 'token';
   global.fetch = fakeRedis();
-  await call('POST', { body: { board: 'cycles', pid: 'victima0001', name: 'Coco', value: 4, hands: 60 } });
-  await call('POST', { ip: '5.5.5.5', body: { board: 'cycles', pid: 'otro000001', name: 'Pepa', value: 3, hands: 45 } });
+  await call('POST', { body: { proof: HUMAN, board: 'cycles', pid: 'victima0001', name: 'Coco', value: 4, hands: 60 } });
+  await call('POST', { ip: '5.5.5.5', body: { proof: HUMAN, board: 'cycles', pid: 'otro000001', name: 'Pepa', value: 3, hands: 45 } });
   const r = await call('GET', { query: { board: 'cycles', pid: 'victima0001' } });
   assert.ok(r.data.entries.every((e) => e.pid === undefined), 'sin ids');
   assert.deepStrictEqual(r.data.entries.map((e) => [e.name, e.me]), [['Coco', true], ['Pepa', false]], 'tu fila viene marcada');
 
-  const bad = (body) => handler.validate(body).error;
+  const bad = (body) => handler.validate({ proof: HUMAN, ...body }).error;
   assert.ok(bad({ board: 'story', pid: 'abcdefgh12', value: 5000, hands: 1 }), 'historia en 1 mano');
   assert.ok(bad({ board: 'story', pid: 'abcdefgh12', value: 10000, hands: 20 }), 'menos de 2 segundos por mano');
   assert.ok(!bad({ board: 'story', pid: 'abcdefgh12', value: 120000, hands: 20 }));
   assert.ok(bad({ board: 'cycles', pid: 'abcdefgh12', value: 10000, hands: 50 }), 'más ciclos que manos');
   assert.ok(bad({ board: 'chips', pid: 'abcdefgh12', value: 1e8, hands: 10 }), 'fichas imposibles');
+  assert.strictEqual((await call('POST', { body: { proof: HUMAN, board: 'story', pid: 'abcdefgh12', value: 5000, hands: 1 } })).code, 403);
+});
+
+test('anti-bot: frena navegadores automatizados y ritmos de máquina; la clave de prueba va a un ranking aparte', async () => {
+  process.env.KV_REST_API_URL = 'https://redis.example';
+  process.env.KV_REST_API_TOKEN = 'token';
+  global.fetch = fakeRedis();
+  const reason = (proof, hands = 20) => handler.botReason({ ...HUMAN, ...proof }, hands);
+  assert.strictEqual(reason({}), null, 'una persona pasa');
+  assert.ok(reason({ webdriver: true }), 'Playwright/Selenium');
+  assert.ok(reason({ untrusted: 10 }), 'eventos simulados');
+  assert.ok(reason({ clicks: 3, keys: 0 }, 20), 'menos jugadas que manos');
+  assert.ok(reason({ centered: 190 }), 'siempre en el centro exacto');
+  assert.ok(reason({ medianGap: 60 }), 'demasiado rápido');
+  assert.ok(reason({ cv: 0.05 }), 'ritmo constante');
+  assert.ok(reason({ moves: 10 }), 'el mouse no se mueve');
+  assert.ok(handler.botReason(null, 20), 'sin datos');
+
+  const bot = await call('POST', { body: { board: 'story', pid: 'robot00001', name: 'Bot', value: 90000, hands: 20, proof: { ...HUMAN, webdriver: true } } });
+  assert.strictEqual(bot.code, 403);
+  const test = await call('POST', { body: { board: 'story', pid: 'robot00001', name: 'Test', value: 90000, hands: 20, proof: { webdriver: true }, testKey: 'clave-equivocada-123' } });
+  assert.strictEqual(test.code, 403, 'una clave equivocada no sirve');
+  assert.strictEqual((await call('GET', { query: { board: 'story' } })).data.entries.length, 0, 'nada llegó al ranking público');
 });

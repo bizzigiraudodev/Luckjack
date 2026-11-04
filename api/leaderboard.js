@@ -10,12 +10,43 @@ const BOARDS = {
   cycles: { order: 'desc', min: 1, max: 10000 },
   trucoStory: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 },
   trucoCycles: { order: 'desc', min: 1, max: 10000 },
+  // Modo speedrun (sin animaciones): rankings aparte para no competir con las partidas normales.
+  speedStory: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 },
+  speedTrucoStory: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 },
 };
+const TIME_BOARDS = ['story', 'trucoStory', 'speedStory', 'speedTrucoStory'];
+const SPEED_BOARDS = ['speedStory', 'speedTrucoStory'];
+
+// Clave de prueba (solo se guarda su hash): las marcas que la traen no las frena el anti-bot,
+// pero van a un ranking de pruebas aparte y nunca aparecen en los públicos.
+const TEST_KEY_SHA256 = '033a820510c0a8ee8ce3ecf470c6b1557d103b6c5fac886d6907dd82813e0b80';
+const crypto = require('crypto');
+const isTestKey = (key) => typeof key === 'string' && key.length >= 16 &&
+  crypto.createHash('sha256').update(key).digest('hex') === TEST_KEY_SHA256;
+
+// Anti-bot: con las estadísticas de cómo se jugó (js/antibot.js) decide si la marca es de un programa.
+// Devuelve el motivo, o null si parece humana.
+function botReason(proof, hands) {
+  if (!proof || typeof proof !== 'object') return 'sin datos de la partida';
+  const n = (k) => Math.max(0, Number(proof[k]) || 0);
+  const clicks = n('clicks');
+  const inputs = clicks + n('keys');
+  if (proof.webdriver) return 'navegador automatizado';
+  if (n('untrusted') > 3) return 'jugadas simuladas por código';
+  if (inputs < hands) return 'menos jugadas que manos';
+  if (clicks >= 20 && n('centered') / clicks > 0.6) return 'clics siempre en el centro exacto';
+  if (inputs >= 20 && n('medianGap') < 120) return 'jugadas demasiado rápidas';
+  if (inputs >= 30 && n('cv') < 0.15) return 'ritmo de máquina';
+  if (n('mouseClicks') >= 20 && n('moves') < n('mouseClicks')) return 'el mouse no se mueve entre clics';
+  return null;
+}
+
 const TOP = 10;
 const RATE_LIMIT = 10; // envíos por minuto por IP
 // Controles de plausibilidad: lo mínimo que hay que jugar para lograr cada marca.
 const MIN_HANDS_STORY = 15; // 3 ciclos de al menos 5 manos
 const MIN_MS_PER_HAND = 2000; // nadie juega una mano en menos de 2 segundos
+const MIN_MS_PER_HAND_SPEED = 700; // sin animaciones se juega más rápido
 const MAX_CHIPS_PER_HAND = 1000;
 const MIN_HANDS_PER_CYCLE = 5;
 
@@ -27,27 +58,46 @@ function validate(body) {
   const b = BOARDS[body.board];
   if (!b) return { error: 'Ranking desconocido' };
   const value = Number(body.value);
-  if (!Number.isFinite(value) || value < b.min || value > b.max) return { error: 'Valor fuera de rango' };
+  const test = isTestKey(body.testKey);
+  if (!Number.isFinite(value) || (!test && (value < b.min || value > b.max)) || value < 1) return { error: 'Valor fuera de rango' };
   const pid = String(body.pid || '');
   if (!/^[a-z0-9]{8,32}$/i.test(pid)) return { error: 'Jugador inválido' };
   const hands = Math.max(0, Math.min(1e6, Math.floor(Number(body.hands) || 0)));
-  if (!plausible(body.board, value, hands)) return { error: 'Marca imposible' };
+  if (!test && !plausible(body.board, value, hands)) return { error: 'La marca no se guardó: es imposible jugando de verdad', bot: true };
+  const proof = sanitizeProof(body.proof);
+  const bot = test ? null : botReason(proof, hands);
+  if (bot) return { error: `La marca no se guardó: parece un bot (${bot})`, bot: true };
   return {
     board: body.board,
     pid,
+    test,
     value: Math.floor(value),
-    entry: { name: cleanName(body.name), hands, date: new Date().toISOString().slice(0, 10) },
+    entry: { name: cleanName(body.name), hands, date: new Date().toISOString().slice(0, 10), proof },
   };
 }
 
 function plausible(board, value, hands) {
-  if (board === 'story' || board === 'trucoStory') return hands >= MIN_HANDS_STORY && value >= hands * MIN_MS_PER_HAND;
+  if (TIME_BOARDS.includes(board)) {
+    const perHand = SPEED_BOARDS.includes(board) ? MIN_MS_PER_HAND_SPEED : MIN_MS_PER_HAND;
+    return hands >= MIN_HANDS_STORY && value >= hands * perHand;
+  }
   if (board === 'cycles' || board === 'trucoCycles') return hands >= value * MIN_HANDS_PER_CYCLE;
   if (board === 'chips') return value <= 100 + hands * MAX_CHIPS_PER_HAND;
   return true;
 }
 
-const keys = (board) => ({ scores: `lb:${board}`, info: `lb:${board}:info` });
+function sanitizeProof(p) {
+  if (!p || typeof p !== 'object') return null;
+  const out = { webdriver: !!p.webdriver };
+  for (const k of ['clicks', 'keys', 'untrusted', 'centered', 'moves', 'mouseClicks', 'medianGap', 'cv']) {
+    out[k] = Math.max(0, Math.min(1e6, Number(p[k]) || 0));
+  }
+  return out;
+}
+
+const keys = (board, test = false) => (test
+  ? { scores: `lbtest:${board}`, info: `lbtest:${board}:info` }
+  : { scores: `lb:${board}`, info: `lb:${board}:info` });
 
 async function top(cfg, board, me = '') {
   const { scores, info } = keys(board);
@@ -63,15 +113,26 @@ async function top(cfg, board, me = '') {
   }
   if (!pids.length) return [];
   const details = await redis(cfg, ['HMGET', info, ...pids]);
-  return pids.map((pid, i) => ({ ...safeParse(details[i]), value: values[i], me: !!me && pid === me }));
+  const rows = [];
+  for (let i = 0; i < pids.length; i++) {
+    const { proof, ...data } = safeParse(details[i]);
+    // Limpieza automática: si una marca guardada no pasa las reglas anti-bot actuales, se borra.
+    if (proof && botReason(proof, data.hands || 0)) {
+      await redis(cfg, ['ZREM', scores, pids[i]]);
+      await redis(cfg, ['HDEL', info, pids[i]]);
+      continue;
+    }
+    rows.push({ ...data, value: values[i], me: !!me && pids[i] === me });
+  }
+  return rows;
 }
 
 function safeParse(text) {
   try { return JSON.parse(text) || {}; } catch { return {}; }
 }
 
-async function submit(cfg, { board, pid, value, entry }) {
-  const { scores, info } = keys(board);
+async function submit(cfg, { board, pid, value, entry, test }) {
+  const { scores, info } = keys(board, test);
   const asc = BOARDS[board].order === 'asc';
   // GT/LT: solo se actualiza si la marca nueva es mejor. CH: devuelve 1 si cambió algo.
   const changed = await redis(cfg, ['ZADD', scores, asc ? 'LT' : 'GT', 'CH', value, pid]);
@@ -82,7 +143,7 @@ async function submit(cfg, { board, pid, value, entry }) {
     await redis(cfg, ['HSET', info, pid, JSON.stringify({ ...old, name: entry.name })]);
   }
   const rank = await redis(cfg, [asc ? 'ZRANK' : 'ZREVRANK', scores, pid]);
-  return { improved: !!changed, rank: rank === null ? null : rank + 1 };
+  return { improved: !!changed, rank: rank === null ? null : rank + 1, ...(test ? { test: true } : {}) };
 }
 
 async function allowed(cfg, req) {
@@ -106,7 +167,7 @@ async function handler(req, res) {
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? safeParse(req.body) : req.body;
       const data = validate(body);
-      if (data.error) return res.status(400).json({ error: data.error });
+      if (data.error) return res.status(data.bot ? 403 : 400).json({ error: data.error });
       if (!(await allowed(cfg, req))) return res.status(429).json({ error: 'Demasiados envíos, probá en un rato' });
       return res.status(200).json(await submit(cfg, data));
     }
@@ -121,3 +182,4 @@ module.exports = handler;
 module.exports.validate = validate;
 module.exports.BOARDS = BOARDS;
 module.exports.plausible = plausible;
+module.exports.botReason = botReason;

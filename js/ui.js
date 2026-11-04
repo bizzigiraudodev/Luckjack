@@ -545,7 +545,9 @@
   }
 
   // --- Historia: presentaciones de cada jefe y finales ---
-  async function cutscene(scenes) {
+  // `force`: la intro (pide el nombre) se muestra aunque estés en modo speedrun.
+  async function cutscene(scenes, force = false) {
+    if (Speedrun.on && !force) return;
     inCutscene = true;
     $('gameover').hidden = true;
     await Cutscene.play(scenes, vars);
@@ -582,7 +584,9 @@
     if (game.submitted) return;
     const subs = [];
     if (game.mode === 'story' && game.phase === 'victory') {
-      subs.push([game.isTruco ? 'trucoStory' : 'story', Math.round(game.playMs)]);
+      // En modo speedrun (sin animaciones) los tiempos van a rankings aparte.
+      const board = game.speedrun ? (game.isTruco ? 'speedTrucoStory' : 'speedStory') : (game.isTruco ? 'trucoStory' : 'story');
+      if (game.speedrun === Speedrun.on) subs.push([board, Math.round(game.playMs)]);
     } else if (game.mode === 'infinite' && game.handsPlayed > 0 && game.isTruco) {
       if (game.maxCleared > 0) subs.push(['trucoCycles', game.maxCleared]);
     } else if (game.mode === 'infinite' && game.handsPlayed > 0) {
@@ -599,6 +603,8 @@
     for (const [board, value] of subs) {
       const res = await Leaderboard.submit(board, { name: vars.name, value, hands: g.handsPlayed });
       const info = Leaderboard.BOARDS[board];
+      if (res.rejected) { lines.push(`🤖 ${res.rejected}`); continue; }
+      if (res.test) { lines.push(`🧪 ${info.icon} ${info.format(value)} → ranking de pruebas, puesto #${res.rank}`); continue; }
       const where = res.global ? 'global' : 'de este dispositivo';
       lines.push(res.rank && res.rank <= Leaderboard.TOP
         ? `${info.icon} ${Leaderboard.BOARDS[board].format(value)} → <b>puesto #${res.rank}</b> del ranking ${where}`
@@ -639,7 +645,7 @@
     if (!items.length) {
       const li = document.createElement('li');
       li.className = 'empty';
-      li.textContent = board === 'story' || board === 'trucoStory'
+      li.textContent = Leaderboard.BOARDS[board].order === 'asc'
         ? 'Todavía nadie terminó la historia. ¿Serás el primero?' : 'Todavía no hay marcas. ¡Jugá una partida de infinito!';
       items.push(li);
     }
@@ -655,7 +661,7 @@
     if (!game || game.mode !== 'story' || inCutscene || document.hidden || !$('menu').hidden) return;
     if (game.phase === 'victory' || game.phase === 'gameover') return;
     game.playMs = (game.playMs || 0) + dt;
-    $('story-timer').textContent = `⏱️ ${Leaderboard.formatTime(game.playMs)}`;
+    $('story-timer').textContent = `${game.speedrun ? '⚡' : '⏱️'} ${Leaderboard.formatTime(game.playMs)}`;
   }, 250);
 
   // --- Menú ---
@@ -692,6 +698,8 @@
     document.body.dataset.game = 'blackjack';
     game = new Game({ mode, startDeck });
     game.playMs = 0;
+    game.speedrun = Speedrun.on;
+    AntiBot.reset();
     $('story-timer').textContent = '⏱️ 0:00';
     $('gameover-ranks').hidden = true;
     $('menu').hidden = true;
@@ -717,6 +725,8 @@
     const startDeck = mode === 'infinite' && golden ? 'dorado' : null;
     game = new TrucoRunModule.TrucoRun({ mode, startDeck });
     game.playMs = 0;
+    game.speedrun = Speedrun.on;
+    AntiBot.reset();
     $('story-timer').textContent = '⏱️ 0:00';
     TrucoUI.prepareRun(game, { vars });
     shopTab = 'bonuses';
@@ -745,7 +755,7 @@
   });
   $('btn-intro').addEventListener('click', async () => {
     $('menu').hidden = true;
-    await cutscene(Story.intro());
+    await cutscene(Story.intro(), true);
     showMenu();
   });
   $('btn-menu-help').addEventListener('click', () => { $('help').hidden = false; });
@@ -773,7 +783,15 @@
     }
   });
   $('btn-ranks').addEventListener('click', () => showRanks());
-  $('btn-gameover-ranks').addEventListener('click', () => showRanks(game.isTruco
+  $('btn-speedrun').addEventListener('click', () => { Speedrun.toggle(); renderSpeedrunButton(); });
+  function renderSpeedrunButton() {
+    $('btn-speedrun').textContent = Speedrun.on ? '⚡ Speedrun: sí' : '⚡ Speedrun: no';
+    $('btn-speedrun').classList.toggle('btn-orange', Speedrun.on);
+  }
+  renderSpeedrunButton();
+  $('btn-gameover-ranks').addEventListener('click', () => showRanks(game.speedrun && game.mode === 'story'
+    ? (game.isTruco ? 'speedTrucoStory' : 'speedStory')
+    : game.isTruco
     ? (game.mode === 'story' ? 'trucoStory' : 'trucoCycles')
     : (game.mode === 'story' ? 'story' : 'cycles')));
   $('btn-close-ranks').addEventListener('click', () => { $('leaderboard').hidden = true; });
@@ -892,7 +910,7 @@
     // Si entraste con un link de invitación (?sala=MATE-37), vas directo a la sala.
     const invite = TrucoOnline.codeFromUrl();
     if (!store.get(KEYS.seenIntro) && !invite) {
-      await cutscene(Story.intro());
+      await cutscene(Story.intro(), true);
       store.set(KEYS.seenIntro, true);
     }
     showMenu();

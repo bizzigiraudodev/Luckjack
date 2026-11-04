@@ -202,6 +202,7 @@
       </div>
       <div class="menu-extra">
         <button class="btn-orange" id="btn-ranks">🏆 Rankings</button>
+        <button id="btn-speedrun" title="Sin animaciones ni cutscenes. Los tiempos van a rankings aparte.">⚡ Speedrun: no</button>
         <button id="btn-intro">🎬 Ver intro</button>
         <button id="btn-menu-help">❓ Cómo se juega</button>
         <button class="sound-btn" id="btn-menu-sound">🔊</button>
@@ -233,6 +234,8 @@
         <button class="tab" data-board="cycles" role="tab">♾️ Ciclos</button>
         <button class="tab" data-board="trucoStory" role="tab">🗡️ Historia truco</button>
         <button class="tab" data-board="trucoCycles" role="tab">🗡️ Ciclos truco</button>
+        <button class="tab" data-board="speedStory" role="tab">⚡ Speedrun BJ</button>
+        <button class="tab" data-board="speedTrucoStory" role="tab">⚡ Speedrun truco</button>
       </div>
       <h3 id="lb-title"></h3>
       <p class="sub" id="lb-status"></p>
@@ -313,6 +316,7 @@
         <li>Tocá una carta para jugarla. Debajo de la mesa están los cantos y las respuestas.</li>
         <li><b>Truco de a 4:</b> vos y el Viejo contra el Diablo y San Pedro. Gana la baza la carta más alta (empate entre compañeros: es de la pareja; entre rivales: parda), el envido es el mejor tanto de cada pareja y con 🤫 le hacés señas a tu compañero (los rivales nunca las ven): cejas = ancho de espadas, guiño = ancho de bastos, boca a la derecha = 7 de espadas, boca a la izquierda = 7 de oro, morder el labio = un tres, trompita = un dos, fruncir el ceño = envido, cerrar los ojos = nada.</li>
         <li><b>Jugar con un amigo:</b> creá una sala (a 15 o a 30), mandale el link por WhatsApp y juegan mano a mano, cada uno desde su celular. Podés cargarlo con frases rápidas 💬 y pedir revancha. Si se corta, abrí el link de nuevo y volvés a la sala.</li>
+        <li><b>⚡ Modo speedrun:</b> desde el menú sacás todas las animaciones y cutscenes. Los tiempos de la historia jugada así van a rankings aparte. Las marcas que parecen de un bot no se guardan.</li>
         <li><b>De a 4 online:</b> al crear la sala elegí "De a 4", compartí el link y armá las parejas tocando dos asientos. Con "Empezar" los lugares vacíos los llenan bots. Tus señas solo las ve tu compañero.</li>
         <li><b>Truco infinito:</b> cada mano es una ronda. Apostás antes de repartir y cobrás (o pagás) la apuesta × la diferencia de puntos de esa mano. Acá no hay partida a 15, así que la falta envido vale 5. Misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos y mejoras) con bonuses propios del truco.</li>
         <li><b>Historia del truco:</b> la progresión del truco infinito en 3 ciclos contra 3 jefes. El Viejo es zorro viejo y miente de vez en cuando; con el Diablo, que miente casi siempre, las bazas pardas son suyas; San Pedro nunca miente y en su mesa no sirven el Chamuyero ni la Cara de Póker. Terminarla desbloquea el Mazo Dorado en el truco infinito.</li>
@@ -363,6 +367,8 @@
   <script src="js/game.js"></script>
   <script src="js/pixel.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/speedrun.js"></script>
+  <script src="js/antibot.js"></script>
   <script src="js/table.js"></script>
   <script src="js/cutscene.js"></script>
   <script src="js/story.js"></script>

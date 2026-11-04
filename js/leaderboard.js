@@ -6,6 +6,8 @@
     cycles: { title: 'Más ciclos (infinito)', icon: '♾️', order: 'desc', format: (v) => `${v} ${v === 1 ? 'ciclo' : 'ciclos'}` },
     trucoStory: { title: 'Historia del truco más rápida', icon: '🗡️', order: 'asc', format: (v) => formatTime(v) },
     trucoCycles: { title: 'Más ciclos (truco infinito)', icon: '🗡️', order: 'desc', format: (v) => `${v} ${v === 1 ? 'ciclo' : 'ciclos'}` },
+    speedStory: { title: 'Speedrun: historia del blackjack', icon: '⚡', order: 'asc', format: (v) => formatTime(v) },
+    speedTrucoStory: { title: 'Speedrun: historia del truco', icon: '⚡', order: 'asc', format: (v) => formatTime(v) },
   };
   const TOP = 10;
   const API = 'api/leaderboard';
@@ -67,7 +69,13 @@
         signal: ctrl.signal,
         cache: 'no-store',
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        let msg = String(res.status);
+        try { msg = (await res.json()).error || msg; } catch { /* sin cuerpo */ }
+        const err = new Error(msg);
+        err.status = res.status;
+        throw err;
+      }
       return await res.json();
     } finally {
       clearTimeout(t);
@@ -85,7 +93,7 @@
     return { entries: localList(board), global: false };
   }
 
-  // Guarda una marca. Devuelve { rank, global, improved }.
+  // Guarda una marca. Devuelve { rank, global, improved } o { rejected } si el servidor la descartó.
   async function submit(board, { name, value, hands }) {
     const entry = { pid: playerId(), name, value, hands, date: new Date().toISOString().slice(0, 10) };
     // En el dispositivo se guardan tus 10 mejores partidas (no solo la mejor).
@@ -93,9 +101,13 @@
     storage.set(`luckjack.lb.${board}`, local.list);
     if (canUseApi()) {
       try {
-        const res = await api('POST', { board, pid: entry.pid, name, value, hands });
-        return { rank: res.rank, global: true, improved: res.improved };
-      } catch { /* sin API */ }
+        const proof = root.AntiBot ? root.AntiBot.proof() : null;
+        const testKey = storage.get('luckjack.testKey') || undefined;
+        const res = await api('POST', { board, pid: entry.pid, name, value, hands, proof, testKey });
+        return { rank: res.rank, global: true, improved: res.improved, test: !!res.test };
+      } catch (e) {
+        if (e.status === 400 || e.status === 403) return { rejected: e.message || 'La marca no se guardó.' };
+      }
     }
     const rank = local.list.indexOf(entry) + 1;
     return { rank: rank || null, global: false, improved: local.improved };

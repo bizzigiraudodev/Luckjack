@@ -7,7 +7,9 @@
   const PAUSE_MS = 150;
   const FULL_SHOE = 104;
 
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  // En modo speedrun no hay esperas ni animaciones.
+  const fast = () => !!(root.Speedrun && root.Speedrun.on);
+  const wait = (ms) => (fast() ? Promise.resolve() : new Promise((r) => setTimeout(r, ms)));
 
   // Cartas que ya están dibujadas en la mesa (mismos objetos que en Game).
   // Cada mano del jugador: { cards, box, handEl, scoreEl, betEl }.
@@ -44,7 +46,7 @@
   // Nunca espera más que la duración (+ un margen): si el navegador pausa las animaciones (pestaña
   // en segundo plano) o se borra el elemento, el juego sigue igual.
   function animate(el, keyframes, ms, opts = {}) {
-    if (!ms || !el.animate) return Promise.resolve();
+    if (!ms || !el.animate || fast()) return Promise.resolve();
     const anim = el.animate(keyframes, { duration: ms, easing: 'cubic-bezier(.2,.7,.3,1)', ...opts });
     const limit = ms + (opts.delay || 0) + 400;
     return Promise.race([anim.finished.catch(() => {}), new Promise((r) => setTimeout(r, limit))]);
