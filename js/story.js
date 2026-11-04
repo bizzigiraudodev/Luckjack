@@ -130,25 +130,35 @@
     }];
   };
 
-  // --- Historia del truco: las mismas tres deudas, pero se pagan a los porotos ---
+  // --- Historia del truco: antes del purgatorio, en su retiro en la pampa, el timbero se juega
+  // la vida al truco contra cinco personajes del campo, uno por noche.
   const truco = {
     cycleIntro(cycle, quota) {
+      const rules = (who, lines) => lines.map((text) => ({ who, text }));
       if (cycle === 1) {
         return [
           {
-            bg: 'purgatorio', music: 'gaucho', chars: [{ id: 'timbero', pos: 'left' }, { id: 'gaucho', pos: 'right' }],
-            lines: [
-              { who: 'gaucho', text: '¿Así que el blackjack no es lo tuyo, {name}? Acá hay otra manera de pagar.' },
-              { who: 'gaucho', text: 'Al truco, como Dios manda. Yo, el Diablo y San Pedro: cada uno cobra lo suyo.' },
-              { who: 'narrador', text: 'En cada mano apostás y cobrás o pagás la apuesta por la diferencia de puntos.' },
-            ],
+            bg: 'pampa', music: 'pampa', chars: [{ id: 'timbero', pos: 'center' }],
+            lines: rules('narrador', [
+              'Antes del purgatorio y de las cuotas, {name} vivía tranquilo en su casucha de la pampa.',
+              'Mate, tortas fritas y el horizonte. Había jurado no tocar nunca más una carta.',
+            ]),
           },
           {
-            bg: 'purgatorio', chars: [{ id: 'gaucho', pos: 'center' }],
+            bg: 'noche', music: 'triste', chars: [],
+            lines: rules('narrador', [
+              'Pero el campo, de noche, tiene sus propios jugadores.',
+              'Una noche golpearon la puerta. Afuera no había nadie... solo una luz que flotaba.',
+            ]),
+          },
+          {
+            bg: 'noche', chars: [{ id: 'timbero', pos: 'left' }, { id: 'luzmala', pos: 'right' }],
             lines: [
-              { who: 'gaucho', text: `Mi cuota: $${quota} en 15 manos. Cada 5 te abro la pulpería.` },
-              { who: 'gaucho', text: 'Yo soy zorro viejo, m\'hijo: de vez en cuando te miento. Ojo con mis cantos.' },
-              { who: 'gaucho', text: 'Tenés tres mazos. Si no llegás, perdés uno y probás de nuevo. ¡Repartí!' },
+              { who: 'luzmala', text: 'Buenas noches, {name}. De chico me seguías por el campo, ¿te acordás?' },
+              { who: 'luzmala', text: 'Dicen que sos el mejor timbero del pago. Juguemos un truquito... por tu vida.' },
+              { who: 'luzmala', text: `Juntame $${quota} en 15 manos. Si no, venís conmigo a vagar por el campo para siempre.` },
+              { who: 'luzmala', text: 'Te voy a mostrar una de mis cartas... pero mi luz trae mala suerte.' },
+              { who: 'narrador', text: 'En cada mano apostás y cobrás o pagás la apuesta por la diferencia de puntos. Cada 5 manos, la pulpería.' },
             ],
           },
         ];
@@ -156,69 +166,95 @@
       if (cycle === 2) {
         return [
           {
-            bg: 'purgatorio', chars: [{ id: 'gaucho', pos: 'center' }],
-            lines: [{ who: 'gaucho', text: '¡Me pelaste, {name}! Ahora te toca el Diablo... y ese no juega limpio.' }],
+            bg: 'lunallena', music: 'diablo', chars: [],
+            lines: rules('narrador', ['La noche siguiente salió la luna llena. Del gallinero llegaban gruñidos.']),
           },
           {
-            bg: 'infierno', music: 'diablo', chars: [{ id: 'diablo', pos: 'center' }],
+            bg: 'lunallena', chars: [{ id: 'lobison', pos: 'center' }],
             lines: [
-              { who: 'diablo', text: '¿Truco conmigo, {name}? Me encanta. Yo miento siempre... o casi siempre. Adiviná.' },
-              { who: 'diablo', text: `Mi cuota es de $${quota}. Si no la pagás, te quedás a barajar acá abajo.` },
-              { who: 'diablo', text: 'Ah, y en mi mesa las pardas son mías. Si empatamos una baza, la gano yo. Je, je.' },
+              { who: 'lobison', text: 'Grrr... Soy el séptimo hijo varón, {name}. Y tengo hambre.' },
+              { who: 'lobison', text: `Jugamos por $${quota}. Cuando brilla la luna llena, cada 4 manos, lo que perdés lo pagás una vez y media.` },
+              { who: 'lobison', text: 'Si perdés, te muerdo... y los viernes vas a aullar conmigo.' },
             ],
           },
         ];
       }
-      return [{
-        bg: 'cielo', music: 'santo', chars: [{ id: 'santo', pos: 'center' }],
-        lines: [
-          { who: 'santo', text: 'Paz y bien, {name}. Acá arriba el truco se juega con la verdad.' },
-          { who: 'santo', text: 'Yo nunca miento: si canto, es porque tengo. Y a mí tampoco me vas a engañar.' },
-          { who: 'santo', text: `Tu Chamuyero y tu Cara de Póker no sirven en mi mesa. La entrada al Edén cuesta $${quota}.` },
-        ],
-      }];
+      if (cycle === 3) {
+        return [
+          {
+            bg: 'noche', music: 'gaucho', chars: [],
+            lines: rules('narrador', ['Por el camino viejo se escuchó un galope. El jinete no tenía cabeza.']),
+          },
+          {
+            bg: 'noche', chars: [{ id: 'futre', pos: 'center' }],
+            lines: [
+              { who: 'futre', text: '¿Me buscás la cara, {name}? La dejé en la cordillera.' },
+              { who: 'futre', text: `Yo voy siempre al galope: soy mano en todas las manos. Mi cuota es de $${quota}.` },
+              { who: 'futre', text: 'Si perdés, te llevo en ancas. Para siempre.' },
+            ],
+          },
+        ];
+      }
+      if (cycle === 4) {
+        return [
+          {
+            bg: 'ingenio', music: 'diablo', chars: [],
+            lines: rules('narrador', ['Un perro negro, enorme, apareció en la tranquera. Venía de los ingenios del norte.']),
+          },
+          {
+            bg: 'ingenio', chars: [{ id: 'familiar', pos: 'center' }],
+            lines: [
+              { who: 'familiar', text: 'Mi patrón firmó un trato: cada año le llevo un peón. Este año sos vos, {name}.' },
+              { who: 'familiar', text: `Juntame $${quota}. Y cada 5 manos me como un pedazo de tus fichas. Grrr.` },
+            ],
+          },
+        ];
+      }
+      return [
+        {
+          bg: 'santuario', music: 'santo', chars: [],
+          lines: rules('narrador', ['La última noche, en el cruce de caminos, flameaban banderas rojas.']),
+        },
+        {
+          bg: 'santuario', chars: [{ id: 'timbero', pos: 'left' }, { id: 'gil', pos: 'right' }],
+          lines: [
+            { who: 'gil', text: 'Tranquilo, {name}. Soy Antonio Gil. No vengo a asustarte.' },
+            { who: 'gil', text: 'Llegó tu hora, hermano. Pero el que juega derecho se gana el descanso.' },
+            { who: 'gil', text: `Juguemos un truco honrado: yo no miento y en mi mesa no valen las mentiras. Juntá $${quota}.` },
+          ],
+        },
+      ];
     },
-    victory: () => [
+    // `golden`: si se jugó con muerte súbita, la victoria desbloquea el Mazo Dorado.
+    victory: (golden = true) => [
       {
-        bg: 'eden', music: 'eden', chars: [{ id: 'timbero', pos: 'left' }, { id: 'santo', pos: 'right' }],
+        bg: 'santuario', music: 'eden', chars: [{ id: 'timbero', pos: 'left' }, { id: 'gil', pos: 'right' }],
         lines: [
-          { who: 'santo', text: 'Bien jugado, {name}. Sin trampas y sin mentiras... bueno, casi.' },
-          { who: 'narrador', text: 'En el Casino del Edén hay una mesa de truco que nunca se vacía, y a {name} le guardan la silla.' },
+          { who: 'gil', text: 'Jugaste derecho, {name}. Andá tranquilo, que tenés mi bendición.' },
+          { who: 'narrador', text: '{name} volvió a su casucha, se cebó un mate y se quedó mirando el horizonte.' },
         ],
       },
       {
-        bg: 'purgatorio', chars: [{ id: 'gaucho', pos: 'center' }],
+        bg: 'noche', music: 'pampa', chars: [],
         lines: [
-          { who: 'gaucho', text: '¡Quiero vale cuatro, {name}! Andá tranquilo, que este viejo te va a extrañar.' },
-          { who: 'narrador', text: '✨ Desbloqueaste el Mazo Dorado para el truco infinito.' },
+          { who: 'narrador', text: 'Y una noche tranquila, de pura vejez, se le terminó la racha.' },
+          { who: 'narrador', text: 'Pero esa ya es otra historia... la del purgatorio de los timberos.' },
+          ...(golden ? [{ who: 'narrador', text: '✨ Desbloqueaste el Mazo Dorado para el truco infinito.' }] : []),
         ],
       },
     ],
     defeat(kind) {
-      if (kind === 'infierno') {
-        return [{
-          bg: 'infierno', music: 'triste', chars: [{ id: 'diablo', pos: 'center' }],
-          lines: [
-            { who: 'diablo', text: '¡Quiero retruco... y vos ya no tenés nada! Bienvenido, {name}.' },
-            { who: 'narrador', text: '{name} juega al truco en el infierno por toda la eternidad. Todas las bazas son pardas.' },
-          ],
-        }];
-      }
-      if (kind === 'casi') {
-        return [{
-          bg: 'cielo', music: 'triste', chars: [{ id: 'santo', pos: 'center' }],
-          lines: [
-            { who: 'santo', text: 'Tan cerca, {name}... La verdad duele, pero no te alcanzó.' },
-            { who: 'narrador', text: 'Desde el purgatorio, {name} escucha los cantos de truco del Edén. Algún día...' },
-          ],
-        }];
-      }
+      const ends = {
+        luzmala: { bg: 'noche', who: 'luzmala', say: 'Vení, {name}. Seguime...', end: '{name} siguió a la luz por el campo. Nunca más lo vieron.' },
+        lobison: { bg: 'lunallena', who: 'lobison', say: '¡Grrr! Ahora sos de la manada.', end: 'Desde esa noche, los viernes de luna llena, {name} también aúlla.' },
+        futre: { bg: 'noche', who: 'futre', say: 'Subí en ancas, {name}.', end: 'Dicen que los dos galopan por la cordillera, buscando cabezas.' },
+        familiar: { bg: 'ingenio', who: 'familiar', say: 'Un peón más para el patrón.', end: 'El Familiar se lo llevó al ingenio. Las chimeneas siguieron humeando.' },
+        gil: { bg: 'santuario', who: 'gil', say: 'No es castigo, hermano. Es tu hora.', end: '{name} cerró los ojos... y los abrió en un lugar gris, lleno de cartas flotando.' },
+      };
+      const e = ends[kind] || ends.luzmala;
       return [{
-        bg: 'purgatorio', music: 'triste', chars: [{ id: 'gaucho', pos: 'center' }],
-        lines: [
-          { who: 'gaucho', text: 'Te quedaste sin mazos, m\'hijo. Arrimá un banquito.' },
-          { who: 'gaucho', text: 'Vamos a jugar unas manos para pasar la eternidad. Yo reparto.' },
-        ],
+        bg: e.bg, music: 'triste', chars: [{ id: kind in ends ? kind : 'luzmala', pos: 'center' }],
+        lines: [{ who: e.who, text: e.say }, { who: 'narrador', text: e.end }],
       }];
     },
   };

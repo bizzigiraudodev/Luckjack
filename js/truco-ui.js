@@ -40,6 +40,22 @@
       print: ['TRUCO EN EL CIELO', 'ACÁ NADIE MIENTE'],
     },
   };
+  // Historia del truco en la pampa
+  const pampa = (id, name, persona, music, print, winHand, loseHand, goodEnvido) => ({
+    id, name, Name: name[0].toUpperCase() + name.slice(1), persona: TrucoAI.PERSONAS[persona], music, print, winHand, loseHand, goodEnvido,
+  });
+  Object.assign(RIVALS, {
+    luzmala: pampa('luzmala', 'la Luz Mala', 'luzmala', 'triste', ['LA LUZ MALA', 'TE MUESTRA UNA CARTA · TE BAJA LA SUERTE'],
+      ['Ji, ji... seguime.', 'Te encandilé, ¿eh?', 'Mi luz nunca falla.'], ['Ay, me apagaste un poquito.', 'Bien jugado, para ser vivo.'], 'Son buenas... por ahora.'),
+    lobison: pampa('lobison', 'el Lobisón', 'lobison', 'diablo', ['EL LOBISÓN', 'LUNA LLENA CADA 4 MANOS: PERDÉS X1.5'],
+      ['¡Auuuuu!', 'Grrr... sabroso.', 'Te olí el miedo.'], ['¡Grrr! Suerte de cristiano.', 'Esta me la cobro.'], 'Grrr... son buenas.'),
+    futre: pampa('futre', 'el Futre', 'futre', 'gaucho', ['EL FUTRE', 'VA AL GALOPE: ES MANO EN TODAS LAS MANOS'],
+      ['¡Al galope!', 'Sin cabeza y igual te gano.', 'Ni la vi venir, ¿eh?'], ['Perdí la cabeza... otra vez.', 'Me atropellaste vos.'], 'Son buenas.'),
+    familiar: pampa('familiar', 'el Familiar', 'familiar', 'diablo', ['EL FAMILIAR', 'CADA 5 MANOS SE COME EL 15% DE TUS FICHAS'],
+      ['Grrr... un peón más.', 'El patrón va a estar contento.', 'Ñam.'], ['¡Grrr! Eso no estaba en el trato.', 'Hmm... duro de roer.'], 'Grrr, son buenas.'),
+    gil: pampa('gil', 'el Gauchito Gil', 'gil', 'santo', ['EL GAUCHITO GIL', 'TRUCO HONRADO: ACÁ NO VALEN LAS MENTIRAS'],
+      ['Jugada limpia, hermano.', 'La verdad siempre gana.', 'Así se juega.'], ['Bien ganada, hermano.', 'Que Dios te lo pague.'], 'Son buenas, hermano.'),
+  });
   let RIVAL = RIVALS.gaucho;
 
   const store = {
@@ -394,7 +410,7 @@
     const t = runToken;
     const hand = run.truco;
     const opts = {
-      reveal: run.has('ojo') ? Math.floor(Math.random() * 3) : undefined,
+      reveal: run.revealsRivalCard ? Math.floor(Math.random() * 3) : undefined,
       rivalEnvido: run.has('mazo_marcado'),
     };
     const done = await playHand(hand, t, run.persona, opts);

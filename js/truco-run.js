@@ -12,14 +12,35 @@
   // Cartas que cuentan como "buenas" para la suerte del mazo: anchos bravos, sietes bravos, treses y doses.
   const isGood = (c) => Truco.rank(c) >= 9;
 
-  // Rivales de la historia (en el infinito siempre es el Viejo).
-  const RIVAL_NAMES = { gaucho: 'el Viejo', diablo: 'el Diablo', santo: 'San Pedro' };
-  // San Pedro nunca miente ni se deja mentir: en su mesa no valen el Chamuyero ni la Cara de Póker.
-  const SANTO_IMMUNE = ['chamuyo', 'mentiroso'];
+  // Historia del truco: en su retiro en la pampa, el timbero se juega la vida contra cinco
+  // personajes del campo, uno por noche (en el infinito siempre es el Viejo).
+  const TRUCO_STORY = ['luzmala', 'lobison', 'futre', 'familiar', 'gil'];
+  const RIVAL_NAMES = {
+    gaucho: 'el Viejo', luzmala: 'la Luz Mala', lobison: 'el Lobisón', futre: 'el Futre',
+    familiar: 'el Familiar', gil: 'el Gauchito Gil',
+  };
+  // El Gauchito Gil es justo: no miente ni se deja mentir (no valen el Chamuyero ni la Cara de Póker).
+  const HONEST_IMMUNE = ['chamuyo', 'mentiroso'];
+  const LUZ_MALA_LUCK = 0.05; // la Luz Mala te muestra una carta suya, pero te tira la suerte abajo
+  const FULL_MOON_EVERY = 4; // el Lobisón: cada 4 manos hay luna llena y las manos perdidas cuestan x1.5
+  const FULL_MOON_MULT = 1.5;
+  // En la pampa se arranca con más plata: con muerte súbita, una mala racha no puede ser el final.
+  const STORY_START = 200;
+  const STORY_QUOTA_GROWTH = 1.15; // $230, $265, $305, $350, $400 (calibrado con simulaciones)
+  const FAMILIAR_EVERY = 5; // el Familiar: cada 5 manos se come el 15% de tus fichas
+  const FAMILIAR_BITE = 0.15;
 
   class TrucoRun extends Game {
+    // `lives`: en la historia, 'sudden' (muerte súbita: perder una noche es perder la vida) o 'decks'
+    // (3 mazos como en el resto de los modos: más fácil, pero sin Mazo Dorado ni rankings).
     constructor(opts = {}) {
       super({ ...opts, catalog: TrucoBonuses });
+      this.lives = opts.lives === 'decks' ? 'decks' : 'sudden';
+      if (this.mode === 'story') {
+        this.money = STORY_START;
+        this.cycleStartMoney = STORY_START;
+        this.bestMoney = STORY_START;
+      }
       this.mano = this.rng() < 0.5 ? 0 : 1;
       this.truco = null;
       this.trucoBet = 0;
@@ -32,6 +53,7 @@
     // El truco tiene más varianza que el blackjack (se cobra apuesta × puntos), así que las cuotas
     // crecen más rápido: $140, $195, $275... (calibrado con simulaciones contra el rival).
     quotaFor(cycle) {
+      if (this.mode === 'story') return Math.round((STORY_START * Math.pow(STORY_QUOTA_GROWTH, cycle)) / 5) * 5;
       return Math.round((100 * Math.pow(1.4, cycle)) / 5) * 5;
     }
 
@@ -48,8 +70,45 @@
       return RIVAL_NAMES[this.boss] || RIVAL_NAMES.gaucho;
     }
 
+    get storyBosses() {
+      return TRUCO_STORY;
+    }
+
+    // En la pampa se juega la vida: con muerte súbita, perder un ciclo es perderla.
+    get suddenDeath() {
+      return this.lives === 'sudden';
+    }
+
+    // Solo la historia con muerte súbita da el Mazo Dorado y cuenta para los rankings.
+    get countsForRecords() {
+      return this.mode !== 'story' || this.lives === 'sudden';
+    }
+
+    // Con 3 mazos, al perder el último te lleva el rival de esa noche.
+    storyEnding() {
+      return this.boss;
+    }
+
+    get victoryLog() {
+      return '🌄 ¡Sobreviviste a las cinco noches! El Gauchito Gil te da su bendición.';
+    }
+
     active(id) {
-      return this.has(id) && !(this.boss === 'santo' && SANTO_IMMUNE.includes(id));
+      return this.has(id) && !(this.boss === 'gil' && HONEST_IMMUNE.includes(id));
+    }
+
+    get luck() {
+      return super.luck - (this.boss === 'luzmala' ? LUZ_MALA_LUCK : 0);
+    }
+
+    // La Luz Mala ilumina una carta del rival (como el bonus Ojo de Halcón).
+    get revealsRivalCard() {
+      return this.has('ojo') || this.boss === 'luzmala';
+    }
+
+    // Luna llena con el Lobisón: la mano en juego es de luna llena (las pérdidas cuestan x1.5).
+    get fullMoon() {
+      return this.boss === 'lobison' && this.handInCycle % FULL_MOON_EVERY === 0;
     }
 
     // Personalidad del rival, ajustada por tus bonuses.
@@ -88,17 +147,16 @@
       this.lastBet = amount;
       this.trucoBet = amount;
       this.result = null;
-      this.mano = 1 - this.mano;
+      // El Futre va siempre al galope: es mano en todas las manos.
+      this.mano = this.boss === 'futre' ? 1 : 1 - this.mano;
       const sieteBravo = this.has('siete_bravo');
-      // La trampa del Diablo: las bazas pardas son suyas (sus cartas desempatan).
-      const diablo = this.boss === 'diablo' ? 0.5 : 0;
       this.truco = new Truco.TrucoHand({
         mano: this.mano,
         cards: this.dealCards(),
         faltaPoints: (winner) => (winner === 1 && this.has('falta_segura') ? FALTA_SEGURA : FALTA),
         envidoBonus: [this.has('envido_gordo') ? 2 : 0, 0],
         pie: this.has('pie') ? 0 : null,
-        rankOf: (c, p) => (p === 0 && sieteBravo && c.n === 7 && (c.s === 'copa' || c.s === 'basto') ? 11 : Truco.rank(c) + (p === 1 ? diablo : 0)),
+        rankOf: (c, p) => (p === 0 && sieteBravo && c.n === 7 && (c.s === 'copa' || c.s === 'basto') ? 11 : Truco.rank(c)),
         flor: [this.has('flor'), false],
       });
       this.phase = 'playing';
@@ -124,6 +182,10 @@
         if (this.has('racha') && this.streak > 0) { net *= 1 + 0.2 * Math.min(this.streak, 5); notes.push(`🔥 racha x${this.streak}`); }
         if (this.upgrades.ganancia) net *= 1 + this.upgradeTotal('ganancia') / 100;
       }
+      if (net < 0 && this.fullMoon) {
+        net *= FULL_MOON_MULT;
+        notes.push('🌕 luna llena: pagás x1.5');
+      }
       if (net < 0) {
         if (this.has('escudo') && !this.shieldUsed) {
           this.shieldUsed = true;
@@ -140,6 +202,12 @@
 
       const before = this.money;
       this.money = Math.max(0, this.money + Math.round(net) + flat);
+      // El Familiar se come un pedazo de tus fichas cada 5 manos.
+      if (this.boss === 'familiar' && this.handInCycle % FAMILIAR_EVERY === 0 && this.money > 0) {
+        const bite = Math.ceil(this.money * FAMILIAR_BITE);
+        this.money -= bite;
+        notes.push(`🐕 el Familiar se comió $${bite}`);
+      }
       const change = this.money - before;
       const outcome = mine > his ? 'win' : mine < his ? 'lose' : 'push';
       this.streak = outcome === 'win' ? this.streak + 1 : outcome === 'lose' ? 0 : this.streak;
@@ -147,9 +215,9 @@
       this.handsPlayed++;
       this.phase = 'roundOver';
       const sign = change >= 0 ? `+$${change}` : `-$${-change}`;
-      const summary = `Puntos: vos ${mine} – ${his} ${this.rivalName} · ${sign}`;
+      const summary = `Puntos: vos ${mine} – ${his} ${this.rivalName} · ${sign}${notes.length ? ` (${notes.join(', ')})` : ''}`;
       this.result = { outcome, bet, net: change, points: [mine, his], notes, summary, hands: [{ outcome }] };
-      this.addLog(`${outcome === 'win' ? '✅' : outcome === 'lose' ? '❌' : '➖'} ${summary}${notes.length ? ' · ' + notes.join(' · ') : ''}`);
+      this.addLog(`${outcome === 'win' ? '✅' : outcome === 'lose' ? '❌' : '➖'} ${summary}`);
       return this.result;
     }
 
@@ -160,7 +228,7 @@
     }
   }
 
-  const TrucoRunModule = { TrucoRun, FALTA, FALTA_SEGURA, RIVAL_NAMES, SANTO_IMMUNE };
+  const TrucoRunModule = { TrucoRun, FALTA, FALTA_SEGURA, RIVAL_NAMES, TRUCO_STORY, HONEST_IMMUNE, STORY_START };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrucoRunModule;
   else root.TrucoRunModule = TrucoRunModule;
 })(typeof window !== 'undefined' ? window : globalThis);

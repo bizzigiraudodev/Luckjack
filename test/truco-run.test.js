@@ -163,60 +163,109 @@ test('simulación: partidas completas de truco infinito sin romper invariantes',
   assert.ok(maxCycles >= 1, 'alguna partida supera al menos un ciclo');
 });
 
-test('historia de truco: el Viejo, el Diablo y San Pedro, cada uno con su estilo', () => {
+test('historia de truco en la pampa: cinco rivales, uno por noche', () => {
   const r = run({ mode: 'story' });
-  assert.strictEqual(r.boss, 'gaucho');
-  assert.strictEqual(r.rivalName, 'el Viejo');
-  assert.strictEqual(r.persona.bluff, TrucoAI.PERSONAS.gaucho.bluff);
-  assert.strictEqual(r.pendingIntro, 1);
+  const order = ['luzmala', 'lobison', 'futre', 'familiar', 'gil'];
+  const names = ['la Luz Mala', 'el Lobisón', 'el Futre', 'el Familiar', 'el Gauchito Gil'];
+  order.forEach((id, i) => {
+    r.cycle = i + 1;
+    assert.strictEqual(r.boss, id);
+    assert.strictEqual(r.rivalName, names[i]);
+    assert.strictEqual(r.persona.bluff, TrucoAI.PERSONAS[id].bluff);
+  });
+  assert.strictEqual(r.persona.bluff, 0, 'el Gauchito Gil nunca miente');
+});
+
+test('la Luz Mala te muestra una carta pero te baja la suerte; el Futre es siempre mano', () => {
+  const r = run({ mode: 'story' });
+  const luck = r.luck;
+  assert.ok(r.revealsRivalCard);
   r.cycle = 2;
-  assert.strictEqual(r.rivalName, 'el Diablo');
-  assert.strictEqual(r.persona.bluff, TrucoAI.PERSONAS.diablo.bluff);
+  assert.ok(!r.revealsRivalCard);
+  assert.ok(r.luck > luck, 'fuera de la Luz Mala, más suerte');
   r.cycle = 3;
-  assert.strictEqual(r.rivalName, 'San Pedro');
-  assert.strictEqual(r.persona.bluff, 0, 'San Pedro nunca miente');
+  r.money = 1000;
+  for (let i = 0; i < 4; i++) {
+    r.phase = 'betting';
+    const h = r.deal(r.minBet);
+    assert.strictEqual(h.mano, 1, 'el Futre es mano siempre');
+  }
 });
 
-test('historia de truco: las pardas son del Diablo', () => {
+test('el Lobisón: con luna llena (cada 4 manos) las manos perdidas cuestan x1.5', () => {
+  const lose = (hand) => {
+    const r = run({ mode: 'story' });
+    r.cycle = 2;
+    r.money = 100;
+    r.handInCycle = hand;
+    rig(r, WEAK, STRONG);
+    const h = r.deal(20);
+    while (!h.finished) h.act(h.actor, h.actor === 0 ? { type: 'mazo' } : { type: 'play', index: 0 });
+    r.settleHand();
+    return 100 - r.money;
+  };
+  const normal = lose(1);
+  const moon = lose(4);
+  assert.strictEqual(moon, Math.round(normal * 1.5));
+});
+
+test('el Familiar se come el 15% de tus fichas cada 5 manos', () => {
   const r = run({ mode: 'story' });
-  r.cycle = 2;
-  rig(r, [c(3, 'espada'), c(4, 'copa'), c(5, 'oro')], [c(3, 'oro'), c(6, 'copa'), c(7, 'copa')]);
-  const h = r.deal(20);
-  // la primera carta de cada uno: los dos treses
-  while (h.bazas.length === 0) h.act(h.actor, { type: 'play', index: 0 });
-  assert.strictEqual(h.bazas[0], 1, 'el tres del Diablo le gana al tuyo');
-
-  const g = run({ mode: 'story' }); // con el Viejo es parda
-  rig(g, [c(3, 'espada'), c(4, 'copa'), c(5, 'oro')], [c(3, 'oro'), c(6, 'copa'), c(7, 'copa')]);
-  const h2 = g.deal(10);
-  while (h2.bazas.length === 0) h2.act(h2.actor, { type: 'play', index: 0 });
-  assert.strictEqual(h2.bazas[0], 'parda');
+  r.cycle = 4;
+  r.money = 200;
+  r.handInCycle = 5; // la cuota del ciclo 4 ($350) es más alta: no hay bonus de cuota
+  rig(r, STRONG, WEAK);
+  const h = r.deal(r.minBet);
+  playOut(h);
+  const sinMordida = 200 + r.minBet * (h.points[0] - h.points[1]); // sin cuota cumplida (la del ciclo 4 es más alta)
+  r.settleHand();
+  assert.ok(r.result.notes.some((n) => n.includes('Familiar')));
+  assert.strictEqual(r.money, sinMordida - Math.ceil(sinMordida * 0.15));
 });
 
-test('historia de truco: San Pedro anula el Chamuyero y la Cara de Póker', () => {
+test('el Gauchito Gil anula el Chamuyero y la Cara de Póker', () => {
   const r = run({ mode: 'story' });
   r.bonuses.push('chamuyo', 'mentiroso');
   assert.strictEqual(r.persona.trucoNeed, 3);
-  assert.strictEqual(r.persona.envidoNeed, 3);
-  r.cycle = 3;
+  r.cycle = 5;
   assert.ok(!r.active('chamuyo') && !r.active('mentiroso'));
   assert.strictEqual(r.persona.trucoNeed, 0);
   assert.strictEqual(r.persona.envidoNeed, 0);
 });
 
-test('historia de truco: pagar la tercera cuota es victoria; perder el último mazo da un final', () => {
+test('muerte súbita: perder un ciclo termina la partida con el final de ese rival; ganarle al Gil es victoria', () => {
+  const l = run({ mode: 'story' });
+  l.cycle = 2;
+  l.money = 10;
+  l.endCycle();
+  assert.strictEqual(l.phase, 'gameover', 'sin mazos de repuesto');
+  assert.strictEqual(l.ending, 'lobison');
   const r = run({ mode: 'story' });
-  r.cycle = 3;
-  r.money = 10000;
+  r.cycle = 5;
+  r.money = 100000;
   r.phase = 'betting';
   r.handInCycle = 6;
   r.advanceCycle();
   assert.strictEqual(r.phase, 'victory');
-  const l = run({ mode: 'story' });
-  l.cycle = 2;
-  l.deckIndex = 2;
-  l.money = 10;
-  l.endCycle();
-  assert.strictEqual(l.phase, 'gameover');
-  assert.strictEqual(l.ending, 'infierno');
+});
+
+test('historia de truco: se elige muerte súbita o 3 mazos; con 3 mazos no hay Mazo Dorado ni rankings', () => {
+  const s = run({ mode: 'story' });
+  assert.strictEqual(s.money, 200, 'en la pampa se arranca con $200');
+  assert.deepStrictEqual([1, 2, 3, 4, 5].map((c) => s.quotaFor(c)), [230, 265, 305, 350, 400]);
+  assert.ok(s.suddenDeath && s.countsForRecords);
+  const d = run({ mode: 'story', lives: 'decks' });
+  assert.ok(!d.suddenDeath && !d.countsForRecords);
+  d.cycle = 3;
+  d.money = 10;
+  d.endCycle();
+  assert.strictEqual(d.phase, 'deckLost', 'con 3 mazos se reintenta la noche');
+  d.continueWithNextDeck();
+  assert.strictEqual(d.cycle, 3);
+  d.deckIndex = 2;
+  d.money = 10;
+  d.endCycle();
+  assert.strictEqual(d.phase, 'gameover');
+  assert.strictEqual(d.ending, 'futre', 'con el último mazo te lleva el rival de esa noche');
+  assert.ok(run({ mode: 'infinite' }).countsForRecords);
 });

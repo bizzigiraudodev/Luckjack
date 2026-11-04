@@ -111,6 +111,50 @@
       ombu(ctx, 128, 56, true);
     },
 
+    // Luna llena enorme sobre el campo y un gallinero.
+    lunallena(ctx, t) {
+      bands(ctx, ['#070814', '#0c0f26', '#121838', '#1a2248'], 0, 72);
+      for (const [x, y, p] of STARS) if (Math.sin(t * 2 + p) > -0.4) rect(ctx, x, y, 1, 1, '#d8dcf0');
+      circle(ctx, 120, 26, 15, '#f4f0d0');
+      circle(ctx, 115, 22, 3, '#ddd6b0');
+      circle(ctx, 125, 31, 2, '#ddd6b0');
+      bands(ctx, ['#1c2418', '#171e13', '#11170e'], 72, H);
+      rect(ctx, 30, 58, 26, 14, '#3a2a1e'); // gallinero
+      rect(ctx, 28, 56, 30, 3, '#2a1d14');
+      rect(ctx, 38, 64, 6, 8, '#120c08');
+      ombu(ctx, 150, 58, true);
+    },
+
+    // Ingenio azucarero de noche: chimenea con humo y el cañaveral.
+    ingenio(ctx, t) {
+      bands(ctx, ['#120a0c', '#1e1014', '#2a161a', '#3a1c1e'], 0, 70);
+      rect(ctx, 96, 20, 10, 50, '#2a2024'); // chimenea
+      rect(ctx, 94, 18, 14, 4, '#1a1418');
+      for (let i = 0; i < 4; i++) circle(ctx, 101 + i * 6 + Math.sin(t + i) * 2, 14 - i * 4, 4 + i, '#3a3034');
+      rect(ctx, 60, 44, 60, 26, '#2e2226'); // galpón
+      rect(ctx, 70, 52, 8, 6, Math.floor(t * 3) % 5 ? '#c8642a' : '#7a3a1a');
+      rect(ctx, 96, 52, 8, 6, '#c8642a');
+      bands(ctx, ['#1e2a14', '#18220f', '#121a0b'], 70, H);
+      for (let x = 2; x < W; x += 5) rect(ctx, x, 62 + (x % 3), 2, 12, '#2c3a1a'); // caña
+    },
+
+    // Santuario del Gauchito Gil en el cruce de caminos, al amanecer, con banderas rojas.
+    santuario(ctx, t) {
+      bands(ctx, ['#2a1a3a', '#4a2a4a', '#8a3a4a', '#d0644a', '#f0a050'], 0, 70);
+      circle(ctx, 80, 70, 10, '#ffd27a');
+      bands(ctx, ['#3a2a1a', '#2e2214', '#22190e'], 70, H);
+      rect(ctx, 70, 52, 20, 18, '#c8102e'); // capillita roja
+      rect(ctx, 68, 48, 24, 5, '#8c0b20');
+      rect(ctx, 77, 58, 6, 12, '#2a0a10');
+      rect(ctx, 79, 42, 2, 6, '#f4efe6'); // cruz
+      rect(ctx, 77, 44, 6, 2, '#f4efe6');
+      for (const [x, h] of [[30, 30], [46, 26], [114, 28], [132, 32]]) {
+        rect(ctx, x, 70 - h, 1, h, '#2a1d14'); // mástil
+        const wave = Math.sin(t * 3 + x) > 0 ? 1 : 0;
+        rect(ctx, x + 1, 70 - h, 9, 5 + wave, '#c8102e'); // bandera
+      }
+    },
+
     purgatorio(ctx, t) {
       bands(ctx, ['#2f2b44', '#3a3550', '#45405e', '#514b6c', '#5d577a'], 0, 84);
       for (let i = 0; i < 5; i++) {
@@ -195,6 +239,11 @@
     diablo: { name: 'El Diablo', cls: 'diablo' },
     santo: { name: 'San Pedro', cls: 'santo' },
     timbero: { name: '{name}', cls: 'timbero' },
+    luzmala: { name: 'La Luz Mala', cls: 'luzmala' },
+    lobison: { name: 'El Lobisón', cls: 'lobison' },
+    futre: { name: 'El Futre', cls: 'futre' },
+    familiar: { name: 'El Familiar', cls: 'familiar' },
+    gil: { name: 'El Gauchito Gil', cls: 'gil' },
   };
 
   let ctx = null;

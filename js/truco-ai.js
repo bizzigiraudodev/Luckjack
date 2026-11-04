@@ -8,6 +8,12 @@
     gaucho: { bluff: 0.18, aggression: 0.5 }, // zorro viejo: miente de vez en cuando
     diablo: { bluff: 0.4, aggression: 0.75 }, // miente todo el tiempo
     santo: { bluff: 0, aggression: 0.35 }, // nunca miente
+    // Historia del truco en la pampa
+    luzmala: { bluff: 0.25, aggression: 0.5 }, // te encandila
+    lobison: { bluff: 0.3, aggression: 0.85 }, // bravo, canta todo
+    futre: { bluff: 0.2, aggression: 0.7 }, // va al galope
+    familiar: { bluff: 0.35, aggression: 0.6 }, // tramposo como su patrón
+    gil: { bluff: 0, aggression: 0.55 }, // justo: nunca miente
   };
 
   const teamOf = (hand, p) => (hand.team ? hand.team(p) : p);

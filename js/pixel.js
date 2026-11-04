@@ -116,6 +116,25 @@
     return out;
   }
 
+  // Cambia un píxel del mapa (fila y, columna x).
+  function put(map, y, x, ch) {
+    map[y] = map[y].slice(0, x) + ch + map[y].slice(x + 1);
+  }
+
+  // La Luz Mala: una bola de luz de 32x34 (núcleo blanco, verde y un halo que titila).
+  function orb() {
+    const out = [];
+    for (let y = 0; y < 34; y++) {
+      let row = '';
+      for (let x = 0; x < 32; x++) {
+        const d = Math.hypot(x - 15.5, y - 13.5);
+        row += d < 4 ? 'W' : d < 7.5 ? 'L' : d < 10.5 ? 'G' : d < 12.5 && (x + y) % 2 === 0 ? 'g' : d < 14.5 && (x + y) % 4 === 0 ? 'g' : '.';
+      }
+      out.push(row);
+    }
+    return out;
+  }
+
   // Pinta franjas horizontales en las filas indicadas (para el poncho).
   function stripe(map, ys, from, to) {
     for (const y of ys) map[y] = map[y].split(from).join(to);
@@ -196,6 +215,103 @@
       arm: { W: '#3d6fd1', w: '#28509e', S: '#f0c7a0', s: '#cf9f78' },
     },
 
+    // --- Historia del truco en la pampa ---
+
+    // La Luz Mala: una bola de luz verdosa que flota, con una cara que da miedo.
+    luzmala: {
+      body: orb(),
+      noArms: true,
+      palette: { ...BASE, W: '#f6fff0', L: '#c9ffb4', G: '#6fdc6a', g: '#2f7a3a', E: '#123018', m: '#123018', S: '#c9ffb4' },
+      arm: {},
+    },
+
+    // El Lobisón: cabeza de lobo peludo con orejas, ojos rojos y colmillos; poncho rotoso.
+    lobison: {
+      body: derive({
+        rows: {
+          0: '.......KK..............KK.......',
+          1: '......KfK..............KfK......',
+          2: '......KffK...KKKKKK...KffK......',
+          3: '.......KffffffffffffffffK.......',
+          4: '......KfFffffffffffffffFfK......',
+          5: '......KffffffffffffffffffK......',
+        },
+        swap: { H: 'F', h: 'F', V: 'f', v: 'F', S: 'f', s: 'F', R: 'P', r: 'p', W: 'F', B: 'p', G: 'p' },
+        post: (m) => {
+          for (const y of [12, 13, 14, 15]) for (let x = 12; x <= 19; x++) put(m, y, x, 'u'); // hocico claro
+          put(m, 11, 15, 'n'); put(m, 11, 16, 'n'); put(m, 12, 15, 'n'); put(m, 12, 16, 'n'); // nariz
+          put(m, 15, 12, 'W'); put(m, 15, 19, 'W'); // colmillos
+          put(m, 8, 9, 'F'); put(m, 9, 9, 'F'); put(m, 8, 22, 'F'); put(m, 9, 22, 'F'); // pelo en las mejillas
+          stripe(m, [26, 30], 'P', 'p');
+        },
+      }),
+      palette: { ...BASE, f: '#7a6a5c', F: '#4d4036', u: '#b8a48c', n: '#120c0a', E: '#ff3b2f', m: '#2a1410', W: '#f4efe6', P: '#5e4a36', p: '#3d2f22', S: '#7a6a5c' },
+      arm: { W: '#4d4036', w: '#3d2f22', S: '#7a6a5c', s: '#4d4036' },
+    },
+
+    // El Futre: jinete fantasma sin cabeza; el sombrero flota sobre el cuello cortado.
+    futre: {
+      body: derive({
+        rows: {
+          0: '................................',
+          1: '..........KKKKKKKKKKKK..........',
+          2: '.........KHHHHHHHHHHHHK.........',
+          3: '......KKKHHHHHHHHHHHHHHKKK......',
+          4: '.....KKKKKKKKKKKKKKKKKKKKKK.....',
+          5: '................................',
+          6: '................................',
+          7: '................................',
+          8: '................................',
+          9: '................................',
+          10: '................................',
+          11: '................................',
+          12: '................................',
+          13: '................................',
+          14: '................................',
+          15: '................................',
+          16: '.............KKKKKK.............',
+          17: '............KbbbbbbK............',
+        },
+        swap: { R: 'J', r: 'j', W: 'w', B: 'T', G: 'L' },
+        post: (m) => stripe(m, [24, 28], 'J', 'L'),
+      }),
+      noFace: true,
+      palette: { ...BASE, H: '#1c1a24', b: '#7a1020', J: '#2b3140', j: '#1b1f2a', w: '#c9d2dc', T: '#5a6a80', L: '#a9b8c8' },
+      arm: { W: '#2b3140', w: '#1b1f2a', S: '#c9d2dc', s: '#9aa6b4' },
+    },
+
+    // El Familiar: un perro negro enorme, ojos de brasa y collar rojo con medalla.
+    familiar: {
+      body: derive({
+        rows: {
+          0: '......KK................KK......',
+          1: '.....KdDK..............KDdK.....',
+          2: '.....KdddK..KKKKKKKK..KdddK.....',
+          3: '......KddddddddddddddddddK......',
+          4: '......KdDddddddddddddddDdK......',
+          5: '......KddddddddddddddddddK......',
+        },
+        swap: { H: 'd', h: 'D', V: 'd', v: 'D', S: 'd', s: 'D', W: 'd', R: 'd', r: 'D', B: 'T', G: 'Y' },
+        post: (m) => {
+          put(m, 15, 12, 'W'); put(m, 15, 19, 'W'); // colmillos
+          for (const y of [12, 13, 14]) for (let x = 13; x <= 18; x++) put(m, y, x, 'D'); // hocico
+          put(m, 11, 15, 'n'); put(m, 11, 16, 'n'); put(m, 12, 15, 'n'); put(m, 12, 16, 'n'); // nariz
+        },
+      }),
+      palette: { ...BASE, d: '#1d1a22', D: '#33303c', E: '#ff5a1f', m: '#7a1020', W: '#f4efe6', T: '#c8323c', Y: '#e0a84a', n: '#000000', S: '#1d1a22' },
+      arm: { W: '#1d1a22', w: '#33303c', S: '#1d1a22', s: '#33303c' },
+    },
+
+    // El Gauchito Gil: pelo y barba negros, vincha y pañuelo rojos, poncho rojo.
+    gil: {
+      body: derive({
+        swap: { V: 'H', v: 'T', h: 'H', R: 'T', r: 't', B: 'T', G: 'K' },
+        post: (m) => { for (const y of [13, 14, 15, 16]) m[y] = m[y].replace(/S/g, 'H'); },
+      }),
+      palette: { ...BASE, H: '#1a1418', S: '#d9a07a', s: '#b57f5c', W: '#f4efe6', T: '#c8102e', t: '#8c0b20', m: '#b04848' },
+      arm: { W: '#c8102e', w: '#8c0b20', S: '#d9a07a', s: '#b57f5c' },
+    },
+
     // El jugador en la intro: un timbero viejo con sombrero.
     timbero: {
       body: derive({
@@ -237,17 +353,20 @@
     const facePal = { K: P.K, S: pal.S, m: pal.m || P.m, W: '#ffffff' };
     const senas = Object.entries(SENA_FACES)
       .map(([sid, f]) => `<g class="sena sena-${sid}">${rects(f.map, facePal, f.x, f.y)}</g>`).join('');
-    return svg(32, 34, [
+    // `noArms`: criaturas sin brazos (la Luz Mala); `noFace`: sin cara (el Futre no tiene cabeza).
+    const arms = c.noArms ? [] : [
       `<g class="arm arm-l">${rects(ARM, armPal, 0, 19)}</g>`,
       `<g class="arm arm-r">${rects(ARM, armPal, 27, 19)}</g>`,
-      rects(c.body, pal),
+    ];
+    const face = c.noFace ? [] : [
       `<g class="eyes">${rects(EYES, pal, 11, 8)}</g>`,
       `<g class="mouth mouth-neutral">${rects(MOUTH, pal, 13, 14)}</g>`,
       `<g class="mouth mouth-happy">${rects(MOUTH_HAPPY, pal, 13, 14)}</g>`,
       `<g class="mouth mouth-sad">${rects(MOUTH_SAD, pal, 13, 14)}</g>`,
       `<g class="sweat">${rects(SWEAT, P, 27, 5)}</g>`,
       senas,
-    ].join(''), `dealer-sprite char-${id}`);
+    ];
+    return svg(32, 34, [...arms, rects(c.body, pal), ...face].join(''), `dealer-sprite char-${id}`);
   }
 
   function dealer() {

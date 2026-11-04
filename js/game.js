@@ -45,8 +45,18 @@
     // Quién reparte: el crupier en el clásico, el gaucho en el infinito y un jefe por ciclo en la historia.
     get boss() {
       if (this.mode === 'classic') return 'crupier';
-      if (this.mode === 'story') return STORY_BOSSES[Math.min(this.cycle, STORY_BOSSES.length) - 1];
+      if (this.mode === 'story') return this.storyBosses[Math.min(this.cycle, this.storyBosses.length) - 1];
       return 'gaucho';
+    }
+
+    // Jefes de la historia, uno por ciclo (el truco tiene los suyos).
+    get storyBosses() {
+      return STORY_BOSSES;
+    }
+
+    // Muerte súbita: perder un ciclo de la historia termina la partida (sin mazos de repuesto).
+    get suddenDeath() {
+      return false;
     }
 
     // Un bonus activo: en el ciclo de San Pedro el Crupier Nervioso no tiene efecto.
@@ -592,9 +602,9 @@
         return this.loseDeck(`No llegaste a la cuota de $${this.quota} del ciclo ${this.cycle}.`);
       }
       this.maxCleared = Math.max(this.maxCleared, this.cycle);
-      if (this.mode === 'story' && this.cycle >= STORY_BOSSES.length) {
+      if (this.mode === 'story' && this.cycle >= this.storyBosses.length) {
         this.phase = 'victory';
-        this.addLog('🌟 ¡Pagaste las tres cuotas! Las puertas del Edén se abren.');
+        this.addLog(this.victoryLog);
         return this.phase;
       }
       this.addLog(`✅ Ciclo ${this.cycle} superado. ¡A la tienda!`);
@@ -610,11 +620,24 @@
       }
     }
 
+    // Final de la historia al perder el último mazo, según dónde te quedaste.
+    storyEnding() {
+      return ['purgatorio', 'infierno', 'casi'][this.cycle - 1];
+    }
+
+    get victoryLog() {
+      return '🌟 ¡Pagaste las tres cuotas! Las puertas del Edén se abren.';
+    }
+
     // Perder con un mazo te pasa al siguiente (peor); perder con el último es game over.
     loseDeck(reason) {
+      if (this.mode === 'story' && this.suddenDeath) {
+        this.ending = this.boss;
+        return this.gameOver(reason);
+      }
       const lost = this.deckInfo;
       if (this.deckIndex >= Decks.DECK_SEQUENCE.length - 1) {
-        if (this.mode === 'story') this.ending = ['purgatorio', 'infierno', 'casi'][this.cycle - 1];
+        if (this.mode === 'story') this.ending = this.storyEnding();
         return this.gameOver(`${reason} Perdiste tu último mazo.`);
       }
       this.deckIndex++;
