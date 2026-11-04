@@ -1,5 +1,5 @@
 // API de rankings globales: Vercel Function + Upstash Redis (por su API REST, sin dependencias).
-//   GET  /api/leaderboard?board=story|chips|cycles  → los 10 mejores
+//   GET  /api/leaderboard?board=story|chips|cycles|trucoStory|trucoCycles  → los 10 mejores
 //   POST /api/leaderboard  { board, pid, name, value, hands } → guarda la marca si mejora la anterior
 // Cada jugador (pid, un id aleatorio de su dispositivo) tiene una sola fila por ranking: su mejor marca.
 
@@ -7,6 +7,8 @@ const BOARDS = {
   story: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 }, // milisegundos: menos es mejor
   chips: { order: 'desc', min: 1, max: 1e8 },
   cycles: { order: 'desc', min: 1, max: 10000 },
+  trucoStory: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 },
+  trucoCycles: { order: 'desc', min: 1, max: 10000 },
 };
 const TOP = 10;
 const RATE_LIMIT = 10; // envíos por minuto por IP

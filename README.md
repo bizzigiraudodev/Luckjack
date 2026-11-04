@@ -66,6 +66,16 @@ Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
 
 **Cómo funciona:** la partida vive en el servidor (`api/room.js`, Vercel Function + Upstash Redis). El motor del truco corre ahí, valida cada jugada y a cada jugador le manda solo lo que puede ver, así que nadie puede espiar las cartas del otro. Los celulares consultan cada ~1 segundo si hubo cambios. Necesita la misma base Upstash que los rankings globales (ver más abajo); con el plan gratis alcanza para unas 200 partidas por mes.
 
+### Truco modo historia
+
+Pestaña **🗡️ Truco → 📖 Modo historia**: la progresión del truco infinito en 3 ciclos, con cutscenes, contra los tres jefes:
+
+1. **El Viejo** (cuota $140): zorro viejo, miente de vez en cuando.
+2. **El Diablo** (cuota $195): miente casi siempre y **las bazas pardas son suyas**.
+3. **San Pedro** (cuota $275): nunca miente y en su mesa no sirven el **Chamuyero** ni la **Cara de Póker**.
+
+Igual que en la historia del blackjack: perder un mazo reintenta el ciclo, jugar el ciclo completo da 1 bonus común gratis y hay un final distinto según dónde te quedes. Terminarla desbloquea el **Mazo Dorado** en el truco infinito.
+
 ### Truco infinito
 
 La misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos como vidas, árbol de mejoras, pasar de ciclo), pero cada ronda es una mano de truco:
@@ -97,11 +107,12 @@ Próximamente: modo historia de truco y rankings del truco.
 
 ## Rankings
 
-Desde el menú (🏆 Rankings) hay tres rankings:
+Desde el menú (🏆 Rankings) hay cinco rankings:
 
 - **⏱️ Historia más rápida:** tiempo de juego hasta entrar al Edén (sin contar cutscenes, menú ni pestaña en segundo plano).
 - **💰 Más fichas (infinito):** el máximo de dinero alcanzado en una partida.
 - **♾️ Más ciclos (infinito):** ciclos superados en una partida.
+- **🗡️ Historia del truco más rápida** y **🗡️ Más ciclos (truco infinito):** los mismos rankings, para el truco.
 
 Las marcas se mandan solas al terminar (o al abandonar una partida de infinito). Cada jugador tiene una sola fila por ranking: su mejor marca. El nombre es el que escribiste en la intro y se puede cambiar desde la pantalla de rankings.
 

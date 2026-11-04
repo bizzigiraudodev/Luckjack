@@ -15,6 +15,7 @@
     name: 'luckjack.name',
     seenIntro: 'luckjack.seenIntro',
     trucoBest: 'luckjack.trucoBest', // truco infinito: { cycles, money }
+    trucoStoryDone: 'luckjack.trucoStoryDone', // historia del truco terminada → Mazo Dorado en el truco infinito
   };
   const store = {
     get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
@@ -447,9 +448,9 @@
       $('gameover-title').textContent = won ? '🌟 ¡Entraste al Edén!' : {
         purgatorio: '🌫️ Te quedaste en el purgatorio', infierno: '🔥 Te fuiste al infierno', casi: '🚪 Tan cerca del Edén',
       }[game.ending] || '💀 Fin de la partida';
-      $('gameover-reason').textContent = won
-        ? 'Pagaste las tres cuotas. ✨ El Mazo Dorado ya está desbloqueado en el modo Infinito.'
-        : game.gameOverReason;
+      $('gameover-reason').textContent = !won ? game.gameOverReason : game.isTruco
+        ? 'Les ganaste al Viejo, al Diablo y a San Pedro. ✨ El Mazo Dorado ya está desbloqueado en el truco infinito.'
+        : 'Pagaste las tres cuotas. ✨ El Mazo Dorado ya está desbloqueado en el modo Infinito.';
       $('gameover-stats').innerHTML = `Ciclos superados: <b>${game.maxCleared}/3</b> · Manos jugadas: <b>${game.handsPlayed}</b>` +
         (won ? ` · Tiempo: <b>${Leaderboard.formatTime(game.playMs)}</b>` : '');
       return;
@@ -521,7 +522,9 @@
     renderDeckLost();
     renderGameOver();
     playTransitionSounds();
+    TrucoUI.syncRun(!inCutscene);
     if (game.phase === 'playing' && !TrucoUI.handRunning) TrucoUI.playRunHand(render);
+    storyEvents();
   }
 
   function renderAll() {
@@ -549,22 +552,25 @@
   }
 
   async function storyEvents() {
-    if (game.mode !== 'story') return;
-    if (game.pendingIntro) {
-      const cycle = game.pendingIntro;
-      game.pendingIntro = null;
-      await cutscene(Story.cycleIntro(cycle, game.quotaFor(cycle)));
-      renderAll();
-    } else if ((game.phase === 'victory' || (game.phase === 'gameover' && game.ending)) && !game.endingShown) {
-      game.endingShown = true;
-      if (game.phase === 'victory') {
-        store.set(KEYS.storyDone, true);
+    if (!game || game.mode !== 'story' || inCutscene) return;
+    const g = game;
+    const script = g.isTruco ? Story.truco : Story;
+    const redraw = () => { if (game === g) (g.isTruco ? renderTruco() : renderAll()); };
+    if (g.pendingIntro) {
+      const cycle = g.pendingIntro;
+      g.pendingIntro = null;
+      await cutscene(script.cycleIntro(cycle, g.quotaFor(cycle)));
+      redraw();
+    } else if ((g.phase === 'victory' || (g.phase === 'gameover' && g.ending)) && !g.endingShown) {
+      g.endingShown = true;
+      if (g.phase === 'victory') {
+        store.set(g.isTruco ? KEYS.trucoStoryDone : KEYS.storyDone, true);
         Sound.sfx('victory');
-        await cutscene(Story.victory());
+        await cutscene(script.victory());
       } else {
-        await cutscene(Story.defeat(game.ending));
+        await cutscene(script.defeat(g.ending));
       }
-      renderAll();
+      redraw();
     }
   }
 
@@ -574,8 +580,10 @@
     if (game.submitted) return;
     const subs = [];
     if (game.mode === 'story' && game.phase === 'victory') {
-      subs.push(['story', Math.round(game.playMs)]);
-    } else if (game.mode === 'infinite' && game.handsPlayed > 0 && !game.isTruco) {
+      subs.push([game.isTruco ? 'trucoStory' : 'story', Math.round(game.playMs)]);
+    } else if (game.mode === 'infinite' && game.handsPlayed > 0 && game.isTruco) {
+      if (game.maxCleared > 0) subs.push(['trucoCycles', game.maxCleared]);
+    } else if (game.mode === 'infinite' && game.handsPlayed > 0) {
       subs.push(['chips', Math.floor(game.bestMoney)]);
       if (game.maxCleared > 0) subs.push(['cycles', game.maxCleared]);
     }
@@ -629,7 +637,8 @@
     if (!items.length) {
       const li = document.createElement('li');
       li.className = 'empty';
-      li.textContent = board === 'story' ? 'Todavía nadie terminó la historia. ¿Serás el primero?' : 'Todavía no hay marcas. ¡Jugá una partida de infinito!';
+      li.textContent = board === 'story' || board === 'trucoStory'
+        ? 'Todavía nadie terminó la historia. ¿Serás el primero?' : 'Todavía no hay marcas. ¡Jugá una partida de infinito!';
       items.push(li);
     }
     $('lb-list').replaceChildren(...items);
@@ -666,6 +675,7 @@
     const truco = TrucoUI.record();
     const tInf = store.get(KEYS.trucoBest);
     $('rec-truco-infinite').textContent = tInf ? `Récord: ${tInf.cycles} ciclos` : 'Cuotas sin fin, bonuses de truco';
+    $('rec-truco-story').textContent = store.get(KEYS.trucoStoryDone) ? '✔ Completado · ¿Otra vez?' : 'El Viejo, el Diablo y San Pedro';
     const t4 = Truco4UI.record();
     $('rec-truco4').textContent = t4 ? `Ganadas: ${t4.wins} · Perdidas: ${t4.losses}` : 'Vos y el Viejo contra el Diablo y San Pedro';
     $('rec-truco').textContent = truco ? `Ganadas: ${truco.wins} · Perdidas: ${truco.losses}` : 'Mano a mano contra el Viejo, a 15 puntos';
@@ -700,9 +710,12 @@
       TrucoUI.start(mode, { vars });
       return;
     }
-    // Truco infinito: la misma progresión que el blackjack, con su propia partida.
-    const startDeck = store.get(KEYS.storyDone) ? 'dorado' : null;
+    // Truco infinito e historia: la misma progresión que el blackjack, con su propia partida.
+    const golden = store.get(KEYS.storyDone) || store.get(KEYS.trucoStoryDone);
+    const startDeck = mode === 'infinite' && golden ? 'dorado' : null;
     game = new TrucoRunModule.TrucoRun({ mode, startDeck });
+    game.playMs = 0;
+    $('story-timer').textContent = '⏱️ 0:00';
     TrucoUI.prepareRun(game, { vars });
     shopTab = 'bonuses';
     lastResult = null;
@@ -758,7 +771,9 @@
     }
   });
   $('btn-ranks').addEventListener('click', () => showRanks());
-  $('btn-gameover-ranks').addEventListener('click', () => showRanks(game.mode === 'story' ? 'story' : 'cycles'));
+  $('btn-gameover-ranks').addEventListener('click', () => showRanks(game.isTruco
+    ? (game.mode === 'story' ? 'trucoStory' : 'trucoCycles')
+    : (game.mode === 'story' ? 'story' : 'cycles')));
   $('btn-close-ranks').addEventListener('click', () => { $('leaderboard').hidden = true; });
   document.querySelectorAll('#lb-tabs .tab').forEach((t) => t.addEventListener('click', () => showRanks(t.dataset.board)));
   $('lb-name-form').addEventListener('submit', (e) => {

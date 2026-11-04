@@ -162,3 +162,60 @@ test('simulación: partidas completas de truco infinito sin romper invariantes',
   }
   assert.ok(maxCycles >= 1, 'alguna partida supera al menos un ciclo');
 });
+
+test('historia de truco: el Viejo, el Diablo y San Pedro, cada uno con su estilo', () => {
+  const r = run({ mode: 'story' });
+  assert.strictEqual(r.boss, 'gaucho');
+  assert.strictEqual(r.rivalName, 'el Viejo');
+  assert.strictEqual(r.persona.bluff, TrucoAI.PERSONAS.gaucho.bluff);
+  assert.strictEqual(r.pendingIntro, 1);
+  r.cycle = 2;
+  assert.strictEqual(r.rivalName, 'el Diablo');
+  assert.strictEqual(r.persona.bluff, TrucoAI.PERSONAS.diablo.bluff);
+  r.cycle = 3;
+  assert.strictEqual(r.rivalName, 'San Pedro');
+  assert.strictEqual(r.persona.bluff, 0, 'San Pedro nunca miente');
+});
+
+test('historia de truco: las pardas son del Diablo', () => {
+  const r = run({ mode: 'story' });
+  r.cycle = 2;
+  rig(r, [c(3, 'espada'), c(4, 'copa'), c(5, 'oro')], [c(3, 'oro'), c(6, 'copa'), c(7, 'copa')]);
+  const h = r.deal(20);
+  // la primera carta de cada uno: los dos treses
+  while (h.bazas.length === 0) h.act(h.actor, { type: 'play', index: 0 });
+  assert.strictEqual(h.bazas[0], 1, 'el tres del Diablo le gana al tuyo');
+
+  const g = run({ mode: 'story' }); // con el Viejo es parda
+  rig(g, [c(3, 'espada'), c(4, 'copa'), c(5, 'oro')], [c(3, 'oro'), c(6, 'copa'), c(7, 'copa')]);
+  const h2 = g.deal(10);
+  while (h2.bazas.length === 0) h2.act(h2.actor, { type: 'play', index: 0 });
+  assert.strictEqual(h2.bazas[0], 'parda');
+});
+
+test('historia de truco: San Pedro anula el Chamuyero y la Cara de Póker', () => {
+  const r = run({ mode: 'story' });
+  r.bonuses.push('chamuyo', 'mentiroso');
+  assert.strictEqual(r.persona.trucoNeed, 3);
+  assert.strictEqual(r.persona.envidoNeed, 3);
+  r.cycle = 3;
+  assert.ok(!r.active('chamuyo') && !r.active('mentiroso'));
+  assert.strictEqual(r.persona.trucoNeed, 0);
+  assert.strictEqual(r.persona.envidoNeed, 0);
+});
+
+test('historia de truco: pagar la tercera cuota es victoria; perder el último mazo da un final', () => {
+  const r = run({ mode: 'story' });
+  r.cycle = 3;
+  r.money = 10000;
+  r.phase = 'betting';
+  r.advanceCycle();
+  assert.strictEqual(r.phase, 'victory');
+  const l = run({ mode: 'story' });
+  l.cycle = 2;
+  l.deckIndex = 2;
+  l.money = 10;
+  l.endCycle();
+  assert.strictEqual(l.phase, 'gameover');
+  assert.strictEqual(l.ending, 'infierno');
+});

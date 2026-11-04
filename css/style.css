@@ -651,6 +651,8 @@ button.big { font-size: 1.2rem; padding: 10px 26px; }
 .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
 .tab { flex: 1; --c: var(--panel-dark); --c-dark: #15201f; color: var(--muted); }
 .tab.active { --c: var(--orange); --c-dark: var(--orange-dark); color: var(--ink); }
+#lb-tabs { flex-wrap: wrap; }
+#lb-tabs .tab { flex: 1 1 30%; }
 .tree { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .branch {
   background: var(--inset);

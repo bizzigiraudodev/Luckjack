@@ -12,6 +12,11 @@
   // Cartas que cuentan como "buenas" para la suerte del mazo: anchos bravos, sietes bravos, treses y doses.
   const isGood = (c) => Truco.rank(c) >= 9;
 
+  // Rivales de la historia (en el infinito siempre es el Viejo).
+  const RIVAL_NAMES = { gaucho: 'el Viejo', diablo: 'el Diablo', santo: 'San Pedro' };
+  // San Pedro nunca miente ni se deja mentir: en su mesa no valen el Chamuyero ni la Cara de Póker.
+  const SANTO_IMMUNE = ['chamuyo', 'mentiroso'];
+
   class TrucoRun extends Game {
     constructor(opts = {}) {
       super({ ...opts, catalog: TrucoBonuses });
@@ -34,13 +39,21 @@
       return this.trucoBet;
     }
 
+    get rivalName() {
+      return RIVAL_NAMES[this.boss] || RIVAL_NAMES.gaucho;
+    }
+
+    active(id) {
+      return this.has(id) && !(this.boss === 'santo' && SANTO_IMMUNE.includes(id));
+    }
+
     // Personalidad del rival, ajustada por tus bonuses.
     get persona() {
       const base = TrucoAI.PERSONAS[this.boss] || TrucoAI.PERSONAS.gaucho;
       return {
         ...base,
-        trucoNeed: this.has('chamuyo') ? 3 : 0,
-        envidoNeed: this.has('mentiroso') ? 3 : 0,
+        trucoNeed: this.active('chamuyo') ? 3 : 0,
+        envidoNeed: this.active('mentiroso') ? 3 : 0,
       };
     }
 
@@ -72,13 +85,15 @@
       this.result = null;
       this.mano = 1 - this.mano;
       const sieteBravo = this.has('siete_bravo');
+      // La trampa del Diablo: las bazas pardas son suyas (sus cartas desempatan).
+      const diablo = this.boss === 'diablo' ? 0.5 : 0;
       this.truco = new Truco.TrucoHand({
         mano: this.mano,
         cards: this.dealCards(),
         faltaPoints: () => (this.has('falta_tuya') ? FALTA_GENEROSA : FALTA),
         envidoBonus: [this.has('envido_gordo') ? 2 : 0, 0],
         pie: this.has('pie') ? 0 : null,
-        rankOf: (c, p) => (p === 0 && sieteBravo && c.n === 7 && (c.s === 'copa' || c.s === 'basto') ? 11 : Truco.rank(c)),
+        rankOf: (c, p) => (p === 0 && sieteBravo && c.n === 7 && (c.s === 'copa' || c.s === 'basto') ? 11 : Truco.rank(c) + (p === 1 ? diablo : 0)),
         flor: [this.has('flor'), false],
       });
       this.phase = 'playing';
@@ -127,7 +142,7 @@
       this.handsPlayed++;
       this.phase = 'roundOver';
       const sign = change >= 0 ? `+$${change}` : `-$${-change}`;
-      const summary = `Puntos: vos ${mine} – ${his} el Viejo · ${sign}`;
+      const summary = `Puntos: vos ${mine} – ${his} ${this.rivalName} · ${sign}`;
       this.result = { outcome, bet, net: change, points: [mine, his], notes, summary, hands: [{ outcome }] };
       this.addLog(`${outcome === 'win' ? '✅' : outcome === 'lose' ? '❌' : '➖'} ${summary}${notes.length ? ' · ' + notes.join(' · ') : ''}`);
       return this.result;
@@ -140,7 +155,7 @@
     }
   }
 
-  const TrucoRunModule = { TrucoRun, FALTA, FALTA_GENEROSA };
+  const TrucoRunModule = { TrucoRun, FALTA, FALTA_GENEROSA, RIVAL_NAMES, SANTO_IMMUNE };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrucoRunModule;
   else root.TrucoRunModule = TrucoRunModule;
 })(typeof window !== 'undefined' ? window : globalThis);

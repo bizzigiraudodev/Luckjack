@@ -4,6 +4,8 @@
     story: { title: 'Historia más rápida', icon: '⏱️', order: 'asc', format: (v) => formatTime(v) },
     chips: { title: 'Más fichas (infinito)', icon: '💰', order: 'desc', format: (v) => `$${v}` },
     cycles: { title: 'Más ciclos (infinito)', icon: '♾️', order: 'desc', format: (v) => `${v} ${v === 1 ? 'ciclo' : 'ciclos'}` },
+    trucoStory: { title: 'Historia del truco más rápida', icon: '🗡️', order: 'asc', format: (v) => formatTime(v) },
+    trucoCycles: { title: 'Más ciclos (truco infinito)', icon: '🗡️', order: 'desc', format: (v) => `${v} ${v === 1 ? 'ciclo' : 'ciclos'}` },
   };
   const TOP = 10;
   const API = 'api/leaderboard';

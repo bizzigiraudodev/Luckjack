@@ -190,7 +190,7 @@
       </div>
       <div class="menu-modes" id="modes-truco" hidden>
         <button class="btn-green big" data-truco="classic">🗡️ Truco clásico<small id="rec-truco">Mano a mano contra el Viejo, a 15 puntos</small></button>
-        <button class="btn-red big" disabled>📖 Modo historia<small>Próximamente</small></button>
+        <button class="btn-red big" data-truco="story">📖 Modo historia<small id="rec-truco-story"></small></button>
         <button class="btn-blue big" data-truco="infinite">♾️ Truco infinito<small id="rec-truco-infinite"></small></button>
         <button class="btn-purple big" id="btn-truco4">🃏 Truco de a 4<small id="rec-truco4">Vos y el Viejo contra el Diablo y San Pedro</small></button>
         <button class="btn-orange big" id="btn-online">👥 Jugar con un amigo<small>Online, cada uno desde su celular</small></button>
@@ -231,6 +231,8 @@
         <button class="tab active" data-board="story" role="tab">⏱️ Historia</button>
         <button class="tab" data-board="chips" role="tab">💰 Fichas</button>
         <button class="tab" data-board="cycles" role="tab">♾️ Ciclos</button>
+        <button class="tab" data-board="trucoStory" role="tab">🗡️ Historia truco</button>
+        <button class="tab" data-board="trucoCycles" role="tab">🗡️ Ciclos truco</button>
       </div>
       <h3 id="lb-title"></h3>
       <p class="sub" id="lb-status"></p>
@@ -313,6 +315,7 @@
         <li><b>Jugar con un amigo:</b> creá una sala (a 15 o a 30), mandale el link por WhatsApp y juegan mano a mano, cada uno desde su celular. Podés cargarlo con frases rápidas 💬 y pedir revancha. Si se corta, abrí el link de nuevo y volvés a la sala.</li>
         <li><b>De a 4 online:</b> al crear la sala elegí "De a 4", compartí el link y armá las parejas tocando dos asientos. Con "Empezar" los lugares vacíos los llenan bots. Tus señas solo las ve tu compañero.</li>
         <li><b>Truco infinito:</b> cada mano es una ronda. Apostás antes de repartir y cobrás (o pagás) la apuesta × la diferencia de puntos de esa mano. La falta envido vale 5. Misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos y mejoras) con bonuses propios del truco.</li>
+        <li><b>Historia del truco:</b> la progresión del truco infinito en 3 ciclos contra 3 jefes. El Viejo es zorro viejo y miente de vez en cuando; con el Diablo, que miente casi siempre, las bazas pardas son suyas; San Pedro nunca miente y en su mesa no sirven el Chamuyero ni la Cara de Póker. Terminarla desbloquea el Mazo Dorado en el truco infinito.</li>
       </ul>
       <h3>Reglas del blackjack</h3>
       <ul class="rules">

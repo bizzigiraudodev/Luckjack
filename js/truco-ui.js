@@ -6,15 +6,41 @@
   const RECORD_KEY = 'luckjack.trucoClassic';
   const TARGET = 15;
 
-  const RIVAL = {
-    id: 'gaucho',
-    name: 'el Viejo',
-    Name: 'El Viejo',
-    persona: TrucoAI.PERSONAS.gaucho,
-    winHand: ['¡Aura sí!', 'Esa es mía, chamigo.', 'Gracias por los porotos.', 'Así se juega, m\'hijo.'],
-    loseHand: ['Ah, la pucha...', 'Bien jugado, m\'hijo.', 'Tuviste suerte, nomás.', 'Me agarraste dormido.'],
-    goodEnvido: 'Son buenas.',
+  const RIVALS = {
+    gaucho: {
+      id: 'gaucho',
+      name: 'el Viejo',
+      Name: 'El Viejo',
+      persona: TrucoAI.PERSONAS.gaucho,
+      winHand: ['¡Aura sí!', 'Esa es mía, chamigo.', 'Gracias por los porotos.', 'Así se juega, m\'hijo.'],
+      loseHand: ['Ah, la pucha...', 'Bien jugado, m\'hijo.', 'Tuviste suerte, nomás.', 'Me agarraste dormido.'],
+      goodEnvido: 'Son buenas.',
+      music: 'gaucho',
+    },
+    diablo: {
+      id: 'diablo',
+      name: 'el Diablo',
+      Name: 'El Diablo',
+      persona: TrucoAI.PERSONAS.diablo,
+      winHand: ['Je, je, je...', '¿Te creíste que tenía algo? ¡Tenía!', 'Otro porotito para el infierno.', 'La casa siempre gana.'],
+      loseHand: ['¡Maldición!', 'Esa no te la perdono.', 'Grrr... suerte de principiante.', 'Ya vas a ver la próxima.'],
+      goodEnvido: 'Ssson buenas...',
+      music: 'diablo',
+      print: ['TRUCO EN EL INFIERNO', 'LAS PARDAS SON DEL DIABLO'],
+    },
+    santo: {
+      id: 'santo',
+      name: 'San Pedro',
+      Name: 'San Pedro',
+      persona: TrucoAI.PERSONAS.santo,
+      winHand: ['La verdad siempre gana.', 'Bendita mano.', 'Te lo dije: tenía.', 'Paz y bien, hijo.'],
+      loseHand: ['Bien jugado, hijo.', 'Que Dios te lo premie.', 'Merecido, merecido.', 'Así se juega, sin mentir.'],
+      goodEnvido: 'Son buenas, hijo.',
+      music: 'santo',
+      print: ['TRUCO EN EL CIELO', 'ACÁ NADIE MIENTE'],
+    },
   };
+  let RIVAL = RIVALS.gaucho;
 
   const store = {
     get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
@@ -105,7 +131,7 @@
     const envidoOpen = !hand.envido.done && hand.bazas.length === 0 &&
       (hand.truco.level === 0 || (hand.pending && hand.pending.kind === 'envido'));
     if (envidoOpen) parts.push(`Tu envido: <b>${hand.envidoValueOf(0)}</b>`);
-    if (envidoOpen && opts.rivalEnvido) parts.push(`🔖 Envido del Viejo: <b>${envidoOf(hand.dealt[1])}</b>`);
+    if (envidoOpen && opts.rivalEnvido) parts.push(`🔖 Envido de ${RIVAL.name}: <b>${envidoOf(hand.dealt[1])}</b>`);
     if (hand.truco.level) parts.push(`${TRUCO_NAMES[hand.truco.level]} querido`);
     $('intel').innerHTML = parts.join(' · ');
   }
@@ -338,11 +364,26 @@
     playerName = (ctx.vars && ctx.vars.name) || 'Vos';
     document.body.dataset.game = 'truco';
     buildBoard();
-    Table.setDealer(RIVAL.id);
-    if (window.setBackgroundTheme) window.setBackgroundTheme(RIVAL.id);
-    document.querySelector('.print-big textPath').textContent = 'TRUCO INFINITO';
-    document.querySelector('.print-small textPath').textContent = 'SE COBRA APUESTA × PUNTOS · LA FALTA VALE 5';
-    Sound.music('gaucho');
+    shownRival = null;
+    syncRun(true);
+  }
+
+  // Pone en la mesa al rival del ciclo actual (en la historia cambia con cada jefe).
+  let shownRival = null;
+  function syncRun(withMusic) {
+    if (!run) return;
+    RIVAL = RIVALS[run.boss] || RIVALS.gaucho;
+    if (shownRival !== RIVAL.id) {
+      shownRival = RIVAL.id;
+      Table.setDealer(RIVAL.id);
+      if (window.setBackgroundTheme) window.setBackgroundTheme(RIVAL.id);
+      const story = run.mode === 'story';
+      const [big, small] = story && RIVAL.print ? RIVAL.print
+        : [story ? 'TRUCO · HISTORIA' : 'TRUCO INFINITO', 'SE COBRA APUESTA × PUNTOS · LA FALTA VALE 5'];
+      document.querySelector('.print-big textPath').textContent = big;
+      document.querySelector('.print-small textPath').textContent = small;
+    }
+    if (withMusic) Sound.music(RIVAL.music);
   }
 
   // Juega la mano que acaba de repartir `run.deal()` y después llama a `onDone` (para que ui.js dibuje).
@@ -374,6 +415,7 @@
     currentMode = mode;
     playerName = (ctx.vars && ctx.vars.name) || 'Vos';
     const t = token;
+    RIVAL = RIVALS.gaucho;
     match = new TrucoMatch({ target: TARGET, firstMano: Math.random() < 0.5 ? 0 : 1 });
     document.body.dataset.game = 'truco';
     $('gameover').hidden = true;
@@ -415,6 +457,7 @@
     get handRunning() { return handRunning; },
     prepareRun,
     playRunHand,
+    syncRun,
     message,
     // Piezas de la mesa que reutiliza el truco online.
     parts: { cardEl, log, LABELS, trucoLabel },
