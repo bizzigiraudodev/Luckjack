@@ -104,6 +104,26 @@
   }
   ['pointerdown', 'keydown', 'touchstart'].forEach((ev) => root.addEventListener(ev, unlock, { passive: true }));
 
+  // Al apagar la pantalla, cambiar de app o de pestaña, se corta todo el sonido;
+  // al volver, sigue el tema que estaba sonando.
+  function pause() {
+    if (!ctx) return;
+    stopTrack();
+    if (ctx.state === 'running') ctx.suspend();
+  }
+  function resume() {
+    if (!ctx || document.hidden) return;
+    const p = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+    Promise.resolve(p).then(() => {
+      if (!document.hidden && ctx.state === 'running' && wanted && playing !== wanted) startTrack(wanted);
+    }).catch(() => { /* hace falta un toque: lo retoma unlock() */ });
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => (document.hidden ? pause() : resume()));
+    root.addEventListener('pagehide', pause);
+    root.addEventListener('pageshow', resume);
+  }
+
   function tone(f, start, dur, type, vol, bus) {
     if (!f) return;
     const osc = ctx.createOscillator();
