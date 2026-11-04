@@ -305,14 +305,15 @@
     $('bet-amount').textContent = amount ? `$${amount}` : '';
   }
 
-  // Quién reparte: 'crupier', 'gaucho', 'diablo' o 'santo'. El gaucho tiene su mate en la mesa.
+  // Quién reparte: 'crupier', 'gaucho', 'diablo' o 'santo'. Cada jefe tiene su mate en la mesa.
   let dealerId = null;
   function setDealer(id) {
     if (id === dealerId) return;
     dealerId = id;
     $('dealer-sprite').innerHTML = Pixel.character(id);
-    $('table-mate').hidden = id !== 'gaucho';
-    if (!$('table-mate').innerHTML) $('table-mate').innerHTML = Pixel.mate();
+    const hasMate = !!Pixel.MATES[id];
+    $('table-mate').hidden = !hasMate;
+    $('table-mate').innerHTML = hasMate ? Pixel.mate(id) : '';
   }
 
   setDealer('crupier');

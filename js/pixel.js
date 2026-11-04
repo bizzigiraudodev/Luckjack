@@ -161,6 +161,7 @@
           17: '...........KsssHHHsssK..........',
         },
         swap: { V: 'H', v: 'H', R: 'J', r: 'j', B: 'T', G: 'T' },
+        post: (m) => stripe(m, [24, 28], 'J', 'T'), // poncho negro con guardas rojas
       }),
       palette: { ...BASE, H: '#1a1420', h: '#3d2a44', k: '#3b2630', S: '#d9473f', s: '#a82f2c',
         E: '#ffd23f', m: '#3b0d12', W: '#f4efe6', J: '#26222e', j: '#3d3550', T: '#e0262f' },
@@ -188,6 +189,7 @@
           20: '....KNNNNNNNKWWwwwWWKNNNNNNNK...',
         },
         swap: { H: 'w', h: 'w', R: 'N', r: 'n', B: 'W', G: 'G' },
+        post: (m) => stripe(m, [24, 28], 'N', 'W'), // poncho celeste y blanco
       }),
       palette: { ...BASE, G: '#ffd84a', w: '#f4f4f4', S: '#f0c7a0', s: '#cf9f78',
         W: '#fbf7ee', N: '#3d6fd1', n: '#28509e' },
@@ -252,10 +254,67 @@
     return character('crupier');
   }
 
-  // Mate con bombilla, para la mesa del gaucho (8x10).
-  const MATE = ['....GG..', '....G...', '...KGK..', '.KKKGKK.', 'KccccccK', 'KcCccccK', 'KcCccccK', '.KccccK.', '..KKKK..'];
-  function mate() {
-    return svg(8, 9, rects(MATE, { K: P.K, G: '#c9ccd6', c: '#7a4a2a', C: '#a8683c' }), 'mate');
+  // Mates de la mesa (12 de ancho), uno por jefe:
+  // el Viejo, de cuero con virola de alpaca; el Diablo, una pezuña partida con bombilla roja;
+  // San Pedro, una calabaza con gajos y virola dorada.
+  const MATES = {
+    gaucho: {
+      map: [
+        '.........GG.',
+        '........G...',
+        '.......G....',
+        '..KKKKKGKK..',
+        '.KLLLLLGLLK.',
+        '.KllllllllK.',
+        'KcCccccccccK',
+        'KcCccccccccK',
+        'KcCccccccccK',
+        'KccccccccccK',
+        '.KccccccccK.',
+        '..KccccccK..',
+        '...KKKKKK...',
+      ],
+      colors: { G: '#c9ccd6', L: '#e6e8ee', l: '#9fa3ad', c: '#5e3a1a', C: '#8a5a30' },
+    },
+    diablo: {
+      map: [
+        '.........TT.',
+        '........T...',
+        '.......T....',
+        '..KKKKKTKK..',
+        '.KyyyyyTyyK.',
+        '.KhhhhhhhhK.',
+        'KhHhhhhhhhhK',
+        'KhHhhhhhhhhK',
+        'KhHhhhhhhhhK',
+        'KhhhhhhhhhhK',
+        'KhhhhKKhhhhK',
+        'KkkkK..KkkkK',
+        '.KKK....KKK.',
+      ],
+      colors: { T: '#e0262f', y: '#5a8f2e', h: '#3a1d24', H: '#6b3440', k: '#8a6f5a' },
+    },
+    santo: {
+      map: [
+        '.........GG.',
+        '........G...',
+        '.......G....',
+        '...KKKKGK...',
+        '..KOOOOGOOK.',
+        '..KccccccK..',
+        '.KcCcrccrccK',
+        'KcCccrccrccK',
+        'KcCccrccrccK',
+        'KccccrccrccK',
+        '.KcccrccrcK.',
+        '..KKKKKKKK..',
+      ],
+      colors: { G: '#e8c547', O: '#ffd84a', c: '#f2a33a', C: '#ffd27a', r: '#c9761f' },
+    },
+  };
+  function mate(id = 'gaucho') {
+    const m = MATES[id] || MATES.gaucho;
+    return svg(12, m.map.length, rects(m.map, { K: P.K, ...m.colors }), `mate mate-${id}`);
   }
 
   // --- Palos españoles (9x9): '#' color principal, '+' detalle ---
@@ -275,7 +334,7 @@
     return svg(9, 9, rects(SPANISH[s].map, SPANISH[s].colors), cls);
   }
 
-  const Pixel = { rects, svg, suit, spanishSuit, dealer, character, mate, CHARACTERS, SUIT_COLORS, SPANISH_COLORS };
+  const Pixel = { rects, svg, suit, spanishSuit, dealer, character, mate, MATES, CHARACTERS, SUIT_COLORS, SPANISH_COLORS };
   if (typeof module !== 'undefined' && module.exports) module.exports = Pixel;
   else root.Pixel = Pixel;
 })(typeof window !== 'undefined' ? window : globalThis);
