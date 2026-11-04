@@ -254,67 +254,75 @@
     return character('crupier');
   }
 
-  // Mates de la mesa (12 de ancho), uno por jefe:
-  // el Viejo, de cuero con virola de alpaca; el Diablo, una pezuña partida con bombilla roja;
-  // San Pedro, una calabaza con gajos y virola dorada.
+  // Mates de la mesa (16x16), uno por jefe:
+  // el Viejo, un camionero de cuero con costuras y virola de alpaca cincelada;
+  // el Diablo, una pezuña partida en marrón, negro y bordó sangre que chorrea del borde;
+  // San Pedro, una calabaza con virola y guarda de filigrana dorada, una cruz y destellos celestiales.
   const MATES = {
     gaucho: {
       map: [
-        '.........GG.',
-        '........G...',
-        '.......G....',
-        '..KKKKKGKK..',
-        '.KLLLLLGLLK.',
-        '.KllllllllK.',
-        'KcCccccccccK',
-        'KcCccccccccK',
-        'KcCccccccccK',
-        'KccccccccccK',
-        '.KccccccccK.',
-        '..KccccccK..',
-        '...KKKKKK...',
+        '...........GG...',
+        '..........G.....',
+        '.........G......',
+        '..KKKKKKKGKKKK..',
+        '.KyyyyyyyGyyyyK.',
+        '.KAAAAAAAAAAAAK.',
+        '.KAeAeAeAeAeAeK.',
+        '.KaaaaaaaaaaaaK.',
+        '.KcCCCCCCCCCCcK.',
+        '.KcCsCCCCCCsCcK.',
+        '.KcCCsCCCCsCCcK.',
+        '.KcCsCCCCCCsCcK.',
+        '.KcCCCCCCCCCCcK.',
+        '.KaaaaaaaaaaaaK.',
+        '..KAeAeAeAeAeK..',
+        '...KKKKKKKKKK...',
       ],
-      colors: { G: '#c9ccd6', L: '#e6e8ee', l: '#9fa3ad', c: '#5e3a1a', C: '#8a5a30' },
+      colors: { G: '#c9ccd6', y: '#6a9a35', A: '#eceef3', a: '#a9adb8', e: '#7d8290', C: '#7a4a24', c: '#4a2a12', s: '#e0b46a' },
     },
     diablo: {
       map: [
-        '.........TT.',
-        '........T...',
-        '.......T....',
-        '..KKKKKTKK..',
-        '.KyyyyyTyyK.',
-        '.KhhhhhhhhK.',
-        'KhHhhhhhhhhK',
-        'KhHhhhhhhhhK',
-        'KhHhhhhhhhhK',
-        'KhhhhhhhhhhK',
-        'KhhhhKKhhhhK',
-        'KkkkK..KkkkK',
-        '.KKK....KKK.',
+        '...........BB...',
+        '..........I.....',
+        '.........I......',
+        '...KKKKKKIKKK...',
+        '..KbbbbbbIbbbK..',
+        '..KbBbbbbbbBbK..',
+        '..KhBhhHhhhBhK..',
+        '..KhHhhHhhhhhK..',
+        '..KhHhhHhhhhhK..',
+        '..KhhhhHhhhhhK..',
+        '..KkkkkkKkkkkK..',
+        '..KnnnnK.KnnnK..',
+        '..KnnnK...KnnK..',
+        '...KKK....KKK...',
       ],
-      colors: { T: '#e0262f', y: '#5a8f2e', h: '#3a1d24', H: '#6b3440', k: '#8a6f5a' },
+      colors: { K: '#0d0709', B: '#a3121f', b: '#6e0c19', I: '#3b3238', h: '#3a1f16', H: '#5a3322', n: '#1a0e0f', k: '#4b352c' },
     },
     santo: {
       map: [
-        '.........GG.',
-        '........G...',
-        '.......G....',
-        '...KKKKGK...',
-        '..KOOOOGOOK.',
-        '..KccccccK..',
-        '.KcCcrccrccK',
-        'KcCccrccrccK',
-        'KcCccrccrccK',
-        'KccccrccrccK',
-        '.KcccrccrcK.',
-        '..KKKKKKKK..',
+        '.L.........GG..L',
+        '..........G.....',
+        '.........G...L..',
+        '....KKKKKGKKK...',
+        '...KOWOWOGOWOK..',
+        '...KoOoOoOoOoK..',
+        '....KcccccccK...',
+        '..KcCccrccrccK..',
+        '.KcCcccrccrcccK.',
+        '.KOWOWOWOWOWOWK.',
+        '.KcCcccWccrcccK.',
+        '.KccccWWWcrcccK.',
+        '..KcccrWccrccK..',
+        '...KKKKKKKKKK...',
+        '.L............L.',
       ],
-      colors: { G: '#e8c547', O: '#ffd84a', c: '#f2a33a', C: '#ffd27a', r: '#c9761f' },
+      colors: { G: '#e8c547', L: '#fff6c8', O: '#ffd84a', o: '#c99a1e', W: '#fffbe8', c: '#f2a33a', C: '#ffd27a', r: '#c9761f' },
     },
   };
   function mate(id = 'gaucho') {
     const m = MATES[id] || MATES.gaucho;
-    return svg(12, m.map.length, rects(m.map, { K: P.K, ...m.colors }), `mate mate-${id}`);
+    return svg(16, m.map.length, rects(m.map, { K: P.K, ...m.colors }), `mate mate-${id}`);
   }
 
   // --- Palos españoles (9x9): '#' color principal, '+' detalle ---
