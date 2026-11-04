@@ -27,7 +27,7 @@
   }
 
   // Qué tan buena es la mano para el truco, contando las bazas ya ganadas o perdidas.
-  // `hints`: lo que el compañero mostró con señas ({ strong, envido, nada }).
+  // `hints`: lo que el compañero mostró con señas ({ strong: cuántas cartas bravas, envido, nada }).
   function power(hand, p, hints = {}) {
     const t = teamOf(hand, p);
     const ranks = hand.cards[p].map(rank).sort((a, b) => b - a);
@@ -38,7 +38,9 @@
     const cur = currentBest(hand);
     if (cur && cur.team === t) edge = 3;
     else if (cur) edge = ranks.some((r) => r > cur.rank) ? 4 : -4;
-    const partner = (hints.strong ? 5 : 0) - (hints.nada ? 2 : 0);
+    // Cada carta brava del compañero suma (si te mostró dos, cuenta las dos).
+    const strong = hints.strong === true ? 1 : Math.min(3, Number(hints.strong) || 0);
+    const partner = 5 * strong - (hints.nada ? 2 : 0);
     return (ranks[0] || 0) + (ranks[1] || 0) * 0.5 + won * 8 - lost * 7 + edge + partner;
   }
 
@@ -120,7 +122,29 @@
     return { type: 'play', index: chooseCard(hand, p) };
   }
 
-  const TrucoAI = { decide, power, chooseCard, currentBest, PERSONAS };
+  // El compañero bot obedece las órdenes de su pareja: si puede cantar lo que le pidieron, lo canta;
+  // con "jugá callado" no canta nada (solo juega y responde). Devuelve { action, used }.
+  const CALLS = ['truco', 'envido', 'real', 'falta'];
+  function obey(hand, p, orders, action, getOrder) {
+    if (!orders || !orders.length) return { action, used: null };
+    const acts = hand.actions(p);
+    const nextTruco = hand.pending && hand.pending.kind === 'truco' ? hand.pending.level + 1 : hand.truco.level + 1;
+    for (const id of orders) {
+      const o = getOrder(id);
+      if (!o || !o.act) continue;
+      if (!has(acts, o.act.type)) continue;
+      if (o.act.type === 'truco' && o.act.level !== nextTruco) continue;
+      return { action: { type: o.act.type }, used: id };
+    }
+    const quiet = orders.some((id) => { const o = getOrder(id); return o && o.callado; });
+    if (quiet && action && CALLS.includes(action.type)) {
+      if (has(acts, 'play')) return { action: { type: 'play', index: chooseCard(hand, p) }, used: null };
+      if (has(acts, 'quiero')) return { action: { type: 'quiero' }, used: null };
+    }
+    return { action, used: null };
+  }
+
+  const TrucoAI = { decide, power, chooseCard, currentBest, obey, PERSONAS };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrucoAI;
   else root.TrucoAI = TrucoAI;
 })(typeof window !== 'undefined' ? window : globalThis);

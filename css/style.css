@@ -850,6 +850,19 @@ body[data-table="4"] #tr-board { display: none !important; }
 .t4-center .card { width: 60px; height: 84px; animation: none; }
 .t4-center .card.winner { box-shadow: 0 0 0 var(--px) var(--gold), 0 0 14px rgba(245, 197, 66, 0.8); }
 .t4-history { display: flex; gap: 14px; justify-content: center; min-height: 52px; }
+/* Señas del compañero: sus cartas bravas a la vista (solo las ves vos) */
+.t4-shown { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; min-height: 0; font-size: 0.8rem; color: var(--gold, #ffcd3c); }
+.t4-shown:empty { display: none; }
+/* En pantallas grandes el panel flota a un costado de la mesa (no empuja tu mano debajo de los botones) */
+@media (min-width: 721px) {
+  .t4-shown { position: absolute; left: 22px; top: 96px; max-width: 170px; justify-content: flex-start; z-index: 2; }
+}
+/* Cuando te toca, tu mano queda por encima de la barra de botones fija */
+#tr-mine { scroll-margin-bottom: 150px; }
+.t4-shown .card { width: 32px; height: 46px; animation: none; }
+.t4-shown .card .tl, .t4-shown .card .br { font-size: 0.6rem; }
+.t4-shown .card .mid svg { width: 16px; height: 16px; }
+.t4-phrase-menu .phrase-title { font-size: 0.75rem; opacity: 0.8; padding: 4px 6px 0; text-transform: uppercase; }
 .t4-baza { display: flex; align-items: center; gap: 4px; }
 .t4-baza .mini .card { width: 32px; height: 46px; animation: none; }
 .t4-baza .mini .card .tl, .t4-baza .mini .card .br { font-size: 0.6rem; }
@@ -872,10 +885,10 @@ body[data-table="4"] #tr-board { display: none !important; }
 
 /* Caras de las señas (en el sprite del compañero) */
 .sena { display: none; }
-[data-sena="cejas"] .sena-cejas, [data-sena="ceno"] .sena-ceno, [data-sena="ojos"] .sena-ojos,
-[data-sena="guino"] .sena-guino, [data-sena="boca_der"] .sena-boca_der, [data-sena="boca_izq"] .sena-boca_izq,
-[data-sena="labio"] .sena-labio, [data-sena="trompa"] .sena-trompa { display: inline; }
-[data-sena="boca_der"] .mouth, [data-sena="boca_izq"] .mouth, [data-sena="labio"] .mouth, [data-sena="trompa"] .mouth { display: none !important; }
+[data-sena~="cejas"] .sena-cejas, [data-sena~="ceno"] .sena-ceno, [data-sena~="ojos"] .sena-ojos,
+[data-sena~="guino"] .sena-guino, [data-sena~="boca_der"] .sena-boca_der, [data-sena~="boca_izq"] .sena-boca_izq,
+[data-sena~="labio"] .sena-labio, [data-sena~="trompa"] .sena-trompa { display: inline; }
+[data-sena~="boca_der"] .mouth, [data-sena~="boca_izq"] .mouth, [data-sena~="labio"] .mouth, [data-sena~="trompa"] .mouth { display: none !important; }
 
 /* --- Truco online --- */
 #online { z-index: 45; }

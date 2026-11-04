@@ -106,3 +106,49 @@ test('simulación: partidas de a 4 entre bots terminan sin romper reglas', () =>
   }
   assert.ok(wins[0] > 30 && wins[1] > 30, `las dos parejas ganan: ${wins}`);
 });
+
+test('señas de un toque: el compañero ve todas tus cartas bravas y si tenés envido', () => {
+  const Senas = require('../js/senas.js');
+  const s = Senas.showFor([c(1, 'espada'), c(3, 'oro'), c(7, 'oro')], 30);
+  assert.deepStrictEqual(s.cards, [c(1, 'espada'), c(7, 'oro'), c(3, 'oro')], 'de la más alta a la más baja');
+  assert.deepStrictEqual(s.senas, ['cejas', 'boca_izq', 'labio', 'ceno']);
+  assert.strictEqual(s.envido, true);
+  const nada = Senas.showFor([c(4, 'copa'), c(5, 'oro'), c(6, 'basto')], 6);
+  assert.deepStrictEqual(nada, { cards: [], senas: ['ojos'], envido: false });
+});
+
+test('órdenes: el compañero bot canta lo que le pedís si puede, y con "jugá callado" no canta', () => {
+  const Senas = require('../js/senas.js');
+  const obey = (h, p, orders, action) => TrucoAI.obey(h, p, orders, action, Senas.getOrder);
+  // Mano 0: le toca primero al 0, después al 1 y después al compañero (2)
+  let h = hand4([filler, filler, [c(7, 'oro'), c(6, 'oro'), c(4, 'basto')], filler], 0);
+  h.act(0, { type: 'play', index: 0 });
+  h.act(1, { type: 'play', index: 0 });
+  let r = obey(h, 2, ['vino'], { type: 'play', index: 0 });
+  assert.deepStrictEqual(r, { action: { type: 'envido' }, used: 'vino' });
+  assert.ok(h.can(2, r.action));
+  r = obey(h, 2, ['segunda'], { type: 'play', index: 0 });
+  assert.deepStrictEqual(r.action, { type: 'truco' }, '"cantá 2da" = truco');
+  r = obey(h, 2, ['re'], { type: 'play', index: 0 });
+  assert.deepStrictEqual(r.action, { type: 'play', index: 0 }, 'no se puede cantar retruco sin truco: juega normal');
+  r = obey(h, 2, ['callado'], { type: 'truco' });
+  assert.strictEqual(r.action.type, 'play', 'callado: en vez de cantar, juega');
+
+  // Si el rival canta truco, "cantá el re" hace que responda retruco
+  h = hand4([filler, filler, filler, filler], 1);
+  h.act(1, { type: 'truco' });
+  r = obey(h, 2, ['re'], { type: 'quiero' });
+  assert.deepStrictEqual(r.action, { type: 'truco' });
+  h.act(2, r.action);
+  assert.strictEqual(h.pending.level, 2, 'retruco');
+});
+
+test('señas múltiples: el compañero bot cuenta todas tus cartas bravas', () => {
+  const Senas = require('../js/senas.js');
+  const one = Senas.hintsFrom(Senas.showFor([c(1, 'espada'), c(4, 'copa'), c(5, 'oro')], 9).senas);
+  const two = Senas.hintsFrom(Senas.showFor([c(1, 'espada'), c(3, 'oro'), c(5, 'oro')], 9).senas);
+  assert.strictEqual(one.strong, 1);
+  assert.strictEqual(two.strong, 2);
+  const h = hand4([filler, filler, filler, filler], 0);
+  assert.ok(TrucoAI.power(h, 2, two) > TrucoAI.power(h, 2, one), 'con dos cartas bravas del compañero se anima más');
+});

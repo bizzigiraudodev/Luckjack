@@ -24,7 +24,12 @@
   let waiter = null;
   let seen = 0;
   let active = false;
-  let mySenas = []; // señas que le hiciste a tu compañero en esta mano
+  let partnerHints = {}; // lo que sabe tu compañero de tus cartas (por tus señas)
+  let orders = []; // órdenes que le diste a tu compañero en esta mano
+  let shows = 0; // cuántas veces mostraste tus señas en esta mano
+  let lastShow = 0;
+  let lastPhrase = 0;
+  let currentHand = null;
   const els = new Map(); // carta → elemento (tu mano)
   const backs = [[], [], [], []]; // dorsos de las cartas de los demás
 
@@ -47,6 +52,7 @@
     $('tr-mine').replaceChildren();
     $('tr-rival').replaceChildren();
     for (const p of [1, 3]) $(`t4-${POS[p]}`).querySelector('.t4-backs').replaceChildren();
+    $('t4-shown').replaceChildren();
     els.clear();
     backs.forEach((b) => { b.length = 0; });
   }
@@ -109,57 +115,127 @@
   }
 
   // --- Señas ---
-  function showSena(id) {
-    const s = Senas.getSena(id);
-    $('dealer').dataset.sena = id;
-    $('intel').textContent = `🤫 Tu compañero: ${s.icon} ${s.face.toLowerCase()} → ${s.means}`;
-    parts().log(`🤫 El Viejo te hizo una seña: ${s.icon} ${s.face.toLowerCase()} (${s.means.toLowerCase()})`);
+
+  // Las señas de tu compañero: hace las caras y te quedan sus cartas bravas a la vista.
+  function showPartnerCards(name, show) {
+    const box = $('t4-shown');
+    box.replaceChildren();
+    const label = document.createElement('span');
+    label.textContent = `🤫 ${name}:`;
+    box.append(label, ...show.cards.map((c) => parts().cardEl(c)));
+    const extra = document.createElement('span');
+    extra.textContent = show.envido ? '😠 tiene envido' : show.cards.length ? '' : '😌 no tiene nada';
+    if (extra.textContent) box.appendChild(extra);
+  }
+
+  function describeShow(show) {
+    const names = show.senas.map((id) => Senas.getSena(id).means.toLowerCase());
+    return names.join(', ');
   }
 
   async function partnerSenas(hand, t) {
-    const ids = Senas.senasFor(hand.dealt[2], hand.envidoValueOf(2));
-    for (const id of ids) {
-      if (t !== token) return;
-      showSena(id);
-      await wait(1600);
-    }
-    delete $('dealer').dataset.sena;
+    const show = Senas.showFor(hand.dealt[2], hand.envidoValueOf(2));
+    showPartnerCards('El Viejo', show);
+    parts().log(`🤫 El Viejo te mostró sus señas: ${describeShow(show)}`);
+    // Todas las señas a la vez (por ejemplo, cejas + ceño = ancho de espadas y envido).
+    $('dealer').dataset.sena = show.senas.join(' ');
+    await wait(1800);
+    if (t === token) delete $('dealer').dataset.sena;
   }
 
-  function senaMenu(onPick) {
-    let menu = $('sena-menu');
-    if (!menu) {
-      menu = document.createElement('div');
-      menu.id = 'sena-menu';
-      menu.className = 'phrase-menu sena-menu';
-      menu.hidden = true;
-      document.body.appendChild(menu);
-    }
-    menu.replaceChildren(...Senas.SENAS.map((s) => {
-      const b = document.createElement('button');
-      b.innerHTML = `${s.icon} ${s.face} <small>${s.means}</small>`;
-      b.onclick = () => { menu.hidden = true; onPick(s.id); };
-      return b;
-    }));
-    return menu;
-  }
-
+  // Un toque y tu compañero ve todas tus señas (con anti-spam).
   function senaButton() {
     const btn = document.createElement('button');
     btn.className = 'phrase-btn';
-    btn.textContent = '🤫 Señas';
-    btn.title = 'Hacele una seña a tu compañero (los rivales no la ven)';
+    btn.textContent = '🤫';
+    btn.setAttribute('aria-label', 'Señas');
+    btn.title = 'Mostrale tus cartas bravas y tu envido a tu compañero (los rivales no ven nada)';
     btn.onclick = () => {
-      const m = senaMenu((id) => {
-        mySenas.push(id);
-        const s = Senas.getSena(id);
-        TrucoUI.message(`Le hiciste una seña al Viejo: ${s.icon} ${s.face.toLowerCase()}`);
-        parts().log(`🤫 Le hiciste una seña al Viejo: ${s.icon} ${s.face.toLowerCase()}`);
-        Sound.sfx('chip');
-      });
-      m.hidden = !m.hidden;
+      const hand = currentHand;
+      if (!hand || hand.finished) return;
+      const now = Date.now();
+      if (shows >= Senas.LIMITS.showsPerHand) { TrucoUI.message('Ya le mostraste tus señas varias veces en esta mano.'); return; }
+      if (now - lastShow < Senas.LIMITS.showGapMs) { TrucoUI.message('Esperá un toque antes de volver a hacer señas.'); return; }
+      shows++;
+      lastShow = now;
+      const show = Senas.showFor(hand.dealt[0], hand.envidoValueOf(0));
+      partnerHints = Senas.hintsFrom(show.senas);
+      TrucoUI.message(`Le mostraste tus señas al Viejo: ${describeShow(show)}.`);
+      parts().log(`🤫 Le mostraste tus señas al Viejo: ${describeShow(show)}`);
+      Sound.sfx('chip');
+      setTimeout(() => { if (currentHand === hand) say(2, '¡Visto, compañero!'); }, 500);
     };
     return btn;
+  }
+
+  // Frases: órdenes a tu compañero (solo él las escucha) o cargadas a los rivales.
+  function phraseMenu() {
+    let menu = $('t4-phrase-menu');
+    if (!menu) {
+      menu = document.createElement('div');
+      menu.id = 't4-phrase-menu';
+      menu.className = 'phrase-menu t4-phrase-menu';
+      menu.hidden = true;
+      document.body.appendChild(menu);
+    }
+    const title = (text) => { const h = document.createElement('div'); h.className = 'phrase-title'; h.textContent = text; return h; };
+    const item = (text, onPick) => {
+      const b = document.createElement('button');
+      b.textContent = text;
+      b.onclick = () => { menu.hidden = true; onPick(); };
+      return b;
+    };
+    menu.replaceChildren(
+      title('🤝 Al compañero'),
+      ...Senas.ORDERS.map((o) => item(o.text, () => giveOrder(o))),
+      title('🔥 A los rivales'),
+      ...Truco.PHRASES.map((text) => item(text, () => taunt(text))),
+    );
+    return menu;
+  }
+
+  function phraseAllowed() {
+    const now = Date.now();
+    if (now - lastPhrase < Senas.LIMITS.phraseGapMs) { TrucoUI.message('Pará un poco, che.'); return false; }
+    lastPhrase = now;
+    return true;
+  }
+
+  function giveOrder(o) {
+    if (!currentHand || currentHand.finished || !phraseAllowed()) return;
+    if (!orders.includes(o.id)) orders.push(o.id);
+    TrucoUI.message(`Le dijiste al Viejo: "${o.text}"`);
+    parts().log(`🤝 Al Viejo: ${o.text}`);
+    Sound.sfx('click');
+    setTimeout(() => say(2, Senas.ACKS[Math.floor(Math.random() * Senas.ACKS.length)]), 500);
+  }
+
+  function taunt(text) {
+    if (!phraseAllowed()) return;
+    TrucoUI.message(`Vos: "${text}"`);
+    parts().log(`💬 Vos: ${text}`);
+    Sound.sfx('click');
+    const rival = Math.random() < 0.5 ? 1 : 3;
+    setTimeout(() => {
+      if (!active) return;
+      const reply = Senas.COMEBACKS[Math.floor(Math.random() * Senas.COMEBACKS.length)];
+      say(rival, reply);
+      parts().log(`💬 ${SEATS[rival].name}: ${reply}`);
+    }, 900);
+  }
+
+  function phraseButton() {
+    const btn = document.createElement('button');
+    btn.className = 'phrase-btn';
+    btn.textContent = '💬';
+    btn.title = 'Órdenes al compañero y cargadas a los rivales';
+    btn.onclick = () => { const m = phraseMenu(); m.hidden = !m.hidden; };
+    return btn;
+  }
+
+  // Mientras juegan los demás, las señas y las frases siguen a mano.
+  function idleControls() {
+    $('truco-controls').replaceChildren(senaButton(), phraseButton());
   }
 
   // --- Turno del jugador ---
@@ -180,12 +256,12 @@
         if (waiter !== resolve) return;
         waiter = null;
         $('truco-controls').replaceChildren();
-        if ($('sena-menu')) $('sena-menu').hidden = true;
+        if ($('t4-phrase-menu')) $('t4-phrase-menu').hidden = true;
         $('tr-mine').querySelectorAll('.card').forEach((c) => { c.classList.remove('playable'); c.onclick = null; });
         resolve(action);
       };
       const acts = hand.actions(0);
-      const buttons = [senaButton(), ...acts.filter((a) => a.type !== 'play').map((a) => {
+      const buttons = [senaButton(), phraseButton(), ...acts.filter((a) => a.type !== 'play').map((a) => {
         const btn = document.createElement('button');
         const [label, cls] = a.type === 'truco' ? [parts().trucoLabel(hand), 'btn-orange'] : parts().LABELS[a.type];
         btn.textContent = label;
@@ -194,6 +270,7 @@
         return btn;
       })];
       $('truco-controls').replaceChildren(...buttons);
+      $('tr-mine').scrollIntoView({ block: 'nearest' });
       if (acts.some((a) => a.type === 'play')) {
         hand.cards[0].forEach((card) => {
           const el = els.get(card);
@@ -298,7 +375,11 @@
 
   async function playHand(hand, t) {
     seen = 0;
-    mySenas = [];
+    currentHand = hand;
+    partnerHints = {};
+    orders = [];
+    shows = 0;
+    lastShow = 0;
     Table.setSpeech(null);
     $('intel').textContent = '';
     TrucoUI.message(hand.mano === 0 ? 'Sos mano.' : `Es mano ${SEATS[hand.mano].name}.`);
@@ -311,9 +392,16 @@
       if (p === 0) {
         action = await waitHuman(hand);
       } else {
+        idleControls();
         await wait(700);
-        const hints = p === 2 ? Senas.hintsFrom(mySenas) : {};
+        const hints = p === 2 ? partnerHints : {};
         action = TrucoAI.decide(hand, p, SEATS[p].persona, Math.random, hints);
+        if (p === 2) {
+          // Tu compañero hace caso a tus órdenes.
+          const r = TrucoAI.obey(hand, p, orders, action, Senas.getOrder);
+          action = r.action;
+          if (r.used) orders = orders.filter((id) => id !== r.used);
+        }
       }
       if (t !== token || !action) return false;
       hand.act(p, action);
@@ -387,8 +475,9 @@
     match = null;
     delete document.body.dataset.table;
     if ($('dealer')) delete $('dealer').dataset.sena;
-    if ($('sena-menu')) $('sena-menu').hidden = true;
-    ['tr-rival', 'tr-mine', 't4-center', 't4-history', 't4-left', 't4-right', 'truco-controls'].forEach((id) => $(id) && $(id).replaceChildren());
+    if ($('t4-phrase-menu')) $('t4-phrase-menu').hidden = true;
+    currentHand = null;
+    ['tr-rival', 'tr-mine', 't4-center', 't4-history', 't4-shown', 't4-left', 't4-right', 'truco-controls'].forEach((id) => $(id) && $(id).replaceChildren());
   }
 
   root.Truco4UI = {

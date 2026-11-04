@@ -184,7 +184,9 @@ test('sala de 4: los bots juegan solos y nadie ve las cartas ajenas', async () =
   const v = res.data;
   // (o la mano ya terminó: por ejemplo, tu compañero bot cantó truco y el rival bot no quiso)
   assert.ok(v.hand.turn === 0 || v.hand.pending || v.hand.finished, 'los bots juegan hasta que le toca al humano');
-  assert.strictEqual(JSON.stringify(v).includes('"cards"'), false);
+  // Las únicas cartas ajenas que ves son las bravas que te muestra tu compañero con señas.
+  assert.strictEqual(JSON.stringify({ ...v, shows: undefined }).includes('"cards"'), false);
+  assert.ok(v.shows.every((x) => x.from === 2 || x.from === 0), 'solo señas de tu pareja');
   assert.deepStrictEqual(v.hand.counts[0], v.hand.myCards.length);
 });
 
@@ -233,4 +235,31 @@ test('sala de 4 con bots: una partida completa termina y la revancha la piden so
   await post({ action: 'rematch', code: r.code, token: r.tokens[1] });
   w = (await get({ code: r.code, token: r.tokens[0] })).data;
   assert.strictEqual(w.status, 'playing');
+});
+
+test('sala de 4: señas de un toque con anti-spam, solo para la pareja', async () => {
+  global.fetch = fakeRedis().fetch;
+  const r = await room4(4);
+  await post({ action: 'start', code: r.code, token: r.tokens[0] });
+  assert.strictEqual((await post({ action: 'senas', code: r.code, token: r.tokens[0] })).code, 200);
+  assert.strictEqual((await post({ action: 'senas', code: r.code, token: r.tokens[0] })).code, 429, 'anti-spam');
+  const view = async (i) => (await get({ code: r.code, token: r.tokens[i] })).data;
+  const partner = await view(2);
+  const shown = partner.shows.find((x) => x.from === 2);
+  assert.ok(shown && Array.isArray(shown.cards) && shown.senas.length, 'el compañero ve tus cartas bravas');
+  for (const i of [1, 3]) assert.strictEqual((await view(i)).shows.length, 0, 'los rivales no ven nada');
+});
+
+test('sala de 4: las órdenes solo las escucha el compañero; los bots contestan', async () => {
+  global.fetch = fakeRedis().fetch;
+  const r = await room4(1); // vos + 3 bots: tu compañero es un bot
+  await post({ action: 'start', code: r.code, token: r.tokens[0] });
+  let v = (await post({ action: 'say', code: r.code, token: r.tokens[0], order: 'vino' })).data;
+  const order = v.chat.find((c) => c.text === '¡Cantá el vino, dale!');
+  assert.ok(order && order.private, 'la orden es privada');
+  assert.ok(v.chat.some((c) => c.from === 2 && c.private), 'el compañero bot contesta');
+  assert.strictEqual((await post({ action: 'say', code: r.code, token: r.tokens[0], order: 'inventada' })).code, 400);
+  await new Promise((ok) => setTimeout(ok, 1600));
+  v = (await post({ action: 'say', code: r.code, token: r.tokens[0], phrase: 2 })).data;
+  assert.ok(v.chat.some((c) => (c.from === 1 || c.from === 3) && !c.private), 'un rival bot le contesta la cargada');
 });

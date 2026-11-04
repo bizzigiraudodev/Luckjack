@@ -97,10 +97,24 @@ function botSenas(room, m) {
   if (sizeOf(room) !== 4 || !h) return;
   for (let p = 0; p < 4; p++) {
     if (!isBot(room, p) || isBot(room, (p + 2) % 4)) continue;
-    for (const sena of Senas.senasFor(h.dealt[p], h.envidoValueOf(p))) {
-      room.senas.push({ id: ++room.senaSeq, seat: p, sena, hand: m.handNumber });
-    }
+    pushShow(room, p, m.handNumber, h.dealt[p]);
   }
+}
+
+// Señas de un toque: lo que ve el compañero (cartas bravas y si hay envido).
+function pushShow(room, seat, handNumber, cards) {
+  room.shows = room.shows || [];
+  room.shows.push({ id: (room.showSeq = (room.showSeq || 0) + 1), seat, hand: handNumber, ...Senas.showFor(cards, envidoOf(cards)) });
+}
+
+// Lo que sabe un jugador de su compañero por las señas que le hizo en esta mano.
+function hintsFor(room, partner, handNumber) {
+  const ids = [
+    ...(room.senas || []).filter((x) => x.seat === partner && x.hand === handNumber).map((x) => x.sena),
+    // De las señas de un toque vale la última (repetirlas no suma cartas).
+    ...((room.shows || []).filter((x) => x.seat === partner && x.hand === handNumber).pop() || { senas: [] }).senas,
+  ];
+  return Senas.hintsFrom(ids);
 }
 
 // Juegan los bots hasta que le toque a un humano. Si cantan contra una pareja con algún humano,
@@ -119,9 +133,16 @@ function runBots(room, m) {
     }
     if (!isBot(room, p)) return;
     const partner = (p + 2) % h.n;
-    const hints = Senas.hintsFrom(room.senas.filter((x) => x.seat === partner && x.hand === m.handNumber).map((x) => x.sena));
+    const hints = hintsFor(room, partner, m.handNumber);
     const persona = TrucoAI.PERSONAS[room.players[p].persona] || TrucoAI.PERSONAS.gaucho;
-    const a = TrucoAI.decide(h, p, persona, Math.random, hints);
+    let a = TrucoAI.decide(h, p, persona, Math.random, hints);
+    // Si su compañero le dio órdenes ("cantá el vino", "jugá callado"...), les hace caso.
+    const mine = (room.orders || []).filter((o) => o.to === p && o.hand === m.handNumber);
+    if (mine.length) {
+      const r = TrucoAI.obey(h, p, mine.map((o) => o.id), a, Senas.getOrder);
+      a = r.action;
+      if (r.used) room.orders = room.orders.filter((o) => !(o.to === p && o.hand === m.handNumber && o.id === r.used));
+    }
     if (!a || !h.can(p, a)) return;
     h.act(p, a);
   }
@@ -146,6 +167,9 @@ function startMatch(room, firstMano) {
   room.rematch = room.players.map((p) => !!(p && p.bot));
   room.senas = [];
   room.senaSeq = room.senaSeq || 0;
+  room.shows = [];
+  room.orders = [];
+  room.lastShow = room.players.map(() => 0);
   botSenas(room, m);
   advance(room, m);
 }
@@ -171,7 +195,8 @@ function view(room, s, since = 0) {
     oppOnline: !!opp && Date.now() - opp.seen < ONLINE_MS,
     left: room.left === null ? null : rel(room.left),
     rematch: { me: room.rematch[s], opp: room.rematch[1 - s] },
-    chat: room.chat.map((c) => ({ id: c.id, from: rel(c.seat), text: c.text })),
+    chat: room.chat.filter((c) => c.to === undefined || c.to === s || c.seat === s)
+      .map((c) => ({ id: c.id, from: rel(c.seat), text: c.text, ...(c.to !== undefined ? { private: true } : {}) })),
     events: room.events.filter((e) => e.id > since).map((e) => relEvent(e, rel, s)),
     lastEvent: room.eventSeq,
   };
@@ -235,12 +260,15 @@ function view4(room, s, since = 0) {
     } : { name: null, seat: q, pos: rel(q), empty: true })),
     left: room.left === null ? null : rel(room.left),
     rematch: { me: !!room.rematch[s], waiting: room.players.filter((p, q) => p && !p.bot && !room.rematch[q]).map((p) => p.name) },
-    chat: room.chat.map((c) => ({ id: c.id, from: rel(c.seat), text: c.text })),
+    chat: room.chat.filter((c) => c.to === undefined || c.to === s || c.seat === s)
+      .map((c) => ({ id: c.id, from: rel(c.seat), text: c.text, ...(c.to !== undefined ? { private: true } : {}) })),
     events: room.events.filter((e) => e.id > since).map((e) => relEvent4(e, rel, relTeam, myTeam)),
     lastEvent: room.eventSeq,
     // Las señas solo las ven el que las hace y su compañero.
     senas: (room.senas || []).filter((x) => x.hand === handNumber && (x.seat === s || x.seat === (s + 2) % n))
       .map((x) => ({ id: x.id, from: rel(x.seat), sena: x.sena })),
+    shows: (room.shows || []).filter((x) => x.hand === handNumber && (x.seat === s || x.seat === (s + 2) % n))
+      .map((x) => ({ id: x.id, from: rel(x.seat), cards: x.cards, senas: x.senas, envido: x.envido })),
   };
   if (!m) return v;
   v.matchNo = room.matchNo;
@@ -407,23 +435,62 @@ function sena(room, seat, body) {
   room.senas.push({ id: ++room.senaSeq, seat, sena: body.sena, hand: handNumber });
 }
 
+// Un toque en "Señas": tu compañero ve tus cartas bravas y tu envido (con anti-spam).
+function showSenas(room, seat) {
+  if (sizeOf(room) !== 4 || room.status !== 'playing') throw new HttpError(409, 'Las señas son para el truco de a 4');
+  const m = room.match;
+  const h = m.hand;
+  if (!h || h.finished) throw new HttpError(409, 'Esperá la próxima mano');
+  const count = (room.shows || []).filter((x) => x.seat === seat && x.hand === m.handNumber).length;
+  if (count >= Senas.LIMITS.showsPerHand) throw new HttpError(429, 'Ya le mostraste tus señas varias veces en esta mano');
+  room.lastShow = room.lastShow || room.players.map(() => 0);
+  if (Date.now() - (room.lastShow[seat] || 0) < Senas.LIMITS.showGapMs) throw new HttpError(429, 'Esperá un toque antes de volver a hacer señas');
+  room.lastShow[seat] = Date.now();
+  pushShow(room, seat, m.handNumber, h.dealt[seat]);
+}
+
 function next(room) {
   if (room.status !== 'playing') return;
   const m = revive(room.match);
   if (!m.hand || !m.hand.finished || m.over) return; // ya la empezó otro
   m.newHand();
   if (room.senas) room.senas = room.senas.filter((x) => x.hand >= m.handNumber - 1);
+  if (room.shows) room.shows = room.shows.filter((x) => x.hand >= m.handNumber - 1);
+  room.orders = (room.orders || []).filter((o) => o.hand >= m.handNumber);
   botSenas(room, m);
   advance(room, m);
 }
 
+const pickOne = (list) => list[Math.floor(Math.random() * list.length)];
+
+// Frases rápidas: cargadas para todos o (de a 4) órdenes que solo escucha tu compañero.
 function say(room, seat, body) {
+  const order = body.order !== undefined ? Senas.getOrder(String(body.order)) : null;
   const i = Number(body.phrase);
-  if (!Number.isInteger(i) || !PHRASES[i]) throw new HttpError(400, 'Frase desconocida');
+  if (!order && (!Number.isInteger(i) || !PHRASES[i])) throw new HttpError(400, 'Frase desconocida');
+  if (order && sizeOf(room) !== 4) throw new HttpError(400, 'Las órdenes son para el truco de a 4');
   if (Date.now() - room.lastChat[seat] < CHAT_GAP_MS) throw new HttpError(429, 'Pará un poco, che');
   room.lastChat[seat] = Date.now();
-  room.chat.push({ id: ++room.chatSeq, seat, text: PHRASES[i] });
-  if (room.chat.length > MAX_CHAT) room.chat = room.chat.slice(-MAX_CHAT);
+  const push = (entry) => {
+    room.chat.push({ id: ++room.chatSeq, ...entry });
+    if (room.chat.length > MAX_CHAT) room.chat = room.chat.slice(-MAX_CHAT);
+  };
+  if (order) {
+    const partner = (seat + 2) % 4;
+    push({ seat, text: order.text, to: partner });
+    if (room.status === 'playing' && room.match) {
+      room.orders = room.orders || [];
+      room.orders.push({ to: partner, id: order.id, hand: room.match.handNumber });
+      if (isBot(room, partner)) push({ seat: partner, text: pickOne(Senas.ACKS), to: seat });
+    }
+    return;
+  }
+  push({ seat, text: PHRASES[i] });
+  // Si hay rivales bots, alguno contesta la cargada.
+  if (sizeOf(room) === 4) {
+    const rivals = [1, 3].map((k) => (seat + k) % 4).filter((q) => isBot(room, q));
+    if (rivals.length) push({ seat: pickOne(rivals), text: pickOne(Senas.COMEBACKS) });
+  }
 }
 
 function rematch(room, seat) {
@@ -473,6 +540,7 @@ async function handler(req, res) {
         case 'swap': return swap(r, seat, body);
         case 'start': return start(r, seat);
         case 'sena': return sena(r, seat, body);
+        case 'senas': return showSenas(r, seat);
         case 'leave': r.left = seat; return null;
         default: throw new HttpError(400, 'Acción desconocida');
       }

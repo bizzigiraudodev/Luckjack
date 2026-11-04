@@ -186,9 +186,18 @@
       TrucoUI.message(e.status === 400 && v && v.size === 4 ? 'Esa ya no vale: seguro respondió tu compañero.' : e.message);
       controlsSig = null;
       Truco4Online.invalidate();
-      if (v) await update({ ...v, events: [], chat: [] }); // vuelve a habilitar los controles
+      // La jugada ya no valía porque la mesa cambió: se pide el estado actual enseguida
+      // (si no, se seguía mostrando la vista vieja y se podía quedar trabado).
+      try {
+        const q = `?code=${encodeURIComponent(session.code)}&token=${session.token}&ver=-1&since=${lastEvent}`;
+        await update(await api('GET', null, q));
+      } catch {
+        if (v) await update({ ...v, events: [], chat: [] }); // vuelve a habilitar los controles
+      }
     } finally {
       sending = false;
+      // Si la barra no se rehízo (por ejemplo, después de una seña o una frase), se reactiva igual.
+      $('truco-controls').querySelectorAll('button').forEach((b) => { b.disabled = false; });
       schedule();
     }
   }

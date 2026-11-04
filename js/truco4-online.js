@@ -11,6 +11,7 @@
   let ctx = null; // { send, inviteLink, lastEvent: {get,set}, lastChat: {get,set} }
   let handId = null;
   let lastSena = 0;
+  let lastShow = 0;
   let controlsSig = null;
   let pickedSeat = null; // para armar parejas en la sala de espera
   const els = new Map();
@@ -27,6 +28,7 @@
     v = null;
     handId = null;
     lastSena = 0;
+    lastShow = 0;
     controlsSig = null;
     pickedSeat = null;
   }
@@ -112,6 +114,7 @@
     buildSeats();
     $('t4-center').innerHTML = POS.map((pos) => `<div class="slot" data-pos="${pos}"></div>`).join('');
     $('t4-history').innerHTML = [0, 1, 2].map((i) => `<div class="t4-baza" data-i="${i}"><span class="mark"></span><div class="mini"></div></div>`).join('');
+    $('t4-shown').replaceChildren();
     $('tr-mine').replaceChildren();
     $('tr-rival').replaceChildren();
     els.clear();
@@ -211,8 +214,30 @@
     for (const c of v.chat || []) {
       if (c.id <= ctx.lastChat.get()) continue;
       ctx.lastChat.set(c.id);
-      if (c.from !== 0) say(c.from, `💬 ${c.text}`);
-      parts().log(`💬 ${nameAt(c.from)}: ${c.text}`);
+      if (c.from !== 0) say(c.from, `${c.private ? '🤝' : '💬'} ${c.text}`);
+      parts().log(`${c.private ? '🤝' : '💬'} ${nameAt(c.from)}${c.private && c.from === 0 ? ` → ${nameAt(2)}` : ''}: ${c.text}`);
+    }
+  }
+
+  // Señas de un toque: las cartas bravas de tu compañero quedan a la vista (solo vos las ves).
+  async function renderShows() {
+    for (const x of v.shows || []) {
+      if (x.id <= lastShow) continue;
+      lastShow = x.id;
+      const names = x.senas.map((id) => Senas.getSena(id).means.toLowerCase()).join(', ');
+      if (x.from === 2) {
+        const box = $('t4-shown');
+        const label = document.createElement('span');
+        label.textContent = `🤫 ${nameAt(2)}:`;
+        const extra = document.createElement('span');
+        extra.textContent = x.envido ? '😠 tiene envido' : x.cards.length ? '' : '😌 no tiene nada';
+        box.replaceChildren(label, ...x.cards.map((c) => parts().cardEl(c)), ...(extra.textContent ? [extra] : []));
+        $('dealer').dataset.sena = x.senas.join(' ');
+        parts().log(`🤫 ${nameAt(2)} te mostró sus señas: ${names}`);
+        setTimeout(() => { if ($('dealer')) delete $('dealer').dataset.sena; }, 1800);
+      } else if (x.from === 0) {
+        parts().log(`🤫 Le mostraste tus señas a ${nameAt(2)}: ${names}`);
+      }
     }
   }
 
@@ -258,29 +283,48 @@
     return h.turn === 0 ? 'Te toca. Jugá una carta o cantá.' : `${nameAt(h.turn)} está pensando...`;
   }
 
+  // Un toque: tu compañero ve tus cartas bravas y tu envido (el servidor frena el spam).
   function senaButton() {
     const btn = document.createElement('button');
     btn.className = 'phrase-btn';
-    btn.textContent = '🤫 Señas';
+    btn.textContent = '🤫';
+    btn.setAttribute('aria-label', 'Señas');
+    btn.title = 'Mostrale tus cartas bravas y tu envido a tu compañero (los rivales no ven nada)';
     btn.onclick = () => {
-      let menu = $('sena-menu');
+      TrucoUI.message(`Le mostrás tus señas a ${nameAt(2)}...`);
+      ctx.send('senas');
+    };
+    return btn;
+  }
+
+  // Frases: órdenes a tu compañero (solo él las escucha) o cargadas a los rivales.
+  function phraseButton() {
+    const btn = document.createElement('button');
+    btn.className = 'phrase-btn';
+    btn.textContent = '💬';
+    btn.title = 'Órdenes al compañero y cargadas a los rivales';
+    btn.onclick = () => {
+      let menu = $('t4o-phrase-menu');
       if (!menu) {
         menu = document.createElement('div');
-        menu.id = 'sena-menu';
-        menu.className = 'phrase-menu sena-menu';
+        menu.id = 't4o-phrase-menu';
+        menu.className = 'phrase-menu t4-phrase-menu';
         menu.hidden = true;
         document.body.appendChild(menu);
       }
-      menu.replaceChildren(...Senas.SENAS.map((s) => {
+      const title = (text) => { const h = document.createElement('div'); h.className = 'phrase-title'; h.textContent = text; return h; };
+      const item = (text, payload) => {
         const b = document.createElement('button');
-        b.innerHTML = `${s.icon} ${s.face} <small>${s.means}</small>`;
-        b.onclick = () => {
-          menu.hidden = true;
-          TrucoUI.message(`Le hiciste una seña a ${nameAt(2)}: ${s.icon} ${s.face.toLowerCase()}`);
-          ctx.send('sena', { sena: s.id });
-        };
+        b.textContent = text;
+        b.onclick = () => { menu.hidden = true; ctx.send('say', payload); };
         return b;
-      }));
+      };
+      menu.replaceChildren(
+        title('🤝 Al compañero'),
+        ...Senas.ORDERS.map((o) => item(o.text, { order: o.id })),
+        title('🔥 A los rivales'),
+        ...Truco.PHRASES.map((text, i) => item(text, { phrase: i })),
+      );
       menu.hidden = !menu.hidden;
     };
     return btn;
@@ -290,7 +334,7 @@
     $('tr-mine').querySelectorAll('.card').forEach((c) => { c.classList.remove('playable'); c.onclick = null; });
     const items = [];
     if (v.status === 'playing' && h && !h.finished && !byPos(2).empty) items.push(senaButton());
-    items.push(ctx.phraseButton());
+    items.push(v.status === 'playing' ? phraseButton() : ctx.phraseButton());
     if (!h || v.status === 'over') {
       $('truco-controls').replaceChildren(...items);
       return;
@@ -312,6 +356,7 @@
         items.push(b);
       }
       if (h.actions.some((a) => a.type === 'play')) {
+        $('tr-mine').scrollIntoView({ block: 'nearest' });
         h.myCards.forEach((card, index) => {
           const el = els.get(cardKey(card));
           if (!el) return;
@@ -372,6 +417,7 @@
         await newHand(h);
       }
       await renderSenas();
+      await renderShows();
       await renderEvents(h);
       if (h.finished) revealAll(h);
       TrucoUI.message(describe(h));
@@ -390,9 +436,9 @@
     reset();
     delete document.body.dataset.table;
     if ($('dealer')) delete $('dealer').dataset.sena;
-    if ($('sena-menu')) $('sena-menu').hidden = true;
+    if ($('t4o-phrase-menu')) $('t4o-phrase-menu').hidden = true;
     if ($('t4-lobby')) $('t4-lobby').hidden = true;
-    ['t4-center', 't4-history', 't4-left', 't4-right'].forEach((id) => $(id) && $(id).replaceChildren());
+    ['t4-center', 't4-history', 't4-shown', 't4-left', 't4-right'].forEach((id) => $(id) && $(id).replaceChildren());
   }
 
   root.Truco4Online = { render, stop, reset, invalidate: () => { controlsSig = null; } };
