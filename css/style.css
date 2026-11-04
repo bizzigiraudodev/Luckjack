@@ -853,6 +853,8 @@ body[data-table="4"] #tr-board { display: none !important; }
 /* Señas del compañero: sus cartas bravas a la vista (solo las ves vos) */
 .t4-shown { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; min-height: 0; font-size: 0.8rem; color: var(--gold, #ffcd3c); }
 .t4-shown:empty { display: none; }
+@keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.shake { animation: shake 0.25s 2; }
 /* En pantallas grandes el panel flota a un costado de la mesa (no empuja tu mano debajo de los botones) */
 @media (min-width: 721px) {
   .t4-shown { position: absolute; left: 22px; top: 96px; max-width: 170px; justify-content: flex-start; z-index: 2; }
@@ -948,7 +950,7 @@ body[data-table="4"] #tr-board { display: none !important; }
 .story-timer { margin-top: 8px; font-size: 1.05rem; color: var(--gold); }
 .ranks-result { margin: 10px 0; padding: 10px 12px; background: var(--inset); border: var(--px) solid var(--outline); border-radius: 8px; line-height: 1.5; }
 .ranks-result b { color: var(--gold); }
-.lb-list { list-style: none; margin: 8px 0 14px; padding: 0; }
+.lb-list { list-style: none; margin: 8px 0 14px; padding: 0; max-height: 46vh; overflow-y: auto; }
 .lb-list li {
   display: grid;
   grid-template-columns: 44px 1fr auto auto;

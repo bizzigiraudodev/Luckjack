@@ -15,7 +15,9 @@
     name: 'luckjack.name',
     seenIntro: 'luckjack.seenIntro',
     trucoBest: 'luckjack.trucoBest', // truco infinito: { cycles, money }
-    trucoStoryDone: 'luckjack.trucoStoryDone', // historia del truco terminada → Mazo Dorado en el truco infinito
+    trucoStoryDone: 'luckjack.trucoStoryDone',
+    playMs: 'luckjack.playMs', // tiempo total de juego (todos los modos)
+    playSent: 'luckjack.playSent', // lo último que se mandó al ranking // historia del truco terminada → Mazo Dorado en el truco infinito
   };
   const store = {
     get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
@@ -645,7 +647,7 @@
     if (!items.length) {
       const li = document.createElement('li');
       li.className = 'empty';
-      li.textContent = Leaderboard.BOARDS[board].order === 'asc'
+      li.textContent = board === 'playtime' ? 'Todavía nadie sumó tiempo de juego.' : Leaderboard.BOARDS[board].order === 'asc'
         ? 'Todavía nadie terminó la historia. ¿Serás el primero?' : 'Todavía no hay marcas. ¡Jugá una partida de infinito!';
       items.push(li);
     }
@@ -664,8 +666,27 @@
     $('story-timer').textContent = `${game.speedrun ? '⚡' : '⏱️'} ${Leaderboard.formatTime(game.playMs)}`;
   }, 250);
 
+  // --- Tiempo total de juego: cuenta mientras jugás (pestaña visible, sin menú ni cutscenes y
+  // tocando algo al menos cada 2 minutos) y se manda al ranking cada 5 minutos y al volver al menú.
+  let lastInput = Date.now();
+  ['pointerdown', 'keydown'].forEach((ev) => document.addEventListener(ev, (e) => { if (e.isTrusted) lastInput = Date.now(); }, true));
+  setInterval(() => {
+    if (!$('menu').hidden || inCutscene || document.hidden || Date.now() - lastInput > 120000) return;
+    const total = (store.get(KEYS.playMs) || 0) + 1000;
+    store.set(KEYS.playMs, total);
+    if (total - (store.get(KEYS.playSent) || 0) >= 5 * 60000) submitPlaytime();
+  }, 1000);
+
+  function submitPlaytime() {
+    const total = store.get(KEYS.playMs) || 0;
+    if (total < 60000 || total === store.get(KEYS.playSent)) return;
+    store.set(KEYS.playSent, total);
+    Leaderboard.submit('playtime', { name: vars.name, value: total, hands: 0 });
+  }
+
   // --- Menú ---
   function showMenu() {
+    submitPlaytime();
     Truco4UI.stop();
     TrucoUI.stop();
     TrucoOnline.stop();

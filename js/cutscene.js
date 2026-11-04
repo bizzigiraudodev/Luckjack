@@ -255,24 +255,51 @@
     [...wrap.children].forEach((el) => el.classList.toggle('talking', el.dataset.id === speaker));
   }
 
+  // Pide el nombre. No se puede saltear ni dejar vacío (así nadie queda como "Timbero").
   function askName(vars) {
     const form = $('cs-input');
     const input = $('cs-name');
     form.hidden = false;
+    $('cs-skip').hidden = true;
     input.value = vars.name && vars.name !== 'Timbero' ? vars.name : '';
     setTimeout(() => input.focus(), 50);
     return new Promise((resolve) => {
       const done = () => {
+        const name = input.value.trim().slice(0, 16);
+        if (!name) {
+          input.focus();
+          input.classList.remove('shake');
+          void input.offsetWidth;
+          input.classList.add('shake');
+          return;
+        }
         form.hidden = true;
-        vars.name = input.value.trim().slice(0, 16) || 'Timbero';
+        $('cs-skip').hidden = false;
+        vars.name = name;
         form.onsubmit = null;
+        advance = null;
         resolve();
       };
       form.onsubmit = (e) => { e.preventDefault(); done(); };
-      if (skipped) done();
-      advance = () => { if (skipped) done(); };
+      advance = null;
     });
   }
+
+  async function showScene(scene, vars) {
+    if (scene.bg !== bg) {
+      overlay().classList.add('fade');
+      Sound.sfx('whoosh');
+      await wait(350);
+      bg = scene.bg;
+      bgStart = performance.now();
+      $('cs-chars').replaceChildren();
+      overlay().classList.remove('fade');
+    }
+    if (scene.music) Sound.music(scene.music);
+  }
+
+  const overlay = () => $('cutscene');
+  const needsName = (vars) => !vars.name || vars.name === 'Timbero';
 
   async function play(scenes, vars = {}) {
     const overlay = $('cutscene');
@@ -316,6 +343,22 @@
         await waitAdvance();
         Sound.sfx('click');
       }
+    }
+    // Si saltearon la intro antes de poner el nombre, se saltea todo menos esa escena.
+    const nameScene = scenes.find((sc) => sc.lines.some((l) => l.input === 'name'));
+    if (skipped && nameScene && needsName(vars)) {
+      skipped = false;
+      await showScene(nameScene, vars);
+      const line = nameScene.lines.find((l) => l.input === 'name');
+      const sp = SPEAKERS[line.who] || SPEAKERS.narrador;
+      setChars(nameScene.chars || [], line.who);
+      $('cs-speaker').textContent = fill(sp.name, vars);
+      $('cs-speaker').className = `cs-speaker ${sp.cls}`;
+      $('cs-speaker').hidden = !sp.name;
+      $('cs-box').className = `cs-box ${sp.cls}`;
+      $('cs-next').hidden = true;
+      await typeText($('cs-text'), fill(line.text, vars));
+      await askName(vars);
     }
     if (skipped && vars.name === undefined) vars.name = 'Timbero';
     overlay.classList.add('fade');

@@ -1,5 +1,6 @@
 // API de rankings globales: Vercel Function + Upstash Redis (por su API REST, sin dependencias).
-//   GET  /api/leaderboard?board=story|chips|cycles|trucoStory|trucoCycles&pid=...  → los 10 mejores
+//   GET  /api/leaderboard?board=story|chips|cycles|trucoStory|trucoCycles|speedStory|speedTrucoStory|playtime&pid=...
+//        → los 10 mejores (en playtime, los 200 que más jugaron)
 //        (los ids de los jugadores no se devuelven: tu fila viene marcada con `me`)
 //   POST /api/leaderboard  { board, pid, name, value, hands } → guarda la marca si mejora la anterior
 // Cada jugador (pid, un id aleatorio de su dispositivo) tiene una sola fila por ranking: su mejor marca.
@@ -13,7 +14,11 @@ const BOARDS = {
   // Modo speedrun (sin animaciones): rankings aparte para no competir con las partidas normales.
   speedStory: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 },
   speedTrucoStory: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 },
+  // Tiempo total de juego (ms), de todos los jugadores: lista larga.
+  playtime: { order: 'desc', min: 60 * 1000, max: 1e11, top: 200 },
 };
+const PLAYTIME_FIRST_MAX = 4 * 3600 * 1000; // la primera vez se aceptan hasta 4 horas acumuladas
+const PLAYTIME_SLACK = 60 * 1000;
 const TIME_BOARDS = ['story', 'trucoStory', 'speedStory', 'speedTrucoStory'];
 const SPEED_BOARDS = ['speedStory', 'speedTrucoStory'];
 
@@ -101,9 +106,10 @@ const keys = (board, test = false) => (test
 
 async function top(cfg, board, me = '') {
   const { scores, info } = keys(board);
+  const limit = BOARDS[board].top || TOP;
   const cmd = BOARDS[board].order === 'asc'
-    ? ['ZRANGE', scores, 0, TOP - 1, 'WITHSCORES']
-    : ['ZRANGE', scores, 0, TOP - 1, 'REV', 'WITHSCORES'];
+    ? ['ZRANGE', scores, 0, limit - 1, 'WITHSCORES']
+    : ['ZRANGE', scores, 0, limit - 1, 'REV', 'WITHSCORES'];
   const flat = (await redis(cfg, cmd)) || [];
   const pids = [];
   const values = [];
@@ -133,6 +139,14 @@ function safeParse(text) {
 
 async function submit(cfg, { board, pid, value, entry, test }) {
   const { scores, info } = keys(board, test);
+  if (board === 'playtime') {
+    // El tiempo jugado no puede crecer más rápido que el reloj desde el último envío.
+    const old = safeParse(await redis(cfg, ['HGET', info, pid]));
+    const now = Date.now();
+    const cap = old.at ? (old.total || 0) + (now - old.at) + PLAYTIME_SLACK : PLAYTIME_FIRST_MAX;
+    value = Math.min(value, cap);
+    entry = { ...entry, at: now, total: Math.max(value, old.total || 0) };
+  }
   const asc = BOARDS[board].order === 'asc';
   // GT/LT: solo se actualiza si la marca nueva es mejor. CH: devuelve 1 si cambió algo.
   const changed = await redis(cfg, ['ZADD', scores, asc ? 'LT' : 'GT', 'CH', value, pid]);

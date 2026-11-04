@@ -8,6 +8,7 @@
     trucoCycles: { title: 'Más ciclos (truco infinito)', icon: '🗡️', order: 'desc', format: (v) => `${v} ${v === 1 ? 'ciclo' : 'ciclos'}` },
     speedStory: { title: 'Speedrun: historia del blackjack', icon: '⚡', order: 'asc', format: (v) => formatTime(v) },
     speedTrucoStory: { title: 'Speedrun: historia del truco', icon: '⚡', order: 'asc', format: (v) => formatTime(v) },
+    playtime: { title: 'Tiempo total de juego', icon: '⌛', order: 'desc', format: (v) => formatHours(v), onePerPlayer: true },
   };
   const TOP = 10;
   const API = 'api/leaderboard';
@@ -18,6 +19,13 @@
     const m = Math.floor((s % 3600) / 60);
     const ss = String(s % 60).padStart(2, '0');
     return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+  }
+
+  // "3 h 12 min" / "45 min"
+  function formatHours(ms) {
+    const min = Math.floor(ms / 60000);
+    const h = Math.floor(min / 60);
+    return h ? `${h} h ${min % 60} min` : `${min} min`;
   }
 
   // Mejor marca primero. Con `onePerPlayer`, una sola fila (la mejor) por jugador.
@@ -97,7 +105,7 @@
   async function submit(board, { name, value, hands }) {
     const entry = { pid: playerId(), name, value, hands, date: new Date().toISOString().slice(0, 10) };
     // En el dispositivo se guardan tus 10 mejores partidas (no solo la mejor).
-    const local = insert(localList(board), entry, BOARDS[board].order, false);
+    const local = insert(localList(board), entry, BOARDS[board].order, !!BOARDS[board].onePerPlayer);
     storage.set(`luckjack.lb.${board}`, local.list);
     if (canUseApi()) {
       try {
@@ -113,7 +121,7 @@
     return { rank: rank || null, global: false, improved: local.improved };
   }
 
-  const Leaderboard = { BOARDS, TOP, insert, formatTime, load, submit, playerId };
+  const Leaderboard = { BOARDS, TOP, insert, formatTime, formatHours, load, submit, playerId };
   if (typeof module !== 'undefined' && module.exports) module.exports = Leaderboard;
   else root.Leaderboard = Leaderboard;
 })(typeof window !== 'undefined' ? window : globalThis);

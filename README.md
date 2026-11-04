@@ -109,13 +109,14 @@ Próximamente: modo historia de truco y rankings del truco.
 
 ## Rankings
 
-Desde el menú (🏆 Rankings) hay siete rankings:
+Desde el menú (🏆 Rankings) hay ocho rankings:
 
 - **⏱️ Historia más rápida:** tiempo de juego hasta entrar al Edén (sin contar cutscenes, menú ni pestaña en segundo plano).
 - **💰 Más fichas (infinito):** el máximo de dinero alcanzado en una partida.
 - **♾️ Más ciclos (infinito):** ciclos superados en una partida.
 - **🗡️ Historia del truco más rápida** y **🗡️ Más ciclos (truco infinito):** los mismos rankings, para el truco.
 - **⚡ Speedrun BJ** y **⚡ Speedrun truco:** las historias jugadas en modo speedrun.
+- **⌛ Tiempo jugado:** el tiempo total de juego de cada jugador, en todos los modos (aparecen todos, no solo los 10 primeros). Cuenta solo con la pestaña a la vista, fuera del menú y de las cutscenes, y si tocaste algo en los últimos 2 minutos; se manda cada 5 minutos y al volver al menú. El servidor no deja que crezca más rápido que el reloj.
 
 ### Modo speedrun
 

@@ -53,7 +53,7 @@ function fakeRedis() {
       }
       case 'ZRANGE': {
         const rev = args.includes('REV');
-        result = sorted(rev).slice(0, 10).flatMap(([m, s]) => [m, String(s)]);
+        result = sorted(rev).slice(0, Number(args[1]) + 1).flatMap(([m, s]) => [m, String(s)]);
         break;
       }
       case 'ZRANK': case 'ZREVRANK': {
@@ -154,4 +154,20 @@ test('anti-bot: frena navegadores automatizados y ritmos de máquina; la clave d
   const test = await call('POST', { body: { board: 'story', pid: 'robot00001', name: 'Test', value: 90000, hands: 20, proof: { webdriver: true }, testKey: 'clave-equivocada-123' } });
   assert.strictEqual(test.code, 403, 'una clave equivocada no sirve');
   assert.strictEqual((await call('GET', { query: { board: 'story' } })).data.entries.length, 0, 'nada llegó al ranking público');
+});
+
+test('tiempo total de juego: lista larga y no crece más rápido que el reloj', async () => {
+  process.env.KV_REST_API_URL = 'https://redis.example';
+  process.env.KV_REST_API_TOKEN = 'token';
+  global.fetch = fakeRedis();
+  const send = (pid, value, ip) => call('POST', { ip, body: { proof: HUMAN, board: 'playtime', pid, name: pid.slice(0, 6), value, hands: 0 } });
+  for (let i = 0; i < 15; i++) await send(`jugador${String(i).padStart(4, '0')}`, 60000 * (i + 1), `7.7.7.${i}`);
+  const r = await call('GET', { query: { board: 'playtime' } });
+  assert.strictEqual(r.data.entries.length, 15, 'aparecen todos, no solo 10');
+  await send('tramposo01', 999 * 3600 * 1000, '8.8.8.8');
+  const top = (await call('GET', { query: { board: 'playtime' } })).data.entries[0];
+  assert.ok(top.value <= 4 * 3600 * 1000, 'la primera vez no se aceptan más de 4 horas');
+  await send('tramposo01', 999 * 3600 * 1000, '8.8.8.8');
+  const again = (await call('GET', { query: { board: 'playtime' } })).data.entries[0];
+  assert.ok(again.value <= 4 * 3600 * 1000 + 61000, 'después, como mucho lo que pasó en el reloj');
 });
