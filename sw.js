@@ -12,6 +12,7 @@ const ASSETS = [
   'js/decks.js',
   'js/upgrades.js',
   'js/game.js',
+  'js/sprites-pampa.js',
   'js/pixel.js',
   'js/audio.js',
   'js/speedrun.js',

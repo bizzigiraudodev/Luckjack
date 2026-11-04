@@ -121,25 +121,12 @@
     map[y] = map[y].slice(0, x) + ch + map[y].slice(x + 1);
   }
 
-  // La Luz Mala: una mancha de oscuridad con dos ojos enormes que brillan, de pupilas como estrellas.
-  function darkEyes() {
-    const out = [];
-    const eyes = [[9, 15], [22, 15]];
-    for (let y = 0; y < 34; y++) {
-      let row = '';
-      for (let x = 0; x < 32; x++) {
-        const mass = ((x - 15.5) / 16) ** 2 + ((y - 15.5) / 11) ** 2;
-        let ch = mass < 0.75 ? 'd' : mass < 1 && (x + y) % 2 === 0 ? 'D' : mass < 1.15 && (x * 3 + y) % 5 === 0 ? 'D' : '.';
-        for (const [cx, cy] of eyes) {
-          const e = ((x - cx) / 5.6) ** 2 + ((y - cy) / 3.1) ** 2;
-          const r = Math.hypot(x - cx, y - cy);
-          if (e < 1) ch = e > 0.7 ? 'w' : 'W';
-          if (r < 2.4) ch = 'K';
-          if ((Math.abs(x - cx) < 0.6 && Math.abs(y - cy) < 1.1) || (Math.abs(y - cy) < 0.6 && Math.abs(x - cx) < 1.1)) ch = 's';
-        }
-        row += ch;
-      }
-      out.push(row);
+  // Rivales de la pampa: sprites más grandes, sin los brazos ni la cara del cuerpo base.
+  function pampaCharacters() {
+    const sprites = root.PAMPA_SPRITES || (typeof require !== 'undefined' && require('./sprites-pampa.js')) || {};
+    const out = {};
+    for (const [id, sp] of Object.entries(sprites)) {
+      out[id] = { body: sp.map, palette: sp.palette, w: sp.map[0].length, h: sp.map.length, noArms: true, noFace: true, arm: {} };
     }
     return out;
   }
@@ -224,194 +211,8 @@
       arm: { W: '#3d6fd1', w: '#28509e', S: '#f0c7a0', s: '#cf9f78' },
     },
 
-    // --- Historia del truco en la pampa ---
-
-    // La Luz Mala: en la oscuridad, solo dos ojos enormes con pupilas de estrella.
-    luzmala: {
-      body: darkEyes(),
-      noArms: true,
-      noFace: true,
-      palette: { ...BASE, d: '#0b0b0f', D: '#1c1c24', W: '#f4f4f0', w: '#9a9aa4', s: '#ffffff' },
-      arm: {},
-    },
-
-    // El Silbón: flaco y verdoso, sombrero de paja roto, ojos hundidos y la bolsa de huesos al hombro.
-    silbon: {
-      body: [
-        '................................',
-        '..........KKKKKKK...............',
-        '.........KYYyYYYYK..............',
-        '........KYYYyyyYYYK.............',
-        '...KKKKKYYYYYYYYYYYKKKKK........',
-        '..KYYyYYYYYYyYYYYYYYYyYYK.......',
-        '...KKKyKKKKKKKKKKKKKyKKK.....KKK',
-        '.........KhhhhhhhhK........KBBBK',
-        '.........KGkkGGkkGK.......KBBBBB',
-        '.........KGkeGGekGK......KBbBBBB',
-        '.........KGGGGGGGGK.....KBBBBbBB',
-        '.........KgGGGGGGgK.....KBBWWBBB',
-        '..........KGmmmmGK......KBWkWkBB',
-        '..........KgGGGGgK......KBWWWWBB',
-        '...........KgggggK......KBBWmWBB',
-        '..........KKGgggGKK.....KBBBBBbB',
-        '........KKCCKGGGKCCKK..KBBBBBBBK',
-        '.......KCCCCCKGKCCCCCKKBBBBBBBK.',
-        '......KCCcCCCCKCCCCCCGGKBBBBBK..',
-        '......KCCcCCCCCCCCCCCKGKBBBBK...',
-        '......KCKcCCCCCCCCCCcKGGKKKK....',
-        '......KCKcCCCCCCCCCCcKKGK.......',
-        '......KGKcCCCCCCCCCCcK.KK.......',
-        '......KGKcCCCCCCCCCCcK..........',
-        '......KGKPPPPPPPPPPPPK..........',
-        '......KGKPPPPKKPPPPPPK..........',
-        '.....KGGKPPPPK.KPPPPPK..........',
-        '.....KGGKPPPPK.KPPPPPK..........',
-        '......KK.KPPPK.KPPPPK...........',
-        '.........KPPPK..KPPPK...........',
-        '.........KpppK..KpppK...........',
-        '........KKKKKK..KKKKKK..........',
-        '................................',
-        '................................',
-      ],
-      noArms: true,
-      noFace: true,
-      palette: { ...BASE, Y: '#c9b46a', y: '#9a8640', h: '#2a3a1e', G: '#7fa05a', g: '#5a7a3e', k: '#141c10', e: '#e8e070',
-        m: '#2a1a10', C: '#7a8aa0', c: '#5a6a80', P: '#5e4430', p: '#3e2c1e', B: '#a8b07a', b: '#7a8050', W: '#e8e2c8' },
-      arm: {},
-    },
-
-    // El Futre: jinete sin cabeza de chaqueta roja con galones, cuello encendido, sable rojo en alto
-    // y la cabeza de su caballo, de ojo rojo, con un collar de calaveras.
-    futre: {
-      body: [
-        '............................RR..',
-        '...........................RrR..',
-        '..........................RrR...',
-        '.........................RrR....',
-        '............r..r........RrR.....',
-        '.............rOr.......RrR......',
-        '............KOOOK.....RrR.......',
-        '...........KjjOjjK...KNNK.......',
-        '.....KKKK.KJJJJJJJK.KNNK........',
-        '....KGGGGKJJJJJJJJJKNNK.........',
-        '....KGGGKJJGGGGGGGJJNK..........',
-        '.....KKJJJJJJGJJJJJJJK..........',
-        '......KJJGGGGGGGGGGJJK..........',
-        '......KJJJJJJGJJJJJJJK..........',
-        '......KJJGGGGGGGGGGJJK..........',
-        '......KJJJJJJGJJJJJJJK..........',
-        '......KJJGGGGGGGGGGJJK..........',
-        '......KjJJJJJGJJJJJJjK..........',
-        '......KKKNNNNNNNNNNKKK..........',
-        '.......KNNNNNNNNNNNNK...........',
-        '..KK...KNNNNNKNNNNNNK...........',
-        '.KhhK..KNNNNK.KNNNNNK...........',
-        'KhhhhKK.KNNNK.KNNNNK............',
-        'KhRhhhhK.KNNK..KNNNK............',
-        'KhhhhhhhKKNNK..KNNNK............',
-        '.KhhhhhhhhKKK...KKK.............',
-        '..KhhhhhhhhK....................',
-        '..KWKWKWKWKhK...................',
-        '..KhhhhhhhhhhK..................',
-        '...KhhKhhhKhhK..................',
-        '...KhhK...KhhK..................',
-        '...KKKK...KKKK..................',
-        '................................',
-        '................................',
-      ],
-      noArms: true,
-      noFace: true,
-      palette: { ...BASE, R: '#ff2a3a', r: '#a8101e', O: '#ff6a4a', J: '#9a1424', j: '#6a0c18', G: '#e0b040',
-        N: '#2a2430', h: '#5a5a66', W: '#e8e2c8' },
-      arm: {},
-    },
-
-    // El Familiar: bestia negra de cuello largo, orejas como cuernos, ojos rojos encendidos y babeando.
-    familiar: {
-      body: [
-        '.......KK.....KK................',
-        '......KdK....KdK................',
-        '.....KddK...KddK................',
-        '.....KdddK.KdddK................',
-        '....KddddKKddddK................',
-        '...KddddddddddddK...............',
-        '..KddRRddddddRRddK..............',
-        '..KdROrRddddROrRdK..............',
-        '.KddddRddddddRddddK.............',
-        'KddddddddddddddddddK............',
-        'KddDDddddddddddddddK............',
-        '.KddddddddddddddddddK...........',
-        '..KdWdKKKKKKdWddddddK...........',
-        '...KWKK....KWKdddddddK..........',
-        '...KsK......KsKdddddddK.........',
-        '....s........s.KdddddddK........',
-        '....s..........KddDdddddK.......',
-        '...............KdddDddddddK.....',
-        '................KdddDddddddK....',
-        '................KddddDdddddddK..',
-        '.................KddddDddddddddK',
-        '..................KddddddddddddK',
-        '..................KdddddddddddK.',
-        '.................KddddddddddddK.',
-        '................KdddKddddKddddK.',
-        '................KddK.KddK.KddK..',
-        '................KddK.KddK.KddK..',
-        '...............KdddK.KddK.KdddK.',
-        '...............KKKK..KKKK.KKKK..',
-        '................................',
-        '................................',
-        '................................',
-        '................................',
-        '................................',
-      ],
-      noArms: true,
-      noFace: true,
-      palette: { ...BASE, d: '#141016', D: '#2c2632', R: '#ff2a2a', r: '#a01010', O: '#ffd0a0', W: '#e8e2d8', s: '#8a8aa8' },
-      arm: {},
-    },
-
-    // El Gauchito Gil: pelo largo negro, vincha y pañuelo rojos, barba, camisa blanca y la cruz detrás.
-    gil: {
-      body: [
-        '.............KXXXXK.............',
-        '.............KXxxXK.............',
-        '.............KXxxXK.............',
-        '.KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.',
-        '.KXXXXXXKHHHHHHHHHHHHHHKXXXXXXK.',
-        '.KxxxxxKHHHHHHHHHHHHHHHHKxxxxxK.',
-        '.KKKKKKKTTTTTTTTTTTTTTTTKKKKKKK.',
-        '.......KHKKKKKKKKKKKKKKHK.......',
-        '......KHHKSSSSSSSSSSSSKHHK......',
-        '......KHHSSSSSSSSSSSSSSHHK......',
-        '......KHHSSSSSSSSSSSSSSHHK......',
-        '......KHHKSSSSSSsSSSSSSKHHK.....',
-        '......KHHKSSSSSSsSSSSSSKHHK.....',
-        '......KHHKSSHHHHHHHHHSSKHHK.....',
-        '......KHHKSHHSSSSSSSHHSKHHK.....',
-        '......KHHKHHHHHHHHHHHHHKHHK.....',
-        '......KHHHKHHHHHHHHHHHKHHHK.....',
-        '......KHHHHKKHHHHHHHKKHHHHK.....',
-        '.......KHHHHKsssssssKHHHHK......',
-        '.......KKKKKWWTTKTTWWKKKKK......',
-        '.....KKWWWWKWWTTTTTWWKWWWWKK....',
-        '....KWWWWWWWKWWWTWWWKWWWWWWWK...',
-        '....KWWWWWWWWKWWWWWKWWWWWWWWK...',
-        '....KWwWWWWWWWKWWWKWWWWWWWwWK...',
-        '....KWwWWWWWWWWKWKWWWWWWWWwWK...',
-        '....KWwWWWWWWWWWKWWWWWWWWWwWK...',
-        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
-        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
-        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
-        '....KTTTTTTTTTTTTTTTTTTTTTTTK...',
-        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
-        '....KWwWWWWWWWWWWWWWWWWWWWwWK...',
-        '....KWWWWWWWWWWWWWWWWWWWWWWWK...',
-        '....KKKKKKKKKKKKKKKKKKKKKKKKK...',
-      ],
-      palette: { ...BASE, X: '#6a3a24', x: '#4a2616', H: '#1a1418', T: '#c8102e', S: '#d9a07a', s: '#b57f5c',
-        W: '#f0ebe0', w: '#c9c1b4', m: '#7a2a2a' },
-      arm: { W: '#f0ebe0', w: '#c9c1b4', S: '#d9a07a', s: '#b57f5c' },
-    },
+    // --- Historia del truco en la pampa (64x68, ver js/sprites-pampa.js) ---
+    ...pampaCharacters(),
 
     // El jugador en la intro: un timbero viejo con sombrero.
     timbero: {
@@ -467,7 +268,7 @@
       `<g class="sweat">${rects(SWEAT, P, 27, 5)}</g>`,
       senas,
     ];
-    return svg(32, 34, [...arms, rects(c.body, pal), ...face].join(''), `dealer-sprite char-${id}`);
+    return svg(c.w || 32, c.h || 34, [...arms, rects(c.body, pal), ...face].join(''), `dealer-sprite char-${id}`);
   }
 
   function dealer() {
