@@ -98,15 +98,33 @@ test('API: guarda la mejor marca de cada jugador y devuelve el puesto', async ()
   r = await call('GET', { query: { board: 'story' } });
   assert.deepStrictEqual(r.data.entries.map((e) => [e.name, e.value, e.hands]), [['Pepa', 200000, 40], ['Coco', 300000, 45]]);
 
-  r = await call('POST', { body: { board: 'chips', pid: 'jugador0001', name: 'Coco', value: 900 } });
-  r = await call('POST', { body: { board: 'chips', pid: 'jugador0002', name: 'Pepa', value: 500 } });
+  r = await call('POST', { body: { board: 'chips', pid: 'jugador0001', name: 'Coco', value: 900, hands: 30 } });
+  r = await call('POST', { body: { board: 'chips', pid: 'jugador0002', name: 'Pepa', value: 500, hands: 30 } });
   r = await call('GET', { query: { board: 'chips' } });
   assert.deepStrictEqual(r.data.entries.map((e) => e.value), [900, 500], 'en fichas gana el mayor');
 
   assert.strictEqual((await call('POST', { body: { board: 'chips', pid: 'x' } })).code, 400);
-  for (let i = 0; i < 10; i++) await call('POST', { ip: '9.9.9.9', body: { board: 'cycles', pid: 'jugador0003', value: 2 } });
-  assert.strictEqual((await call('POST', { ip: '9.9.9.9', body: { board: 'cycles', pid: 'jugador0003', value: 2 } })).code, 429, 'límite de envíos');
+  for (let i = 0; i < 10; i++) await call('POST', { ip: '9.9.9.9', body: { board: 'cycles', pid: 'jugador0003', value: 2, hands: 20 } });
+  assert.strictEqual((await call('POST', { ip: '9.9.9.9', body: { board: 'cycles', pid: 'jugador0003', value: 2, hands: 20 } })).code, 429, 'límite de envíos');
 
   delete process.env.KV_REST_API_URL;
   assert.strictEqual((await call('GET', { query: { board: 'story' } })).code, 503, 'sin base de datos configurada');
+});
+
+test('API: no expone los ids de los jugadores y rechaza marcas imposibles', async () => {
+  process.env.KV_REST_API_URL = 'https://redis.example';
+  process.env.KV_REST_API_TOKEN = 'token';
+  global.fetch = fakeRedis();
+  await call('POST', { body: { board: 'cycles', pid: 'victima0001', name: 'Coco', value: 4, hands: 60 } });
+  await call('POST', { ip: '5.5.5.5', body: { board: 'cycles', pid: 'otro000001', name: 'Pepa', value: 3, hands: 45 } });
+  const r = await call('GET', { query: { board: 'cycles', pid: 'victima0001' } });
+  assert.ok(r.data.entries.every((e) => e.pid === undefined), 'sin ids');
+  assert.deepStrictEqual(r.data.entries.map((e) => [e.name, e.me]), [['Coco', true], ['Pepa', false]], 'tu fila viene marcada');
+
+  const bad = (body) => handler.validate(body).error;
+  assert.ok(bad({ board: 'story', pid: 'abcdefgh12', value: 5000, hands: 1 }), 'historia en 1 mano');
+  assert.ok(bad({ board: 'story', pid: 'abcdefgh12', value: 10000, hands: 20 }), 'menos de 2 segundos por mano');
+  assert.ok(!bad({ board: 'story', pid: 'abcdefgh12', value: 120000, hands: 20 }));
+  assert.ok(bad({ board: 'cycles', pid: 'abcdefgh12', value: 10000, hands: 50 }), 'más ciclos que manos');
+  assert.ok(bad({ board: 'chips', pid: 'abcdefgh12', value: 1e8, hands: 10 }), 'fichas imposibles');
 });

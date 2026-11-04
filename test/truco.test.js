@@ -95,7 +95,18 @@ test('envido: puntos queridos, no queridos y falta envido', () => {
   h.act(1, { type: 'envido' });
   h.act(0, { type: 'real' });
   h.act(1, { type: 'noquiero' });
-  assert.deepStrictEqual(h.points, [4, 0], 'envido-envido-real no querido: 4');
+  assert.deepStrictEqual(h.points, [5, 0], 'envido-envido-real no querido: 2 + 2 + 1');
+
+  h = handWith(p0, p1, 0);
+  h.act(0, { type: 'envido' });
+  h.act(1, { type: 'envido' });
+  h.act(0, { type: 'noquiero' });
+  assert.deepStrictEqual(h.points, [0, 3], 'envido-envido no querido: 2 + 1 para el que subió');
+
+  h = handWith(p0, p1, 0);
+  h.act(0, { type: 'envido' });
+  h.act(1, { type: 'noquiero' });
+  assert.deepStrictEqual(h.points, [1, 0], 'envido no querido: 1');
 
   h = handWith(p0, p1, 0);
   h.act(0, { type: 'real' });
@@ -107,6 +118,17 @@ test('envido: puntos queridos, no queridos y falta envido', () => {
   h.act(1, { type: 'falta' });
   h.act(0, { type: 'quiero' });
   assert.deepStrictEqual(h.points, [9, 0], 'falta envido: lo que le falta al que va ganando');
+});
+
+test('falta envido: a 15 lo que le falta al que va ganando; a 30, de malas a buenas o hasta ganar', () => {
+  const { faltaFor } = Truco;
+  assert.strictEqual(faltaFor(15, [0, 0]), 15);
+  assert.strictEqual(faltaFor(15, [0, 2]), 13);
+  assert.strictEqual(faltaFor(15, [14, 3]), 1);
+  assert.strictEqual(faltaFor(30, [0, 0]), 15, 'nadie en buenas: lo que falta para salir de las malas');
+  assert.strictEqual(faltaFor(30, [10, 4]), 5);
+  assert.strictEqual(faltaFor(30, [16, 12]), 14, 'alguien en buenas: lo que le falta para ganar');
+  assert.strictEqual(faltaFor(30, [3, 29]), 1);
 });
 
 test('envido empatado: gana la mano', () => {

@@ -39,7 +39,7 @@
 
   // Costo de comprar el siguiente nivel teniendo `level` niveles.
   function costAt(level) {
-    return BASE_COST + COST_STEP * level;
+    return Math.round(BASE_COST + COST_STEP * level); // siempre en pesos enteros: $5, $8, $10, $13...
   }
 
   function round2(n) {

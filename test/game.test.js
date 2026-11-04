@@ -172,8 +172,9 @@ test('no se puede dividir sin par, sin dinero o con 4 manos', () => {
   assert.ok(!g.canSplit(), 'K y Q no son par');
 
   const g2 = new Game({ startingPick: false });
+  g2.money = 50;
   stack(g2, [c('8'), c('9'), c('8', '♥'), c('7')]);
-  g2.deal(100);
+  g2.deal(50);
   assert.ok(!g2.canSplit(), 'no alcanza el dinero');
 
   const g3 = new Game({ startingPick: false });
@@ -232,8 +233,9 @@ test('no llegar a la cuota hace perder el mazo; perder el 3ro es game over', () 
 
 test('quedarse sin dinero para la apuesta mínima hace perder el mazo', () => {
   const g = new Game({ startingPick: false });
+  g.money = 50;
   stack(g, [c('K'), c('K'), c('7'), c('8')]);
-  g.deal(100);
+  g.deal(50);
   g.stand();
   g.nextHand();
   assert.strictEqual(g.phase, 'deckLost');
@@ -367,11 +369,11 @@ test('al empezar se elige 1 bonus gratis entre 3', () => {
   assert.ok(g.shop.free, 'una partida nueva vuelve a ofrecer el bonus gratis');
 });
 
-test('mejoras: Suerte suma 0.15%, 0.25%, 0.35%... y cuesta $5, $7.5, $10...', () => {
+test('mejoras: Suerte suma 0.15%, 0.25%, 0.35%... y cuesta $5, $8, $10, $13 (siempre pesos enteros)', () => {
   const Upgrades = require('../js/upgrades.js');
   const suerte = Upgrades.getUpgrade('suerte');
   assert.deepStrictEqual([1, 2, 3, 4].map((l) => Upgrades.gainAt(suerte, l)), [0.15, 0.25, 0.35, 0.45]);
-  assert.deepStrictEqual([0, 1, 2, 3].map(Upgrades.costAt), [5, 7.5, 10, 12.5]);
+  assert.deepStrictEqual([0, 1, 2, 3].map(Upgrades.costAt), [5, 8, 10, 13]);
 
   const g = new Game({ startingPick: false });
   g.money = 100;
@@ -379,7 +381,7 @@ test('mejoras: Suerte suma 0.15%, 0.25%, 0.35%... y cuesta $5, $7.5, $10...', ()
   g.openShop('mid');
   g.upgrade('suerte');
   g.upgrade('suerte');
-  assert.strictEqual(g.money, 87.5);
+  assert.strictEqual(g.money, 87);
   assert.strictEqual(g.upgradeTotal('suerte'), 0.4);
   assert.ok(Math.abs(g.luck - 1.004) < 1e-9);
   assert.strictEqual(g.upgradeCost('suerte'), 10);
@@ -398,7 +400,7 @@ test('mejoras: no se compran en la elección gratis ni pasando el nivel máximo'
 });
 
 test('mejoras: Ganancia, Seguro y Descuento', () => {
-  const g = new Game({ startingPick: false });
+  const g = new Game({ mode: 'classic' }); // sin tope de mesa, para apostar $100
   g.upgrades.ganancia = 2; // +2.5%
   g.upgrades.seguro = 2; // 2.5%
   stack(g, [c('K'), c('9'), c('Q'), c('8')]);
@@ -407,7 +409,7 @@ test('mejoras: Ganancia, Seguro y Descuento', () => {
   g.stand();
   assert.strictEqual(g.result.payout, 202, 'gana 100 + 2.5%');
 
-  const g2 = new Game({ startingPick: false });
+  const g2 = new Game({ mode: 'classic' });
   g2.upgrades.seguro = 2;
   stack(g2, [c('K'), c('K'), c('7'), c('8')]);
   g2.deal(100);
@@ -431,16 +433,18 @@ function winHand(g, bet = 10) {
   g.stand();
 }
 
-test('pasar de ciclo: solo con la cuota cumplida; +$5 por ronda con la cuota cumplida', () => {
+test('pasar de ciclo: con la cuota cumplida y desde la mano 6; +$5 por ronda con la cuota cumplida', () => {
   const g = new Game({ startingPick: false });
   assert.ok(!g.canAdvance());
   winHand(g, 30); // $130 ≥ $125
   g.nextHand();
-  assert.ok(g.canAdvance());
+  assert.ok(!g.canAdvance(), 'hay que jugar 5 manos antes de pasar');
   winHand(g, 10);
   assert.ok(g.result.notes.some((n) => n.includes('cuota cumplida')));
   assert.strictEqual(g.money, 130 + 10 + 5);
   g.nextHand();
+  g.handInCycle = 6;
+  assert.ok(g.canAdvance());
   g.advanceCycle();
   assert.strictEqual(g.phase, 'shop');
   assert.strictEqual(g.shop.kind, 'end');
@@ -477,6 +481,7 @@ test('historia: pasar directo de ciclo hace la tienda del final paga', () => {
   const g = new Game({ mode: 'story', startingPick: false });
   winHand(g, 30);
   g.nextHand();
+  g.handInCycle = 6;
   g.advanceCycle();
   assert.strictEqual(g.shop.kind, 'end');
   assert.ok(!g.shop.free);
@@ -498,6 +503,7 @@ test('historia: perder un mazo reintenta el mismo ciclo con el dinero del inicio
 test('tienda: no deja gastar la apuesta mínima del próximo ciclo', () => {
   const g = new Game({ mode: 'story', startingPick: false });
   g.money = 200;
+  g.handInCycle = 6;
   g.advanceCycle();
   assert.strictEqual(g.shopReserve(), 15, 'apuesta mínima del ciclo 2');
   g.money = 15 + g.upgradeCost('suerte') - 1;
@@ -514,6 +520,7 @@ test('tienda: no deja gastar la apuesta mínima del próximo ciclo', () => {
 test('historia: perder un mazo con menos de la apuesta mínima no te deja trabado', () => {
   const g = new Game({ mode: 'story', startingPick: false });
   g.money = 200;
+  g.handInCycle = 6;
   g.advanceCycle();
   g.money = 8; // por ejemplo, venía de una partida guardada con la plata gastada
   g.leaveShop();
@@ -527,6 +534,7 @@ test('historia: ganarle a San Pedro es victoria; perder todos los mazos da un fi
   const g = new Game({ mode: 'story', startingPick: false });
   g.cycle = 3;
   g.money = 1000;
+  g.handInCycle = 6;
   g.advanceCycle();
   assert.strictEqual(g.phase, 'victory');
 

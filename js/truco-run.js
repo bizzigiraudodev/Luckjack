@@ -6,8 +6,8 @@
   const TrucoAI = root.TrucoAI || (typeof require !== 'undefined' && require('./truco-ai.js'));
   const TrucoBonuses = root.TrucoBonuses || (typeof require !== 'undefined' && require('./truco-bonuses.js'));
 
-  const FALTA = 5; // en el roguelike no hay partida a 15: la falta envido vale 5 puntos
-  const FALTA_GENEROSA = 8;
+  const FALTA = 5; // acá no hay partida a 15 (cada mano se cobra aparte): la falta envido vale 5 puntos
+  const FALTA_SEGURA = 0; // con Falta Segura, la falta que perdés no te cuesta nada
 
   // Cartas que cuentan como "buenas" para la suerte del mazo: anchos bravos, sietes bravos, treses y doses.
   const isGood = (c) => Truco.rank(c) >= 9;
@@ -37,6 +37,11 @@
 
     get bet() {
       return this.trucoBet;
+    }
+
+    // En el truco se cobra apuesta × puntos, así que la mesa tiene un tope más bajo: 3 veces la mínima.
+    get tableMaxFactor() {
+      return 3;
     }
 
     get rivalName() {
@@ -90,7 +95,7 @@
       this.truco = new Truco.TrucoHand({
         mano: this.mano,
         cards: this.dealCards(),
-        faltaPoints: () => (this.has('falta_tuya') ? FALTA_GENEROSA : FALTA),
+        faltaPoints: (winner) => (winner === 1 && this.has('falta_segura') ? FALTA_SEGURA : FALTA),
         envidoBonus: [this.has('envido_gordo') ? 2 : 0, 0],
         pie: this.has('pie') ? 0 : null,
         rankOf: (c, p) => (p === 0 && sieteBravo && c.n === 7 && (c.s === 'copa' || c.s === 'basto') ? 11 : Truco.rank(c) + (p === 1 ? diablo : 0)),
@@ -116,7 +121,7 @@
       }
       if (net > 0) {
         if (this.has('doble_truco') && h.truco.level > 0 && h.winner === 0) { net *= 1.5; notes.push('✌️ x1.5'); }
-        if (this.has('racha') && this.streak > 0) { net *= 1 + 0.2 * this.streak; notes.push(`🔥 racha x${this.streak}`); }
+        if (this.has('racha') && this.streak > 0) { net *= 1 + 0.2 * Math.min(this.streak, 5); notes.push(`🔥 racha x${this.streak}`); }
         if (this.upgrades.ganancia) net *= 1 + this.upgradeTotal('ganancia') / 100;
       }
       if (net < 0) {
@@ -155,7 +160,7 @@
     }
   }
 
-  const TrucoRunModule = { TrucoRun, FALTA, FALTA_GENEROSA, RIVAL_NAMES, SANTO_IMMUNE };
+  const TrucoRunModule = { TrucoRun, FALTA, FALTA_SEGURA, RIVAL_NAMES, SANTO_IMMUNE };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrucoRunModule;
   else root.TrucoRunModule = TrucoRunModule;
 })(typeof window !== 'undefined' ? window : globalThis);

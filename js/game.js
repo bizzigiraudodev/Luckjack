@@ -22,6 +22,9 @@
   const CLASSIC_MIN_BET = 10;
   const QUOTA_BONUS = 5; // por cada ronda jugada con la cuota ya cumplida
   const DEVIL_PUSH_CUT = 0.25; // parte de la apuesta que se lleva el Diablo en cada empate
+  const TABLE_MAX = 5; // apuesta máxima de la mesa: 5 veces la mínima (no se puede ir all-in)
+  const MIN_HANDS_TO_ADVANCE = 5; // manos que hay que jugar en el ciclo antes de poder pasar
+  const RACHA_MAX = 5; // la racha suma hasta +100%
 
   class Game {
     // `startingPick: false` saltea la elección del bonus inicial (útil en tests).
@@ -57,6 +60,7 @@
       this.handInCycle = 1;
       this.handsPlayed = 0;
       this.bonuses = [];
+      this.gifted = []; // bonuses que te regalaron (no se venden por plata)
       this.upgrades = Object.fromEntries(Upgrades.UPGRADES.map((u) => [u.id, 0]));
       this.streak = 0;
       this.shieldUsed = false;
@@ -107,6 +111,20 @@
 
     get quota() {
       return this.quotaFor(this.cycle);
+    }
+
+    // Apuesta máxima de la mesa (en el clásico no hay tope).
+    get tableMax() {
+      return this.isRoguelike ? this.minBet * this.tableMaxFactor : Infinity;
+    }
+
+    get tableMaxFactor() {
+      return TABLE_MAX;
+    }
+
+    // Lo máximo que podés apostar ahora: el tope de la mesa o tu dinero.
+    get maxBet() {
+      return Math.min(Math.floor(this.money), this.tableMax);
     }
 
     get bustLimit() {
@@ -264,7 +282,7 @@
     // --- Acciones del jugador ---
     canBet(amount) {
       return this.phase === 'betting' && Number.isInteger(amount) &&
-        amount >= this.minBet && amount <= this.money;
+        amount >= this.minBet && amount <= this.maxBet;
     }
 
     deal(amount) {
@@ -474,7 +492,7 @@
       }
 
       if (won && this.has('racha') && this.streak > 0) {
-        payout += (payout - bet) * 0.2 * this.streak;
+        payout += (payout - bet) * 0.2 * Math.min(this.streak, RACHA_MAX);
         notes.push(`🔥 racha x${this.streak}`);
       }
       if (won && this.upgrades.ganancia) payout += (payout - bet) * this.upgradeTotal('ganancia') / 100;
@@ -553,7 +571,8 @@
 
     // Con la cuota cumplida podés pasar de ciclo sin jugar las manos que faltan.
     canAdvance() {
-      return this.phase === 'betting' && this.isRoguelike && this.money >= this.quota;
+      return this.phase === 'betting' && this.isRoguelike && this.money >= this.quota &&
+        this.handInCycle > MIN_HANDS_TO_ADVANCE;
     }
 
     advanceCycle() {
@@ -695,6 +714,7 @@
       if (!bonus || !this.canBuy(bonus)) throw new Error('No podés comprar eso');
       this.money -= this.priceOf(bonus);
       this.bonuses.push(bonus.id);
+      if (this.shop.free) this.gifted.push(bonus.id);
       this.shop.offers = this.shop.offers.filter((b) => b !== bonus);
       if (this.shop.kind === 'start') {
         this.addLog(`🎁 Elegiste ${bonus.icon} ${bonus.name} como bonus inicial.`);
@@ -710,7 +730,9 @@
       this.addLog(`🛒 Compraste ${bonus.icon} ${bonus.name}.`);
     }
 
+    // Los bonuses regalados (el inicial y el de recompensa) se pueden vender, pero no dan plata.
     sellValue(bonusId) {
+      if (this.gifted.includes(bonusId)) return 0;
       return Math.floor(this.catalog.priceOf(this.catalog.getBonus(bonusId), this.cycle) / 2);
     }
 
@@ -719,6 +741,7 @@
       const value = this.sellValue(bonusId);
       this.money += value;
       this.bonuses = this.bonuses.filter((id) => id !== bonusId);
+      this.gifted = this.gifted.filter((id) => id !== bonusId);
       this.addLog(`💸 Vendiste ${this.catalog.getBonus(bonusId).name} por $${value}.`);
     }
 
@@ -771,7 +794,7 @@
     return n >= 0 ? `+$${n}` : `-$${-n}`;
   }
 
-  const GameModule = { Game, STORY_BOSSES, QUOTA_BONUS, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, START_MONEY, OUTCOME_TEXT, formatNet };
+  const GameModule = { Game, STORY_BOSSES, TABLE_MAX, MIN_HANDS_TO_ADVANCE, QUOTA_BONUS, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, START_MONEY, OUTCOME_TEXT, formatNet };
   if (typeof module !== 'undefined' && module.exports) module.exports = GameModule;
   else root.GameModule = GameModule;
 })(typeof window !== 'undefined' ? window : globalThis);

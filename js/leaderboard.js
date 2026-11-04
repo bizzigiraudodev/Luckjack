@@ -78,7 +78,7 @@
   async function load(board) {
     if (canUseApi()) {
       try {
-        const data = await api('GET', null, `?board=${board}`);
+        const data = await api('GET', null, `?board=${board}&pid=${playerId()}`);
         return { entries: data.entries || [], global: true };
       } catch { /* sin API: ranking local */ }
     }

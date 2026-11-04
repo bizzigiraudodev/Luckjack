@@ -25,6 +25,7 @@
   --common: #0095ff;
   --uncommon: #3fbf7f;
   --rare: #fe5f55;
+  --legendary: #ffcd3c;
   --felt: #2f8a5b;
   --px: 3px; /* grosor de bordes "pixel" */
 }
@@ -237,6 +238,7 @@ button.big { font-size: 1.2rem; padding: 10px 26px; }
 .bonus .name { line-height: 1.05; }
 .bonus.uncommon { box-shadow: inset 0 0 0 4px var(--uncommon), 0 4px 0 rgba(0, 0, 0, 0.5); }
 .bonus.rare { box-shadow: inset 0 0 0 4px var(--rare), 0 4px 0 rgba(0, 0, 0, 0.5); }
+.bonus.legendary { box-shadow: inset 0 0 0 4px var(--legendary), 0 0 10px var(--legendary), 0 4px 0 rgba(0, 0, 0, 0.5); }
 .bonus.empty {
   background: rgba(0, 0, 0, 0.25);
   border: var(--px) dashed rgba(255, 255, 255, 0.18);
@@ -606,6 +608,7 @@ button.big { font-size: 1.2rem; padding: 10px 26px; }
 .offer:nth-child(3) { animation-delay: -2s; }
 .offer.uncommon { box-shadow: inset 0 0 0 5px var(--uncommon), 0 5px 0 rgba(0, 0, 0, 0.45); }
 .offer.rare { box-shadow: inset 0 0 0 5px var(--rare), 0 5px 0 rgba(0, 0, 0, 0.45); }
+.offer.legendary { box-shadow: inset 0 0 0 5px var(--legendary), 0 0 16px var(--legendary), 0 5px 0 rgba(0, 0, 0, 0.45); }
 .offer .icon { font-size: 2.4rem; }
 .offer .name { font-weight: 700; margin-top: 4px; font-size: 1.05rem; }
 .offer .rarity {
@@ -620,6 +623,7 @@ button.big { font-size: 1.2rem; padding: 10px 26px; }
 }
 .offer.uncommon .rarity { background: var(--uncommon); }
 .offer.rare .rarity { background: var(--rare); }
+.offer.legendary .rarity { background: var(--legendary); color: #2a1a00; }
 .offer p { flex: 1; font-size: 0.92rem; line-height: 1.25; }
 .offer button { --c: var(--green); --c-dark: var(--green-dark); }
 .deck-offer {

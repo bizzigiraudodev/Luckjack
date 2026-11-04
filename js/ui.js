@@ -1,6 +1,6 @@
 // Interfaz: menú, modos de juego, flujo de la historia y render del estado de Game.
 (function () {
-  const { Game, HANDS_PER_CYCLE, SHOP_EVERY, MAX_BONUSES, QUOTA_BONUS, OUTCOME_TEXT, formatNet } = GameModule;
+  const { Game, HANDS_PER_CYCLE, SHOP_EVERY, MIN_HANDS_TO_ADVANCE, MAX_BONUSES, QUOTA_BONUS, OUTCOME_TEXT, formatNet } = GameModule;
   const { RARITY } = Bonuses;
   // Catálogo de bonuses del juego actual (blackjack o truco).
   const getBonus = (id) => (game ? game.catalog : Bonuses).getBonus(id);
@@ -121,7 +121,9 @@
         msg.textContent = `Te faltan $${left} para la cuota. Quedan ${handsLeft} manos.`;
       } else {
         const warning = game.mode === 'story' ? ' (si pasás ahora, la tienda del final no es gratis)' : '';
-        msg.textContent = `¡Cuota cumplida! Seguí jugando (+$${QUOTA_BONUS} por ronda) o pasá de ciclo${warning}.`;
+        msg.textContent = game.canAdvance()
+          ? `¡Cuota cumplida! Seguí jugando (+$${QUOTA_BONUS} por ronda) o pasá de ciclo${warning}.`
+          : `¡Cuota cumplida! Sumás $${QUOTA_BONUS} por ronda. Desde la mano ${MIN_HANDS_TO_ADVANCE + 1} podés pasar de ciclo.`;
       }
     } else if (game.phase === 'playing') {
       const which = game.hands.length > 1 ? `Mano ${game.handIndex + 1} de ${game.hands.length}. ` : '';
@@ -170,8 +172,8 @@
     document.body.dataset.mode = game.mode;
     document.body.dataset.boss = game.boss;
     $('money').textContent = `$${game.money}`;
-    $('minbet-label').textContent = 'Apuesta mín.';
-    $('minbet').textContent = `$${game.minBet}`;
+    $('minbet-label').textContent = game.isRoguelike ? 'Apuesta' : 'Apuesta mín.';
+    $('minbet').textContent = game.isRoguelike ? `$${game.minBet}–$${game.tableMax}` : `$${game.minBet}`;
 
     if (!game.isRoguelike) {
       const best = Math.max(game.bestMoney, store.get(KEYS.classic) || 0);
@@ -249,10 +251,10 @@
     if (game.phase === 'betting') {
       const input = $('bet-input');
       input.min = game.minBet;
-      input.max = Math.floor(game.money);
+      input.max = game.maxBet;
       const current = Number(input.value);
-      if (!current || current < game.minBet || current > game.money) {
-        input.value = Math.min(Math.max(game.lastBet, game.minBet), Math.floor(game.money));
+      if (!current || current < game.minBet || current > game.maxBet) {
+        input.value = Math.min(Math.max(game.lastBet, game.minBet), game.maxBet);
       }
       $('btn-deal').disabled = !game.canBet(Number(input.value));
       $('btn-advance').hidden = !game.canAdvance();
@@ -620,7 +622,7 @@
     const me = Leaderboard.playerId();
     const items = entries.map((e, i) => {
       const li = document.createElement('li');
-      li.className = e.pid === me ? 'me' : '';
+      li.className = e.me || e.pid === me ? 'me' : '';
       const pos = document.createElement('span');
       pos.className = 'pos';
       pos.textContent = i < 3 ? ['🥇', '🥈', '🥉'][i] : `#${i + 1}`;
@@ -810,11 +812,11 @@
     btn.addEventListener('click', () => {
       const input = $('bet-input');
       const v = Number(input.value) + Number(btn.dataset.delta);
-      input.value = Math.min(Math.max(v, game.minBet), Math.floor(game.money));
+      input.value = Math.min(Math.max(v, game.minBet), game.maxBet);
       renderControls();
     });
   });
-  $('bet-max').addEventListener('click', () => { $('bet-input').value = Math.floor(game.money); renderControls(); });
+  $('bet-max').addEventListener('click', () => { $('bet-input').value = game.maxBet; renderControls(); });
   $('bet-input').addEventListener('input', renderControls);
   $('btn-deal').addEventListener('click', () => {
     const amount = Number($('bet-input').value);

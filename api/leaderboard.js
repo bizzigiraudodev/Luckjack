@@ -1,5 +1,6 @@
 // API de rankings globales: Vercel Function + Upstash Redis (por su API REST, sin dependencias).
-//   GET  /api/leaderboard?board=story|chips|cycles|trucoStory|trucoCycles  → los 10 mejores
+//   GET  /api/leaderboard?board=story|chips|cycles|trucoStory|trucoCycles&pid=...  → los 10 mejores
+//        (los ids de los jugadores no se devuelven: tu fila viene marcada con `me`)
 //   POST /api/leaderboard  { board, pid, name, value, hands } → guarda la marca si mejora la anterior
 // Cada jugador (pid, un id aleatorio de su dispositivo) tiene una sola fila por ranking: su mejor marca.
 
@@ -12,6 +13,11 @@ const BOARDS = {
 };
 const TOP = 10;
 const RATE_LIMIT = 10; // envíos por minuto por IP
+// Controles de plausibilidad: lo mínimo que hay que jugar para lograr cada marca.
+const MIN_HANDS_STORY = 15; // 3 ciclos de al menos 5 manos
+const MIN_MS_PER_HAND = 2000; // nadie juega una mano en menos de 2 segundos
+const MAX_CHIPS_PER_HAND = 1000;
+const MIN_HANDS_PER_CYCLE = 5;
 
 const { config, redis, cleanName } = require('./_redis.js');
 
@@ -25,6 +31,7 @@ function validate(body) {
   const pid = String(body.pid || '');
   if (!/^[a-z0-9]{8,32}$/i.test(pid)) return { error: 'Jugador inválido' };
   const hands = Math.max(0, Math.min(1e6, Math.floor(Number(body.hands) || 0)));
+  if (!plausible(body.board, value, hands)) return { error: 'Marca imposible' };
   return {
     board: body.board,
     pid,
@@ -33,9 +40,16 @@ function validate(body) {
   };
 }
 
+function plausible(board, value, hands) {
+  if (board === 'story' || board === 'trucoStory') return hands >= MIN_HANDS_STORY && value >= hands * MIN_MS_PER_HAND;
+  if (board === 'cycles' || board === 'trucoCycles') return hands >= value * MIN_HANDS_PER_CYCLE;
+  if (board === 'chips') return value <= 100 + hands * MAX_CHIPS_PER_HAND;
+  return true;
+}
+
 const keys = (board) => ({ scores: `lb:${board}`, info: `lb:${board}:info` });
 
-async function top(cfg, board) {
+async function top(cfg, board, me = '') {
   const { scores, info } = keys(board);
   const cmd = BOARDS[board].order === 'asc'
     ? ['ZRANGE', scores, 0, TOP - 1, 'WITHSCORES']
@@ -49,7 +63,7 @@ async function top(cfg, board) {
   }
   if (!pids.length) return [];
   const details = await redis(cfg, ['HMGET', info, ...pids]);
-  return pids.map((pid, i) => ({ pid, value: values[i], ...safeParse(details[i]) }));
+  return pids.map((pid, i) => ({ ...safeParse(details[i]), value: values[i], me: !!me && pid === me }));
 }
 
 function safeParse(text) {
@@ -87,7 +101,7 @@ async function handler(req, res) {
     if (req.method === 'GET') {
       const board = req.query && req.query.board;
       if (!BOARDS[board]) return res.status(400).json({ error: 'Ranking desconocido' });
-      return res.status(200).json({ board, entries: await top(cfg, board) });
+      return res.status(200).json({ board, entries: await top(cfg, board, String(req.query.pid || '')) });
     }
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? safeParse(req.body) : req.body;
@@ -106,3 +120,4 @@ async function handler(req, res) {
 module.exports = handler;
 module.exports.validate = validate;
 module.exports.BOARDS = BOARDS;
+module.exports.plausible = plausible;

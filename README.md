@@ -21,7 +21,7 @@ Fuiste el mejor timbero de tu época: ganaste fortunas y te retiraste a una casu
   Si no llegás a una cuota perdés un mazo y reintentás ese ciclo con el dinero con el que lo empezaste. Al final de cada ciclo jugado completo elegís **1 bonus común gratis**; el árbol de mejoras solo aparece en la tienda de fin de ciclo. Hay cutscenes al presentar cada jefe, al ganar y al perder. Pasar la historia desbloquea el **Mazo Dorado** para el modo infinito.
 - **♾️ Roguelike infinito:** cuotas cada vez más altas, sin final (con el Viejo Timbero repartiendo).
 
-En los dos modos roguelike, cuando ya cumpliste la cuota podés **pasar de ciclo** o seguir jugando y ganar **$5 por cada ronda** que arranque con la cuota cumplida. En la historia, si pasás directo, la tienda del final deja de ser gratis.
+En los dos modos roguelike, cuando ya cumpliste la cuota y jugaste al menos **5 manos del ciclo** podés **pasar de ciclo**, o seguir jugando y ganar **$5 por cada ronda** que arranque con la cuota cumplida. En la historia, si pasás directo, la tienda del final deja de ser gratis. La mesa tiene **apuesta máxima**: 5 veces la mínima en el blackjack y 3 veces en el truco (no se puede ir all-in).
 
 La música y los efectos se generan en el momento con Web Audio (sin archivos de audio); se pueden silenciar con el botón 🔊.
 
@@ -29,7 +29,8 @@ La música y los efectos se generan en el momento con Web Audio (sin archivos de
 
 Desde el menú (pestaña **🗡️ Truco**) se juega **truco clásico**: mano a mano contra el Viejo Timbero, sin flor, a 15 puntos. Las cartas son del mazo español en pixel art y se juegan tocándolas.
 
-- Envido, Real envido y Falta envido (el envido está primero); Truco, Retruco y Vale cuatro; irse al mazo.
+- Envido (2), Real envido (3) y Falta envido (lo que le falta al que va ganando para llegar a 15; en partidas a 30, para salir de las malas o para ganar: nunca más de 15). El envido está primero. Si no se quiere, el último que cantó se lleva lo ya aceptado + 1: envido-envido no querido = 3, envido-envido-real no querido = 5.
+- Truco, Retruco y Vale cuatro; irse al mazo.
 - El rival canta, quiere, sube y a veces miente según su personalidad (`js/truco-ai.js`).
 - Se guardan tus partidas ganadas y perdidas.
 
@@ -81,27 +82,27 @@ Igual que en la historia del blackjack: perder un mazo reintenta el ciclo, jugar
 La misma progresión que el blackjack (ciclos de 15 manos, cuota, tienda cada 5 manos, mazos como vidas, árbol de mejoras, pasar de ciclo), pero cada ronda es una mano de truco:
 
 - Apostás antes de repartir y cobrás o pagás **apuesta × (tus puntos − los del Viejo)**. Un truco querido y ganado con envido (4–0) paga 4 veces lo apostado. El dinero no baja de $0.
-- La falta envido vale 5 puntos. Las cuotas crecen más rápido que en el blackjack (**$140, $195, $275...**) porque el truco tiene más varianza; están calibradas con simulaciones.
+- Acá no hay partida a 15 (cada mano se cobra aparte), así que la falta envido vale 5 puntos. Las cuotas crecen más rápido que en el blackjack (**$140, $195, $275...**) porque el truco tiene más varianza; están calibradas con simulaciones.
 - La suerte del mazo (y la mejora de Suerte) cambia la chance de recibir cartas buenas (anchos bravos, sietes bravos, treses y doses).
 
 | | Bonus | Rareza | Efecto |
 |-|-------|--------|--------|
-| 🗡️ | Ancho Bravo | Común | El ancho de espadas te sale mucho más seguido |
-| 🍖 | Envido Gordo | Común | +2 a tu envido |
-| 🫘 | Porotero | Común | +$3 por cada punto que ganás en la mano |
 | 🏳️ | Retirada Digna | Común | Irte al mazo no te cuesta fichas |
 | 🗣️ | Chamuyero | Común | El rival se achica más seguido ante tus cantos de truco |
 | 🧉 | Mate Cebado | Común | +$5 cada vez que ganás el envido |
-| 🦅 | Ojo de Halcón | Poco común | Ves una de las cartas del rival |
-| 🦶 | Pie | Poco común | Si la primera baza es parda, la ganás vos |
-| 😐 | Cara de Póker | Poco común | El rival te quiere menos los envidos |
-| ✌️ | Truco Doble | Poco común | Las manos ganadas con truco querido pagan x1.5 |
+| 🦅 | Ojo de Halcón | Común | Ves una de las cartas del rival |
+| 🦶 | Pie | Común | Si la primera baza es parda, la ganás vos |
+| 😐 | Cara de Póker | Común | El rival te quiere menos los envidos |
+| 🔖 | Mazo Marcado | Común | Sabés el envido del rival |
+| 🪂 | Falta Segura | Común | Si perdés una falta envido querida, no te cuesta nada |
+| 🍖 | Envido Gordo | Poco común | +2 a tu envido |
+| 🫘 | Porotero | Poco común | +$3 por cada punto que ganás en la mano |
 | 🔥 | Racha Gaucha | Poco común | +20% de ganancia por cada mano ganada seguida |
-| 🔖 | Mazo Marcado | Poco común | Sabés el envido del rival |
-| 🌼 | Flor | Raro | Jugás con flor: tres del mismo palo te dan 3 puntos |
-| 7️⃣ | Siete Bravo | Raro | Tus 7 de copa y de basto valen como el 7 de oro |
-| 🛡️ | Poncho Protector | Raro | Una vez por ciclo, una mano perdida no te cuesta fichas |
-| 💥 | Falta Generosa | Raro | La falta envido vale 8 en vez de 5 |
+| 🌼 | Flor | Poco común | Jugás con flor: tres del mismo palo te dan 3 puntos |
+| 7️⃣ | Siete Bravo | Poco común | Tus 7 de copa y de basto valen como el 7 de oro |
+| 🗡️ | Ancho Bravo | Raro | El ancho de espadas te sale mucho más seguido |
+| ✌️ | Truco Doble | Raro | Las manos ganadas con truco querido pagan x1.5 |
+| 🛡️ | Poncho Protector | Legendario | Una vez por ciclo, una mano perdida no te cuesta fichas |
 
 Próximamente: modo historia de truco y rankings del truco.
 
@@ -172,7 +173,7 @@ Tenés **3 mazos**. Si perdés con uno (no llegás a la cuota o te quedás sin d
 | 🂠 | Mazo Clásico | Normal (es con el que empezás) |
 | 🥀 | Mazo Gastado | 15% menos |
 | ☠️ | Mazo Maldito | 30% menos |
-| ✨ | Mazo Dorado | 5% más · aparece en la tienda con 5% de probabilidad y cuesta $200+ · reemplaza tu mazo actual |
+| ✨ | Mazo Dorado | 5% más · aparece en la tienda con 5% de probabilidad y cuesta $120+ · reemplaza tu mazo actual |
 
 Una carta es "buena" si arma una buena mano: la primera carta es un As o vale 10, y las siguientes dejan tu mano entre 18 y 21 sin pasarte. La chance de recibir una carta buena es la natural del mazo multiplicada por la suerte del mazo (por ejemplo, ×0.85 en el Gastado). Solo afecta a tus cartas, no a las del crupier.
 
@@ -191,26 +192,26 @@ Una carta es "buena" si arma una buena mano: la primera carta es un As o vale 10
 
 | | Bonus | Rareza | Efecto |
 |-|-------|--------|--------|
-| 🍀 | Herradura | Común | +$5 extra por cada mano ganada |
 | 👑 | Diezmo Real | Común | +$2 por cada figura que recibís |
 | 👯 | Gemelos | Común | +$15 si tus dos primeras cartas son del mismo rango |
 | 🏦 | Interés Compuesto | Común | 10% de tu dinero al final de cada ciclo (máx. $50) |
 | 🧮 | Contador de Cartas | Común | Muestra la probabilidad de pasarte |
-| 🕸️ | Red de Seguridad | Común | Si te pasás, recuperás la mitad de la apuesta |
+| 🌟 | Blackjack Dorado | Común | El blackjack paga 2:1: cobrás x3 lo apostado en vez de x2.5 |
+| ⏫ | Doble o Nada | Común | Ganar doblado paga x1.5 |
+| 🖐️ | Charlie de Cinco | Común | 5 cartas sin pasarte = victoria automática x2 |
+| 🧲 | Imán de Ases | Común | +6 ases en el mazo |
+| 😰 | Crupier Nervioso | Común | El crupier pide hasta 18 |
+| 🍀 | Herradura | Poco común | +$5 extra por cada mano ganada |
 | 👁️ | Ojo del Crupier | Poco común | Ves la carta oculta del crupier |
-| 🌟 | Blackjack Dorado | Poco común | El blackjack paga 2:1: cobrás x3 lo apostado en vez de x2.5 |
 | 🤝 | Empate a Favor | Poco común | Los empates pagan +50% |
 | 🎯 | Veintiuno Exacto | Poco común | Ganar con 21 exacto duplica la ganancia |
 | 🔥 | Racha Caliente | Poco común | +20% de ganancia por victoria consecutiva |
-| 🎲 | Dados Cargados | Poco común | Si el crupier se pasa, ganancia x1.5 |
-| ⏫ | Doble o Nada | Poco común | Ganar doblado paga x1.5 |
-| ♻️ | Segunda Oportunidad | Poco común | Descartá la última carta pedida (1 vez por mano). Si te pasaste, recibís otra en su lugar |
-| 🩻 | Rayos X | Raro | Ves la próxima carta del mazo |
-| 🛡️ | Escudo | Raro | La primera derrota de cada ciclo es empate |
-| 🖐️ | Charlie de Cinco | Raro | 5 cartas sin pasarte = victoria automática x2 |
+| 🕸️ | Red de Seguridad | Raro | Si te pasás, recuperás la mitad de la apuesta |
+| 🎲 | Dados Cargados | Raro | Si el crupier se pasa, ganancia x1.5 |
+| ♻️ | Segunda Oportunidad | Raro | Descartá la última carta pedida (1 vez por mano). Si te pasaste, recibís otra en su lugar |
 | 🪀 | Límite Elástico | Raro | Te pasás recién con más de 22 (22 vale 21) |
-| 🧲 | Imán de Ases | Raro | +6 ases en el mazo |
-| 😰 | Crupier Nervioso | Raro | El crupier pide hasta 18 |
+| 🩻 | Rayos X | Legendario | Ves la próxima carta del mazo |
+| 🛡️ | Escudo | Legendario | La primera derrota de cada ciclo es empate |
 
 Para agregar un bonus nuevo: sumalo al catálogo en `js/bonuses.js` y aplicá su efecto en `js/game.js` usando `this.has('<id>')`.
 

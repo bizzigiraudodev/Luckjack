@@ -68,7 +68,7 @@ function revive(data) {
     // Salas creadas antes de que existiera el truco de a 4.
     if (m.hand.n === undefined) Object.assign(m.hand, { n: 2, leader: m.hand.turn, bazaWinners: [] });
     m.hand.rankOf = (c) => rank(c);
-    m.hand.faltaPoints = () => m.target - Math.max(...m.scores);
+    m.hand.faltaPoints = () => Truco.faltaFor(m.target, m.scores);
     m.hand.events = m.hand.events || [];
   }
   return m;

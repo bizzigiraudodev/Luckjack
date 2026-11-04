@@ -55,6 +55,15 @@
   const ENVIDO_NAMES = { envido: 'Envido', real: 'Real envido', falta: 'Falta envido' };
   const ENVIDO_POINTS = { envido: 2, real: 3 };
 
+  // La falta envido vale lo que le falta al que va ganando para llegar a 15. En una partida a 30,
+  // mientras nadie pasó a las buenas es lo que le falta para llegar a 15 (salir de las malas);
+  // después, lo que le falta para ganar. Nunca vale más de 15.
+  function faltaFor(target, scores) {
+    const lead = Math.max(...scores);
+    const goal = target > 15 && lead < 15 ? 15 : target;
+    return Math.max(1, goal - lead);
+  }
+
   // Una mano de truco para 2 (mano a mano) o 4 jugadores (parejas). Los asientos pares forman una
   // pareja y los impares la otra; en mano a mano cada jugador es su propia "pareja" (0 y 1).
   // Puntos, bazas y "quién tiene el quiero" van por pareja; las cartas y los turnos, por jugador.
@@ -227,14 +236,15 @@
       }
     }
 
-    // Puntos del envido querido; si no se quiere, el que cantó último se lleva lo anterior (mínimo 1).
+    // Puntos del envido querido. Si no se quiere, el que cantó último se lleva lo que ya estaba
+    // aceptado (cada canto acepta el anterior) más 1 por el canto rechazado:
+    // envido no querido = 1, envido-envido no querido = 2 + 1, envido-envido-real no querido = 2 + 2 + 1.
     envidoChainPoints(chain, accepted, winner) {
       if (accepted) {
         if (chain.includes('falta')) return this.faltaPoints(winner);
         return chain.reduce((s, c) => s + ENVIDO_POINTS[c], 0);
       }
-      if (chain.length === 1) return 1;
-      return chain.slice(0, -1).reduce((s, c) => s + (ENVIDO_POINTS[c] || 0), 0);
+      return chain.slice(0, -1).reduce((s, c) => s + (ENVIDO_POINTS[c] || 0), 0) + 1;
     }
 
     // Tanto de cada pareja (el mejor de sus jugadores). Si empatan, gana el más cerca de la mano.
@@ -328,8 +338,7 @@
         deck: buildDeck(this.rng),
         mano: this.mano,
         players: this.players,
-        // La falta envido vale lo que le falta a la pareja que va ganando para llegar.
-        faltaPoints: () => this.target - Math.max(...this.scores),
+        faltaPoints: () => faltaFor(this.target, this.scores),
       });
       return this.hand;
     }
@@ -364,7 +373,7 @@
   ];
 
   const Truco = {
-    SUITS, NUMBERS, TRUCO_NAMES, ENVIDO_NAMES, PHRASES,
+    SUITS, NUMBERS, TRUCO_NAMES, ENVIDO_NAMES, PHRASES, faltaFor,
     buildDeck, rank, envidoOf, handWinner, TrucoHand, TrucoMatch,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Truco;

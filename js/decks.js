@@ -9,7 +9,7 @@
       desc: '15% menos de chances de una buena combinación.' },
     maldito: { id: 'maldito', name: 'Mazo Maldito', icon: '☠️', luck: 0.7,
       desc: '30% menos de chances de una buena combinación.' },
-    dorado: { id: 'dorado', name: 'Mazo Dorado', icon: '✨', luck: 1.05, price: 200,
+    dorado: { id: 'dorado', name: 'Mazo Dorado', icon: '✨', luck: 1.05, price: 120,
       desc: '5% más de chances de una buena combinación que el mazo clásico. Reemplaza tu mazo actual.' },
   };
 

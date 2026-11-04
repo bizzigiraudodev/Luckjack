@@ -209,6 +209,7 @@ test('historia de truco: pagar la tercera cuota es victoria; perder el último m
   r.cycle = 3;
   r.money = 10000;
   r.phase = 'betting';
+  r.handInCycle = 6;
   r.advanceCycle();
   assert.strictEqual(r.phase, 'victory');
   const l = run({ mode: 'story' });
