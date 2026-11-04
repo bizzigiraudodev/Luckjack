@@ -135,9 +135,19 @@
       return Upgrades.costAt(this.upgrades[id]);
     }
 
+    // En la tienda no se puede gastar la apuesta mínima de la próxima mano: si no, quedarías sin poder apostar.
+    shopReserve() {
+      if (!this.shop || this.shop.kind === 'start' || this.mode === 'classic') return 0;
+      return this.minBetFor(this.shop.midCycle ? this.cycle : this.cycle + 1);
+    }
+
+    spendable() {
+      return Math.max(0, this.money - this.shopReserve());
+    }
+
     canUpgrade(id) {
       return this.phase === 'shop' && this.shop.allowUpgrades && this.upgrades[id] < Upgrades.MAX_LEVEL &&
-        this.money >= this.upgradeCost(id);
+        this.spendable() >= this.upgradeCost(id);
     }
 
     upgrade(id) {
@@ -601,7 +611,8 @@
     continueWithNextDeck() {
       if (this.phase !== 'deckLost') throw new Error('No perdiste un mazo');
       if (this.mode === 'story') {
-        this.money = this.cycleStartMoney;
+        // Nunca reintentar con menos de la apuesta mínima: quedarías trabado sin poder apostar.
+        this.money = Math.max(this.cycleStartMoney, this.minBet);
       } else {
         this.money = START_MONEY;
         this.cycle = 1;
@@ -657,7 +668,7 @@
     }
 
     canBuyDeck() {
-      return this.phase === 'shop' && !this.shop.free && !!this.shop.deckOffer && this.money >= this.deckPrice();
+      return this.phase === 'shop' && !this.shop.free && !!this.shop.deckOffer && this.spendable() >= this.deckPrice();
     }
 
     buyDeck() {
@@ -676,7 +687,7 @@
 
     canBuy(bonus) {
       return this.phase === 'shop' && this.shop.offers.includes(bonus) &&
-        this.money >= this.priceOf(bonus) && this.bonuses.length < MAX_BONUSES;
+        this.spendable() >= this.priceOf(bonus) && this.bonuses.length < MAX_BONUSES;
     }
 
     buy(bonusId) {
@@ -712,7 +723,7 @@
     }
 
     reroll() {
-      if (this.phase !== 'shop' || this.shop.free || this.money < this.shop.rerollCost) throw new Error('No te alcanza');
+      if (this.phase !== 'shop' || this.shop.free || this.spendable() < this.shop.rerollCost) throw new Error('No te alcanza');
       this.money -= this.shop.rerollCost;
       this.shop.offers = this.catalog.rollShop(this.bonuses, 3, this.rng);
       this.rollDeckOffer();

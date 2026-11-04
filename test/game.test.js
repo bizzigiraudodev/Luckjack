@@ -495,6 +495,34 @@ test('historia: perder un mazo reintenta el mismo ciclo con el dinero del inicio
   assert.strictEqual(g.money, 130);
 });
 
+test('tienda: no deja gastar la apuesta mínima del próximo ciclo', () => {
+  const g = new Game({ mode: 'story', startingPick: false });
+  g.money = 200;
+  g.advanceCycle();
+  assert.strictEqual(g.shopReserve(), 15, 'apuesta mínima del ciclo 2');
+  g.money = 15 + g.upgradeCost('suerte') - 1;
+  assert.ok(!g.canUpgrade('suerte'), 'la mejora te dejaría sin la apuesta mínima');
+  g.money += 1;
+  g.upgrade('suerte');
+  assert.strictEqual(g.money, 15);
+  assert.throws(() => g.reroll());
+  g.leaveShop();
+  assert.strictEqual(g.phase, 'betting');
+  assert.ok(g.canBet(15), "puede apostar la mínima");
+});
+
+test('historia: perder un mazo con menos de la apuesta mínima no te deja trabado', () => {
+  const g = new Game({ mode: 'story', startingPick: false });
+  g.money = 200;
+  g.advanceCycle();
+  g.money = 8; // por ejemplo, venía de una partida guardada con la plata gastada
+  g.leaveShop();
+  assert.strictEqual(g.phase, 'deckLost');
+  g.continueWithNextDeck();
+  assert.strictEqual(g.phase, 'betting');
+  assert.ok(g.money >= g.minBet, 'reintenta con al menos la apuesta mínima');
+});
+
 test('historia: ganarle a San Pedro es victoria; perder todos los mazos da un final según el ciclo', () => {
   const g = new Game({ mode: 'story', startingPick: false });
   g.cycle = 3;

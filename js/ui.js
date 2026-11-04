@@ -314,6 +314,8 @@
       ? `Cuota (quedan ${HANDS_PER_CYCLE - game.handInCycle} manos)` : 'Próxima cuota';
     $('shop-quota').textContent = `$${game.quotaFor(nextCycle)}`;
     $('shop-minbet').textContent = `$${game.minBetFor(nextCycle)}`;
+    $('shop-reserve').hidden = start || !game.shopReserve();
+    $('shop-reserve').textContent = `🔒 Se guardan $${game.shopReserve()} para la apuesta mínima: podés gastar $${game.spendable()}.`;
 
     const offers = game.shop.offers.map((b) => {
       const el = document.createElement('div');
@@ -377,7 +379,7 @@
     if (!free) {
       const reroll = $('btn-reroll');
       reroll.textContent = `🔄 Cambiar ofertas ($${game.shop.rerollCost})`;
-      reroll.disabled = game.money < game.shop.rerollCost;
+      reroll.disabled = game.spendable() < game.shop.rerollCost;
     }
   }
 
