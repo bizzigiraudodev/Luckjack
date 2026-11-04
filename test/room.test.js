@@ -182,7 +182,8 @@ test('sala de 4: los bots juegan solos y nadie ve las cartas ajenas', async () =
   const r = await room4(1);
   const res = await post({ action: 'start', code: r.code, token: r.tokens[0] });
   const v = res.data;
-  assert.ok(v.hand.turn === 0 || v.hand.pending, 'los bots juegan hasta que le toca al humano');
+  // (o la mano ya terminó: por ejemplo, tu compañero bot cantó truco y el rival bot no quiso)
+  assert.ok(v.hand.turn === 0 || v.hand.pending || v.hand.finished, 'los bots juegan hasta que le toca al humano');
   assert.strictEqual(JSON.stringify(v).includes('"cards"'), false);
   assert.deepStrictEqual(v.hand.counts[0], v.hand.myCards.length);
 });
