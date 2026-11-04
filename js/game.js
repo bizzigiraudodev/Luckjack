@@ -11,7 +11,7 @@
   const MAX_HANDS = 4; // se puede volver a dividir hasta tener 4 manos
   const START_MONEY = 100;
   const RESHUFFLE_AT = 15;
-  const QUOTA_FACTOR = 0.9; // cuotas 10% más bajas que la curva base
+  const QUOTA_FACTOR = 0.99; // ciclo 1: $125, ciclo 2: $155, ciclo 3: $195...
 
   function roundTo5(n) {
     return Math.round(n / 5) * 5;

@@ -314,8 +314,8 @@ test('superar la cuota a las 15 manos abre la tienda y se puede comprar', () => 
   g.deal(10);
   g.stand();
   g.nextHand();
-  // 15 victorias de $10 + $5 en cada una de las 13 rondas que arrancaron con la cuota ($115) cumplida
-  assert.strictEqual(g.money, 250 + 13 * 5);
+  // 15 victorias de $10 + $5 en cada una de las 12 rondas que arrancaron con la cuota ($125) cumplida
+  assert.strictEqual(g.money, 250 + 12 * 5);
   assert.strictEqual(g.phase, 'shop');
   assert.ok(!g.shop.midCycle);
   assert.strictEqual(g.shop.offers.length, 3);
@@ -323,7 +323,7 @@ test('superar la cuota a las 15 manos abre la tienda y se puede comprar', () => 
   const price = g.priceOf(offer);
   g.buy(offer.id);
   assert.ok(g.has(offer.id));
-  assert.strictEqual(g.money, 315 - price);
+  assert.strictEqual(g.money, 310 - price);
   g.sell(offer.id);
   assert.ok(!g.has(offer.id));
   g.leaveShop();
@@ -434,12 +434,12 @@ function winHand(g, bet = 10) {
 test('pasar de ciclo: solo con la cuota cumplida; +$5 por ronda con la cuota cumplida', () => {
   const g = new Game({ startingPick: false });
   assert.ok(!g.canAdvance());
-  winHand(g, 20); // $120 ≥ $115
+  winHand(g, 30); // $130 ≥ $125
   g.nextHand();
   assert.ok(g.canAdvance());
   winHand(g, 10);
   assert.ok(g.result.notes.some((n) => n.includes('cuota cumplida')));
-  assert.strictEqual(g.money, 120 + 10 + 5);
+  assert.strictEqual(g.money, 130 + 10 + 5);
   g.nextHand();
   g.advanceCycle();
   assert.strictEqual(g.phase, 'shop');
@@ -475,7 +475,7 @@ test('historia: 3 jefes, tienda gratis de comunes al final y árbol solo al fina
 
 test('historia: pasar directo de ciclo hace la tienda del final paga', () => {
   const g = new Game({ mode: 'story', startingPick: false });
-  winHand(g, 20);
+  winHand(g, 30);
   g.nextHand();
   g.advanceCycle();
   assert.strictEqual(g.shop.kind, 'end');
@@ -486,7 +486,7 @@ test('historia: perder un mazo reintenta el mismo ciclo con el dinero del inicio
   const g = new Game({ mode: 'story', startingPick: false });
   g.cycle = 2;
   g.cycleStartMoney = 130;
-  g.money = 100; // menos que la cuota de $140
+  g.money = 100; // menos que la cuota de $155
   g.endCycle();
   assert.strictEqual(g.phase, 'deckLost');
   g.continueWithNextDeck();

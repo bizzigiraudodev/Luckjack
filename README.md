@@ -137,7 +137,7 @@ Queda con su ícono, se abre a pantalla completa y funciona sin internet.
 - Blackjack clásico contra el crupier: acercate a 21 más que él sin pasarte. El crupier se planta en 17.
 - Ganar paga **1:1** (apostás $10, cobrás $20) y el blackjack natural paga **3:2** (cobrás $25). Podés **doblar** con tus dos primeras cartas y **dividir** pares del mismo rango (hasta 4 manos; los ases divididos reciben una sola carta y un 21 dividido no cuenta como blackjack).
 - Empezás con **$100** y elegís **1 bonus gratis** entre 3 al azar. La partida se divide en **ciclos de 15 manos**.
-- Al terminar cada ciclo tenés que tener al menos la **cuota** (`$90 × 1.25^ciclo`, redondeada a $5), si no, perdés.
+- Al terminar cada ciclo tenés que tener al menos la **cuota** (`$99 × 1.25^ciclo`, redondeada a $5: $125, $155, $195...), si no, perdés.
 - Cada **5 manos** aparece la **tienda** (en las manos 5 y 10 sin chequear la cuota, y en la 15 si la superaste): 3 bonuses al azar (ponderados por rareza). Podés comprar, vender a mitad de precio o pagar para cambiar las ofertas. Máximo 5 bonuses.
 - Cada ciclo sube la cuota y la apuesta mínima (`$10 + $5` por ciclo). El objetivo: llegar lo más lejos posible. El récord se guarda en el navegador.
 
