@@ -269,3 +269,37 @@ test('historia de truco: se elige muerte súbita o 3 mazos; con 3 mazos no hay M
   assert.strictEqual(d.ending, 'futre', 'con el último mazo te lleva el rival de esa noche');
   assert.ok(run({ mode: 'infinite' }).countsForRecords);
 });
+
+test('historia del purgatorio: la original, con 3 mazos, sin Mazo Dorado ni rankings', () => {
+  const r = run({ mode: 'story', story: 'purgatorio' });
+  assert.deepStrictEqual([1, 2, 3].map((c) => { r.cycle = c; return r.boss; }), ['gaucho', 'diablo', 'santo']);
+  r.cycle = 1;
+  assert.strictEqual(r.money, 100);
+  assert.deepStrictEqual([1, 2, 3].map((c) => r.quotaFor(c)), [140, 195, 275]);
+  assert.ok(!r.suddenDeath && !r.countsForRecords, 'siempre con 3 mazos y sin rankings');
+  // el Diablo se queda con las pardas
+  const d = run({ mode: 'story', story: 'purgatorio' });
+  d.cycle = 2;
+  rig(d, [c(3, 'espada'), c(4, 'copa'), c(5, 'oro')], [c(3, 'oro'), c(6, 'copa'), c(7, 'copa')]);
+  const h = d.deal(20);
+  while (h.bazas.length === 0) h.act(h.actor, { type: 'play', index: 0 });
+  assert.strictEqual(h.bazas[0], 1);
+  // San Pedro anula el Chamuyero
+  d.cycle = 3;
+  d.bonuses.push('chamuyo');
+  assert.ok(!d.active('chamuyo'));
+  // perder el último mazo da el final de siempre; ganarle a San Pedro es victoria
+  const l = run({ mode: 'story', story: 'purgatorio' });
+  l.cycle = 2;
+  l.deckIndex = 2;
+  l.money = 10;
+  l.endCycle();
+  assert.strictEqual(l.ending, 'infierno');
+  const w = run({ mode: 'story', story: 'purgatorio' });
+  w.cycle = 3;
+  w.money = 10000;
+  w.phase = 'betting';
+  w.handInCycle = 6;
+  w.advanceCycle();
+  assert.strictEqual(w.phase, 'victory');
+});

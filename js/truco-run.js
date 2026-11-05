@@ -15,9 +15,11 @@
   // Historia del truco: en su retiro en la pampa, el timbero se juega la vida contra cinco
   // personajes del campo, uno por noche (en el infinito siempre es el Viejo).
   const TRUCO_STORY = ['luzmala', 'silbon', 'futre', 'familiar', 'gil'];
+  // La historia original, como alternativa: el Viejo, el Diablo y San Pedro, con 3 mazos.
+  const PURGATORIO_STORY = ['gaucho', 'diablo', 'santo'];
   const RIVAL_NAMES = {
     gaucho: 'el Viejo', luzmala: 'la Luz Mala', silbon: 'el Silbón', futre: 'el Futre',
-    familiar: 'el Familiar', gil: 'el Gauchito Gil',
+    familiar: 'el Familiar', gil: 'el Gauchito Gil', diablo: 'el Diablo', santo: 'San Pedro',
   };
   // El Gauchito Gil es justo: no miente ni se deja mentir (no valen el Chamuyero ni la Cara de Póker).
   const HONEST_IMMUNE = ['chamuyo', 'mentiroso'];
@@ -33,10 +35,13 @@
   class TrucoRun extends Game {
     // `lives`: en la historia, 'sudden' (muerte súbita: perder una noche es perder la vida) o 'decks'
     // (3 mazos como en el resto de los modos: más fácil, pero sin Mazo Dorado ni rankings).
+    // `story`: 'pampa' (la historia del truco) o 'purgatorio' (la original: siempre con 3 mazos,
+    // sin Mazo Dorado ni rankings, pero ganarla desbloquea los otros modos).
     constructor(opts = {}) {
       super({ ...opts, catalog: TrucoBonuses });
-      this.lives = opts.lives === 'decks' ? 'decks' : 'sudden';
-      if (this.mode === 'story') {
+      this.story = opts.story === 'purgatorio' ? 'purgatorio' : 'pampa';
+      this.lives = this.story === 'purgatorio' || opts.lives === 'decks' ? 'decks' : 'sudden';
+      if (this.mode === 'story' && this.story === 'pampa') {
         this.money = STORY_START;
         this.cycleStartMoney = STORY_START;
         this.bestMoney = STORY_START;
@@ -53,7 +58,7 @@
     // El truco tiene más varianza que el blackjack (se cobra apuesta × puntos), así que las cuotas
     // crecen más rápido: $140, $195, $275... (calibrado con simulaciones contra el rival).
     quotaFor(cycle) {
-      if (this.mode === 'story') return Math.round((STORY_START * Math.pow(STORY_QUOTA_GROWTH, cycle)) / 5) * 5;
+      if (this.mode === 'story' && this.story === 'pampa') return Math.round((STORY_START * Math.pow(STORY_QUOTA_GROWTH, cycle)) / 5) * 5;
       return Math.round((100 * Math.pow(1.4, cycle)) / 5) * 5;
     }
 
@@ -71,7 +76,7 @@
     }
 
     get storyBosses() {
-      return TRUCO_STORY;
+      return this.story === 'purgatorio' ? PURGATORIO_STORY : TRUCO_STORY;
     }
 
     // En la pampa se juega la vida: con muerte súbita, perder un ciclo es perderla.
@@ -81,20 +86,23 @@
 
     // Solo la historia con muerte súbita da el Mazo Dorado y cuenta para los rankings.
     get countsForRecords() {
-      return this.mode !== 'story' || this.lives === 'sudden';
+      return this.mode !== 'story' || (this.story === 'pampa' && this.lives === 'sudden');
     }
 
-    // Con 3 mazos, al perder el último te lleva el rival de esa noche.
+    // Con 3 mazos, al perder el último te lleva el rival de esa noche (en el purgatorio, el final de siempre).
     storyEnding() {
-      return this.boss;
+      return this.story === 'purgatorio' ? super.storyEnding() : this.boss;
     }
 
     get victoryLog() {
-      return '🌄 ¡Sobreviviste a las cinco noches! El Gauchito Gil te da su bendición.';
+      return this.story === 'purgatorio'
+        ? '🌟 ¡Les ganaste a los tres! Las puertas del Edén se abren.'
+        : '🌄 ¡Sobreviviste a las cinco noches! El Gauchito Gil te da su bendición.';
     }
 
+    // El Gauchito Gil y San Pedro son justos: en su mesa no valen el Chamuyero ni la Cara de Póker.
     active(id) {
-      return this.has(id) && !(this.boss === 'gil' && HONEST_IMMUNE.includes(id));
+      return this.has(id) && !((this.boss === 'gil' || this.boss === 'santo') && HONEST_IMMUNE.includes(id));
     }
 
     get luck() {
@@ -150,13 +158,15 @@
       // El Futre va siempre al galope: es mano en todas las manos.
       this.mano = this.boss === 'futre' ? 1 : 1 - this.mano;
       const sieteBravo = this.has('siete_bravo');
+      // La trampa del Diablo (historia del purgatorio): las bazas pardas son suyas.
+      const diablo = this.boss === 'diablo' ? 0.5 : 0;
       this.truco = new Truco.TrucoHand({
         mano: this.mano,
         cards: this.dealCards(),
         faltaPoints: (winner) => (winner === 1 && this.has('falta_segura') ? FALTA_SEGURA : FALTA),
         envidoBonus: [this.has('envido_gordo') ? 2 : 0, 0],
         pie: this.has('pie') ? 0 : null,
-        rankOf: (c, p) => (p === 0 && sieteBravo && c.n === 7 && (c.s === 'copa' || c.s === 'basto') ? 11 : Truco.rank(c)),
+        rankOf: (c, p) => (p === 0 && sieteBravo && c.n === 7 && (c.s === 'copa' || c.s === 'basto') ? 11 : Truco.rank(c) + (p === 1 ? diablo : 0)),
         flor: [this.has('flor'), false],
       });
       this.phase = 'playing';
@@ -228,7 +238,7 @@
     }
   }
 
-  const TrucoRunModule = { TrucoRun, FALTA, FALTA_SEGURA, RIVAL_NAMES, TRUCO_STORY, HONEST_IMMUNE, STORY_START };
+  const TrucoRunModule = { TrucoRun, FALTA, FALTA_SEGURA, RIVAL_NAMES, TRUCO_STORY, PURGATORIO_STORY, HONEST_IMMUNE, STORY_START };
   if (typeof module !== 'undefined' && module.exports) module.exports = TrucoRunModule;
   else root.TrucoRunModule = TrucoRunModule;
 })(typeof window !== 'undefined' ? window : globalThis);

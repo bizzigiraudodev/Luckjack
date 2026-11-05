@@ -196,7 +196,7 @@
     }
     $('story-timer').hidden = game.mode !== 'story';
     const title = game.mode === 'story'
-      ? `${game.isTruco ? 'NOCHE' : 'CICLO'} <b id="cycle">${game.cycle}/${game.storyBosses.length}</b><span class="boss-name">${info.title}</span>`
+      ? `${game.isTruco && game.story !== 'purgatorio' ? 'NOCHE' : 'CICLO'} <b id="cycle">${game.cycle}/${game.storyBosses.length}</b><span class="boss-name">${info.title}</span>`
       : `CICLO <b id="cycle">${game.cycle}</b>`;
     $('cycle').parentElement.innerHTML = title;
     $('quota-label').textContent = game.mode === 'story' ? info.goal : 'Llegá a';
@@ -456,6 +456,18 @@
         (record ? '🏆 ¡Nuevo récord!' : `Récord: $${best}`);
       return;
     }
+    if (game.mode === 'story' && game.isTruco && game.story === 'purgatorio') {
+      const won = game.phase === 'victory';
+      $('gameover-title').textContent = won ? '🌟 ¡Entraste al Edén!' : {
+        purgatorio: '🌫️ Te quedaste en el purgatorio', infierno: '🔥 Te fuiste al infierno', casi: '🚪 Tan cerca del Edén',
+      }[game.ending] || '💀 Fin de la partida';
+      $('gameover-reason').textContent = !won ? game.gameOverReason
+        : 'Les ganaste al Viejo, al Diablo y a San Pedro. 🔓 Desbloqueaste el truco infinito, el de a 4 y jugar con un amigo.';
+      $('gameover-stats').innerHTML = `Ciclos superados: <b>${game.maxCleared}/3</b> · Manos jugadas: <b>${game.handsPlayed}</b>` +
+        '<br>🔥 Historia del purgatorio (no da Mazo Dorado ni cuenta para rankings)';
+      $('btn-gameover-ranks').hidden = true;
+      return;
+    }
     if (game.mode === 'story' && game.isTruco) {
       const won = game.phase === 'victory';
       const counts = game.countsForRecords;
@@ -585,7 +597,7 @@
   async function storyEvents() {
     if (!game || game.mode !== 'story' || inCutscene) return;
     const g = game;
-    const script = g.isTruco ? Story.truco : Story;
+    const script = g.isTruco ? (g.story === 'purgatorio' ? Story.trucoPurgatorio : Story.truco) : Story;
     const redraw = () => { if (game === g) (g.isTruco ? renderTruco() : renderAll()); };
     if (g.pendingIntro) {
       const cycle = g.pendingIntro;
@@ -818,7 +830,7 @@
     });
   }
 
-  function startTruco(mode, lives) {
+  function startTruco(mode, lives, story) {
     $('menu').hidden = true;
     document.body.classList.remove('in-menu');
     if (mode === 'classic') {
@@ -829,7 +841,7 @@
     // Truco infinito e historia: la misma progresión que el blackjack, con su propia partida.
     const golden = store.get(KEYS.storyDone) || store.get(KEYS.trucoStoryDone);
     const startDeck = mode === 'infinite' && golden ? 'dorado' : null;
-    game = new TrucoRunModule.TrucoRun({ mode, startDeck, lives });
+    game = new TrucoRunModule.TrucoRun({ mode, startDeck, lives, story });
     game.playMs = 0;
     game.speedrun = Speedrun.on;
     AntiBot.reset();
@@ -850,6 +862,7 @@
   });
   document.querySelectorAll('#modes-truco button[data-truco]').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      if (btn.dataset.truco === 'purgatorio') return startTruco('story', 'decks', 'purgatorio');
       if (btn.dataset.truco !== 'story') return startTruco(btn.dataset.truco);
       const lives = await chooseLives();
       if (lives) startTruco('story', lives);
@@ -973,7 +986,7 @@
   $('btn-restart').addEventListener('click', () => {
     if (Truco4UI.active) Truco4UI.start();
     else if (TrucoOnline.active) TrucoOnline.rematch();
-    else if (game && game.isTruco) startTruco(game.mode, game.lives);
+    else if (game && game.isTruco) startTruco(game.mode, game.lives, game.story);
     else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
     else startGame(game.mode);
   });

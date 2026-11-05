@@ -70,7 +70,7 @@ Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
 
 ### Modos bloqueados
 
-Al principio solo están el **clásico** y la **historia** de cada juego. Pasarte la historia del blackjack desbloquea el roguelike infinito; pasarte la historia del truco (con muerte súbita o con 3 mazos) desbloquea el truco infinito, el truco de a 4 y jugar con un amigo. Si un amigo te manda el link de una sala, podés entrar igual.
+Al principio solo están el **clásico** y la **historia** de cada juego. Pasarte la historia del blackjack desbloquea el roguelike infinito; pasarte la historia del truco (con muerte súbita o con 3 mazos) o la del purgatorio desbloquea el truco infinito, el truco de a 4 y jugar con un amigo. Si un amigo te manda el link de una sala, podés entrar igual.
 
 ### Truco modo historia: cinco noches en la pampa
 
@@ -89,6 +89,10 @@ Al empezar elegís cómo jugar:
 - **🃏 Con 3 mazos:** reintentás la noche con el mazo siguiente. Más fácil, pero sin Mazo Dorado ni rankings.
 
 Si sobrevivís, el Gauchito Gil te da su bendición y morís tranquilo de viejo... que es justo donde empieza la historia del blackjack. Las reglas de cada rival son provisorias. Los sprites de los cinco son pixel art original de 64×68 (`js/sprites-pampa.js`).
+
+### Historia del purgatorio (alternativa)
+
+Pestaña **🗡️ Truco → 🔥 Historia del purgatorio**: la historia del truco original, en 3 ciclos con 3 mazos contra **el Viejo** (miente de vez en cuando), **el Diablo** (las bazas pardas son suyas) y **San Pedro** (nunca miente y anula el Chamuyero y la Cara de Póker). No da Mazo Dorado ni cuenta para los rankings, pero ganarla desbloquea el truco infinito, el de a 4 y jugar con un amigo.
 
 ### Truco infinito
 
