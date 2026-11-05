@@ -68,6 +68,10 @@ Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
 
 **Cómo funciona:** la partida vive en el servidor (`api/room.js`, Vercel Function + Upstash Redis). El motor del truco corre ahí, valida cada jugada y a cada jugador le manda solo lo que puede ver, así que nadie puede espiar las cartas del otro. Los celulares consultan cada ~1 segundo si hubo cambios. Necesita la misma base Upstash que los rankings globales (ver más abajo); con el plan gratis alcanza para unas 200 partidas por mes.
 
+### Modos bloqueados
+
+Al principio solo están el **clásico** y la **historia** de cada juego. Pasarte la historia del blackjack desbloquea el roguelike infinito; pasarte la historia del truco (con muerte súbita o con 3 mazos) desbloquea el truco infinito, el truco de a 4 y jugar con un amigo. Si un amigo te manda el link de una sala, podés entrar igual.
+
 ### Truco modo historia: cinco noches en la pampa
 
 Pestaña **🗡️ Truco → 📖 Modo historia**. Es la precuela de la historia del blackjack: antes de morir de viejo, el timbero está retirado en su casucha de la pampa y cada noche viene alguien a jugarle un truco **por su vida**. Arrancás con **$200** y cada noche tiene su cuota (**$230, $265, $305, $350 y $400**).

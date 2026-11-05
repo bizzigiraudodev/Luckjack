@@ -16,6 +16,7 @@
     seenIntro: 'luckjack.seenIntro',
     trucoBest: 'luckjack.trucoBest', // truco infinito: { cycles, money }
     trucoStoryDone: 'luckjack.trucoStoryDone',
+    trucoStoryBeaten: 'luckjack.trucoStoryBeaten', // historia del truco ganada en cualquier modo → desbloquea el resto
     playMs: 'luckjack.playMs', // tiempo total de juego (todos los modos)
     playSent: 'luckjack.playSent', // lo último que se mandó al ranking // historia del truco terminada → Mazo Dorado en el truco infinito
   };
@@ -596,6 +597,7 @@
       if (g.phase === 'victory') {
         const golden = g.countsForRecords !== false;
         if (golden) store.set(g.isTruco ? KEYS.trucoStoryDone : KEYS.storyDone, true);
+        if (g.isTruco) store.set(KEYS.trucoStoryBeaten, true); // con 3 mazos también desbloquea los otros modos
         Sound.sfx('victory');
         await cutscene(script.victory(golden));
       } else {
@@ -734,10 +736,43 @@
     const t4 = Truco4UI.record();
     $('rec-truco4').textContent = t4 ? `Ganadas: ${t4.wins} · Perdidas: ${t4.losses}` : 'Vos y el Viejo contra el Diablo y San Pedro';
     $('rec-truco').textContent = truco ? `Ganadas: ${truco.wins} · Perdidas: ${truco.losses}` : 'Mano a mano contra el Viejo, a 15 puntos';
+    renderLocks();
     if (!$('menu-chars').innerHTML) {
       $('menu-chars').innerHTML = ['diablo', 'gaucho', 'santo'].map((id) => `<div class="menu-char">${Pixel.character(id)}</div>`).join('');
     }
   }
+
+  // --- Modos bloqueados: hay que pasarse la historia de cada juego (el clásico siempre está) ---
+  const unlocked = {
+    blackjack: () => !!store.get(KEYS.storyDone),
+    truco: () => !!(store.get(KEYS.trucoStoryBeaten) || store.get(KEYS.trucoStoryDone)),
+  };
+  const LOCKS = [
+    ['#modes-blackjack [data-mode="infinite"]', 'blackjack', 'Pasate la historia del blackjack para desbloquearlo'],
+    ['#modes-truco [data-truco="infinite"]', 'truco', 'Pasate la historia del truco para desbloquearlo'],
+    ['#btn-truco4', 'truco', 'Pasate la historia del truco para desbloquearlo'],
+    ['#btn-online', 'truco', 'Pasate la historia del truco para desbloquearlo'],
+  ];
+  function renderLocks() {
+    for (const [sel, gameId, msg] of LOCKS) {
+      const btn = document.querySelector(sel);
+      const locked = !unlocked[gameId]();
+      btn.classList.toggle('locked', locked);
+      if (locked) btn.dataset.lock = `🔒 ${msg}`;
+      else delete btn.dataset.lock;
+    }
+    $('menu-note').hidden = true;
+  }
+  // Tocar un modo bloqueado avisa en vez de arrancarlo (se frena antes de los otros clics).
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('#menu button.locked');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    $('menu-note').textContent = btn.dataset.lock;
+    $('menu-note').hidden = false;
+    Sound.sfx('push');
+  }, true);
 
   function startGame(mode) {
     const startDeck = mode === 'infinite' && store.get(KEYS.storyDone) ? 'dorado' : null;
