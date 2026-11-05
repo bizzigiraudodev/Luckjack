@@ -171,3 +171,17 @@ test('tiempo total de juego: lista larga y no crece más rápido que el reloj', 
   const again = (await call('GET', { query: { board: 'playtime' } })).data.entries[0];
   assert.ok(again.value <= 4 * 3600 * 1000 + 61000, 'después, como mucho lo que pasó en el reloj');
 });
+
+test('se borran las marcas de la historia del truco vieja que están en la lista', async () => {
+  process.env.KV_REST_API_URL = 'https://redis.example';
+  process.env.KV_REST_API_TOKEN = 'token';
+  global.fetch = fakeRedis();
+  const body = (pid, name, value) => ({ proof: HUMAN, board: 'trucoStory', pid, name, value, hands: 40 });
+  const real = Date.prototype.toISOString;
+  Date.prototype.toISOString = function () { return '2026-11-04T12:00:00.000Z'; }; // la marca vieja es del 4/11
+  await call('POST', { body: body('celular0001', 'Dev', 856750), ip: '1.1.1.1' });
+  Date.prototype.toISOString = real;
+  await call('POST', { body: body('compu00001', 'DevPC', 969498), ip: '2.2.2.2' });
+  const rows = (await call('GET', { query: { board: 'trucoStory' } })).data.entries;
+  assert.deepStrictEqual(rows.map((e) => [e.name, e.value]), [['DevPC', 969498]], 'solo queda la marca de la historia nueva');
+});

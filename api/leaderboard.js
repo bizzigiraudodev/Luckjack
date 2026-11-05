@@ -19,6 +19,13 @@ const BOARDS = {
 };
 const PLAYTIME_FIRST_MAX = 4 * 3600 * 1000; // la primera vez se aceptan hasta 4 horas acumuladas
 const PLAYTIME_SLACK = 60 * 1000;
+// Marcas que se borran a mano: la historia del truco cambió por completo (la de la pampa reemplazó
+// a la del Viejo, el Diablo y San Pedro) y las marcas de la historia vieja no valen.
+const PURGE = [
+  { board: 'trucoStory', name: 'Dev', date: '2026-11-04' },
+];
+const purged = (board, data) => PURGE.some((p) => p.board === board && p.name === data.name && p.date === data.date);
+
 const TIME_BOARDS = ['story', 'trucoStory', 'speedStory', 'speedTrucoStory'];
 const SPEED_BOARDS = ['speedStory', 'speedTrucoStory'];
 
@@ -122,8 +129,9 @@ async function top(cfg, board, me = '') {
   const rows = [];
   for (let i = 0; i < pids.length; i++) {
     const { proof, ...data } = safeParse(details[i]);
-    // Limpieza automática: si una marca guardada no pasa las reglas anti-bot actuales, se borra.
-    if (proof && botReason(proof, data.hands || 0)) {
+    // Limpieza automática: si una marca guardada no pasa las reglas anti-bot actuales, o es de las
+    // que se borran a mano, se borra.
+    if ((proof && botReason(proof, data.hands || 0)) || purged(board, data)) {
       await redis(cfg, ['ZREM', scores, pids[i]]);
       await redis(cfg, ['HDEL', info, pids[i]]);
       continue;
