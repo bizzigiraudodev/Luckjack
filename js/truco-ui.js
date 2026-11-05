@@ -197,6 +197,7 @@
         return btn;
       });
       $('truco-controls').replaceChildren(...buttons);
+      $('tr-mine').scrollIntoView({ block: 'nearest' }); // tu mano a la vista, por encima de los botones
       // Las cartas se juegan tocándolas.
       if (acts.some((a) => a.type === 'play')) {
         hand.cards[0].forEach((card) => {

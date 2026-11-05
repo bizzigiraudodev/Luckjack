@@ -870,7 +870,7 @@ body[data-table="4"] #tr-board { display: none !important; }
   .t4-shown { position: absolute; left: 22px; top: 96px; max-width: 170px; justify-content: flex-start; z-index: 2; }
 }
 /* Cuando te toca, tu mano queda por encima de la barra de botones fija */
-#tr-mine { scroll-margin-bottom: 150px; }
+#tr-mine { scroll-margin-bottom: 96px; } /* justo por encima de la barra de botones */
 .t4-shown .card { width: 32px; height: 46px; animation: none; }
 .t4-shown .card .tl, .t4-shown .card .br { font-size: 0.6rem; }
 .t4-shown .card .mid svg { width: 16px; height: 16px; }
@@ -1119,6 +1119,26 @@ body.in-menu .app, body.in-menu .help-btn { visibility: hidden; }
 }
 
 /* --- Pantallas angostas --- */
+/* Truco en pantallas de compu bajas (notebooks): todo más compacto para ver al rival y tu mano a la vez */
+@media (min-width: 721px) and (max-height: 920px) {
+  body[data-game="truco"] .bonus { max-width: 52px; }
+  body[data-game="truco"] .dealer { width: 112px; height: 119px; }
+  body[data-game="truco"] .table-top { height: 52px; }
+  body[data-game="truco"] .felt { min-height: 0; padding: 10px 16px 26px; gap: 4px; }
+  body[data-game="truco"] .tr-hand.rival { min-height: 58px; }
+  body[data-game="truco"] .tr-hand.rival .card { width: 42px; height: 58px; }
+  body[data-game="truco"] .tr-baza .slot, body[data-game="truco"] .tr-baza .slot .card { width: 58px; height: 81px; }
+  body[data-game="truco"] .tr-baza .mark { min-height: 16px; font-size: 0.95rem; }
+  body[data-game="truco"] .tr-hand { min-height: 92px; }
+  body[data-game="truco"] #tr-mine .card { width: 66px; height: 92px; }
+  body[data-game="truco"] .message { font-size: 1.05rem; }
+  body[data-game="truco"] .intel { margin-top: 2px; font-size: 0.85rem; }
+}
+@media (min-width: 721px) and (max-height: 760px) {
+  body[data-game="truco"] .dealer { width: 92px; height: 98px; }
+  body[data-game="truco"] .table-top { height: 44px; }
+}
+
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; grid-template-areas: "hud" "play" "log"; }
   .hud { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; }

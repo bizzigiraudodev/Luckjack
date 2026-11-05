@@ -68,15 +68,23 @@ Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
 
 **Cómo funciona:** la partida vive en el servidor (`api/room.js`, Vercel Function + Upstash Redis). El motor del truco corre ahí, valida cada jugada y a cada jugador le manda solo lo que puede ver, así que nadie puede espiar las cartas del otro. Los celulares consultan cada ~1 segundo si hubo cambios. Necesita la misma base Upstash que los rankings globales (ver más abajo); con el plan gratis alcanza para unas 200 partidas por mes.
 
-### Truco modo historia
+### Truco modo historia: cinco noches en la pampa
 
-Pestaña **🗡️ Truco → 📖 Modo historia**: la progresión del truco infinito en 3 ciclos, con cutscenes, contra los tres jefes:
+Pestaña **🗡️ Truco → 📖 Modo historia**. Es la precuela de la historia del blackjack: antes de morir de viejo, el timbero está retirado en su casucha de la pampa y cada noche viene alguien a jugarle un truco **por su vida**. Arrancás con **$200** y cada noche tiene su cuota (**$230, $265, $305, $350 y $400**).
 
-1. **El Viejo** (cuota $140): zorro viejo, miente de vez en cuando.
-2. **El Diablo** (cuota $195): miente casi siempre y **las bazas pardas son suyas**.
-3. **San Pedro** (cuota $275): nunca miente y en su mesa no sirven el **Chamuyero** ni la **Cara de Póker**.
+| Noche | Rival | Su trampa |
+|---|---|---|
+| 1 | 💡 **La Luz Mala** | Te muestra una de sus cartas, pero te baja la suerte (−5%) |
+| 2 | 🎵 **El Silbón** | Cada 4 manos silba cerca: lo que perdés en esa mano cuesta ×1,5 |
+| 3 | 🐎 **El Futre** | Va siempre al galope: es mano en todas las manos |
+| 4 | 🐕 **El Familiar** | Cada 5 manos se come el 15% de tus fichas |
+| 5 | 🕯️ **El Gauchito Gil** | Truco honrado: nunca miente y en su mesa no sirven el Chamuyero ni la Cara de Póker |
 
-Igual que en la historia del blackjack: perder un mazo reintenta el ciclo, jugar el ciclo completo da 1 bonus común gratis y hay un final distinto según dónde te quedes. Terminarla desbloquea el **Mazo Dorado** en el truco infinito.
+Al empezar elegís cómo jugar:
+- **💀 Muerte súbita:** perder una noche es perder la vida (cada rival tiene su final). Ganarla desbloquea el **Mazo Dorado** en el truco infinito y el tiempo cuenta para los rankings.
+- **🃏 Con 3 mazos:** reintentás la noche con el mazo siguiente. Más fácil, pero sin Mazo Dorado ni rankings.
+
+Si sobrevivís, el Gauchito Gil te da su bendición y morís tranquilo de viejo... que es justo donde empieza la historia del blackjack. Las reglas de cada rival son provisorias. Los sprites de los cinco son pixel art original de 64×68 (`js/sprites-pampa.js`).
 
 ### Truco infinito
 
@@ -265,6 +273,7 @@ js/truco-online.js # truco online contra un amigo
 js/truco4-ui.js   # mesa de truco de a 4 con señas
 js/truco4-online.js # truco de a 4 online (salas con bots)
 js/senas.js       # señas del truco de a 4
+js/sprites-pampa.js # sprites de los rivales de la pampa (64x68)
 js/speedrun.js    # modo speedrun (sin animaciones)
 js/antibot.js     # estadísticas anti-bot para los rankings
 test/             # tests con node:test
