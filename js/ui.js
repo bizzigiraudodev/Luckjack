@@ -17,6 +17,7 @@
     trucoBest: 'luckjack.trucoBest', // truco infinito: { cycles, money }
     trucoStoryDone: 'luckjack.trucoStoryDone',
     trucoStoryBeaten: 'luckjack.trucoStoryBeaten', // historia del truco ganada en cualquier modo → desbloquea el resto
+    trucoPampaBeaten: 'luckjack.trucoPampaBeaten', // la historia de la pampa ganada → desbloquea la secuela (purgatorio)
     playMs: 'luckjack.playMs', // tiempo total de juego (todos los modos)
     playSent: 'luckjack.playSent', // lo último que se mandó al ranking // historia del truco terminada → Mazo Dorado en el truco infinito
   };
@@ -442,6 +443,7 @@
   function renderGameOver() {
     const el = $('gameover');
     const ended = game.phase === 'gameover' || game.phase === 'victory';
+    $('btn-sequel').hidden = true;
     el.hidden = !ended || inCutscene;
     $('btn-gameover-ranks').hidden = game.mode === 'classic';
     if (!ended) return;
@@ -476,12 +478,13 @@
         familiar: '🐕 Te devoró el Familiar', gil: '🕯️ Te llegó la hora',
       }[game.ending] || '💀 Fin de la partida';
       $('gameover-reason').textContent = !won ? game.gameOverReason : counts
-        ? 'El Gauchito Gil te dio su bendición. ✨ El Mazo Dorado ya está desbloqueado en el truco infinito.'
-        : 'El Gauchito Gil te dio su bendición. Jugaste con 3 mazos: no hay Mazo Dorado ni rankings (probá con muerte súbita).';
+        ? 'El Gauchito Gil te dio su bendición. ✨ Ganaste el Mazo Dorado: el purgatorio y el truco infinito arrancan con él.'
+        : 'El Gauchito Gil te dio su bendición. Jugaste con 3 mazos: no hay Mazo Dorado ni rankings (probá con muerte súbita). La historia sigue en el purgatorio.';
       $('gameover-stats').innerHTML = `Noches superadas: <b>${game.maxCleared}/${game.storyBosses.length}</b> · Manos jugadas: <b>${game.handsPlayed}</b>` +
         (won ? ` · Tiempo: <b>${Leaderboard.formatTime(game.playMs)}</b>` : '') +
         `<br>${game.suddenDeath ? '💀 Muerte súbita' : '🃏 Con 3 mazos (no cuenta para rankings)'}`;
       $('btn-gameover-ranks').hidden = !counts;
+      $('btn-sequel').hidden = !won;
       return;
     }
     if (game.mode === 'story') {
@@ -610,6 +613,7 @@
         const golden = g.countsForRecords !== false;
         if (golden) store.set(g.isTruco ? KEYS.trucoStoryDone : KEYS.storyDone, true);
         if (g.isTruco) store.set(KEYS.trucoStoryBeaten, true); // con 3 mazos también desbloquea los otros modos
+        if (g.isTruco && g.story !== 'purgatorio') store.set(KEYS.trucoPampaBeaten, true); // y la secuela
         Sound.sfx('victory');
         await cutscene(script.victory(golden));
       } else {
@@ -727,6 +731,7 @@
   // --- Menú ---
   function showMenu() {
     submitPlaytime();
+    $('btn-sequel').hidden = true;
     Truco4UI.stop();
     TrucoUI.stop();
     TrucoOnline.stop();
@@ -758,9 +763,11 @@
   const unlocked = {
     blackjack: () => !!store.get(KEYS.storyDone),
     truco: () => !!(store.get(KEYS.trucoStoryBeaten) || store.get(KEYS.trucoStoryDone)),
+    pampa: () => !!(store.get(KEYS.trucoPampaBeaten) || store.get(KEYS.trucoStoryDone)),
   };
   const LOCKS = [
     ['#modes-blackjack [data-mode="infinite"]', 'blackjack', 'Pasate la historia del blackjack para desbloquearlo'],
+    ['#modes-truco [data-truco="purgatorio"]', 'pampa', 'La secuela: pasate primero la historia de la pampa'],
     ['#modes-truco [data-truco="infinite"]', 'truco', 'Pasate la historia del truco para desbloquearlo'],
     ['#btn-truco4', 'truco', 'Pasate la historia del truco para desbloquearlo'],
     ['#btn-online', 'truco', 'Pasate la historia del truco para desbloquearlo'],
@@ -840,7 +847,7 @@
     }
     // Truco infinito e historia: la misma progresión que el blackjack, con su propia partida.
     const golden = store.get(KEYS.storyDone) || store.get(KEYS.trucoStoryDone);
-    const startDeck = mode === 'infinite' && golden ? 'dorado' : null;
+    const startDeck = (mode === 'infinite' && golden) || (story === 'purgatorio' && store.get(KEYS.trucoStoryDone)) ? 'dorado' : null;
     game = new TrucoRunModule.TrucoRun({ mode, startDeck, lives, story });
     game.playMs = 0;
     game.speedrun = Speedrun.on;
@@ -982,6 +989,11 @@
     game.continueWithNextDeck();
     $('bet-input').value = '';
     render();
+  });
+  // Al ganar la pampa: seguir directo con la secuela.
+  $('btn-sequel').addEventListener('click', () => {
+    $('btn-sequel').hidden = true;
+    startTruco('story', 'decks', 'purgatorio');
   });
   $('btn-restart').addEventListener('click', () => {
     if (Truco4UI.active) Truco4UI.start();

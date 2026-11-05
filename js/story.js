@@ -228,7 +228,7 @@
         },
       ];
     },
-    // `golden`: si se jugó con muerte súbita, la victoria desbloquea el Mazo Dorado.
+    // `golden`: si se jugó con muerte súbita, la victoria desbloquea el Mazo Dorado (para la secuela).
     victory: (golden = true) => [
       {
         bg: 'santuario', music: 'eden', chars: [{ id: 'timbero', pos: 'left' }, { id: 'gil', pos: 'right' }],
@@ -242,7 +242,8 @@
         lines: [
           { who: 'narrador', text: 'Y una noche tranquila, de pura vejez, se le terminó la racha.' },
           { who: 'narrador', text: 'Pero esa ya es otra historia... la del purgatorio de los timberos.' },
-          ...(golden ? [{ who: 'narrador', text: '✨ Desbloqueaste el Mazo Dorado para el truco infinito.' }] : []),
+          { who: 'narrador', text: '🔥 Continúa en la historia del purgatorio.' },
+          ...(golden ? [{ who: 'narrador', text: '✨ Ganaste el Mazo Dorado: arrancás el purgatorio y el truco infinito con él.' }] : []),
         ],
       },
     ],
@@ -272,7 +273,7 @@
           {
             bg: 'purgatorio', music: 'gaucho', chars: [{ id: 'timbero', pos: 'left' }, { id: 'gaucho', pos: 'right' }],
             lines: [
-              { who: 'gaucho', text: '¿Así que el blackjack no es lo tuyo, {name}? Acá hay otra manera de pagar.' },
+              { who: 'gaucho', text: 'Así que sobreviviste a la pampa, {name}... y igual terminaste acá. Bienvenido al purgatorio.' },
               { who: 'gaucho', text: 'Al truco, como Dios manda. Yo, el Diablo y San Pedro: cada uno cobra lo suyo.' },
               { who: 'narrador', text: 'En cada mano apostás y cobrás o pagás la apuesta por la diferencia de puntos.' },
             ],
@@ -324,7 +325,7 @@
         bg: 'purgatorio', chars: [{ id: 'gaucho', pos: 'center' }],
         lines: [
           { who: 'gaucho', text: '¡Quiero vale cuatro, {name}! Andá tranquilo, que este viejo te va a extrañar.' },
-          { who: 'narrador', text: '🔓 Desbloqueaste el truco infinito, el truco de a 4 y jugar con un amigo.' },
+          { who: 'narrador', text: 'De la pampa al purgatorio, y del purgatorio al Edén: así terminó la historia de {name}.' },
         ],
       },
     ],

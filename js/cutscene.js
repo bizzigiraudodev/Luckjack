@@ -357,6 +357,9 @@
     canvas.height = H;
     ctx = canvas.getContext('2d');
     skipped = false;
+    // Sin restos de la cutscene anterior mientras hace el fundido.
+    $('cs-text').textContent = '';
+    $('cs-speaker').hidden = true;
     overlay.hidden = false;
     $('cs-chars').replaceChildren();
     cancelAnimationFrame(raf);
