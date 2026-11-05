@@ -74,7 +74,7 @@ Al principio solo están el **clásico** y la **historia** de cada juego. Pasart
 
 ### Truco modo historia: cinco noches en la pampa
 
-Pestaña **🗡️ Truco → 📖 Modo historia**. Es la precuela de la historia del blackjack: antes de morir de viejo, el timbero está retirado en su casucha de la pampa y cada noche viene alguien a jugarle un truco **por su vida**. Arrancás con **$200** y cada noche tiene su cuota (**$230, $265, $305, $350 y $400**).
+Pestaña **🗡️ Truco → 📖 Modo historia**. Es la precuela de la historia del blackjack: antes de morir de viejo, el timbero está retirado en su casucha de la pampa y cada noche viene alguien a jugarle un truco **por su vida**. Arrancás con **$200** y cada noche tiene su cuota (**$260, $380, $550, $795 y $1.155**).
 
 | Noche | Rival | Su trampa |
 |---|---|---|

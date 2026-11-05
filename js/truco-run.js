@@ -28,7 +28,9 @@
   const WHISTLE_MULT = 1.5;
   // En la pampa se arranca con más plata: con muerte súbita, una mala racha no puede ser el final.
   const STORY_START = 200;
-  const STORY_QUOTA_GROWTH = 1.15; // $230, $265, $305, $350, $400 (calibrado con simulaciones)
+  // Cuotas de las cinco noches: $260, $380, $550, $795, $1155 (subidas: los jugadores llegaban sobrados)
+  const STORY_QUOTA_BASE = 180;
+  const STORY_QUOTA_GROWTH = 1.45;
   const FAMILIAR_EVERY = 5; // el Familiar: cada 5 manos se come el 15% de tus fichas
   const FAMILIAR_BITE = 0.15;
 
@@ -58,7 +60,7 @@
     // El truco tiene más varianza que el blackjack (se cobra apuesta × puntos), así que las cuotas
     // crecen más rápido: $140, $195, $275... (calibrado con simulaciones contra el rival).
     quotaFor(cycle) {
-      if (this.mode === 'story' && this.story === 'pampa') return Math.round((STORY_START * Math.pow(STORY_QUOTA_GROWTH, cycle)) / 5) * 5;
+      if (this.mode === 'story' && this.story === 'pampa') return Math.round((STORY_QUOTA_BASE * Math.pow(STORY_QUOTA_GROWTH, cycle)) / 5) * 5;
       return Math.round((100 * Math.pow(1.4, cycle)) / 5) * 5;
     }
 

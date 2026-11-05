@@ -252,7 +252,7 @@ test('muerte súbita: perder un ciclo termina la partida con el final de ese riv
 test('historia de truco: se elige muerte súbita o 3 mazos; con 3 mazos no hay Mazo Dorado ni rankings', () => {
   const s = run({ mode: 'story' });
   assert.strictEqual(s.money, 200, 'en la pampa se arranca con $200');
-  assert.deepStrictEqual([1, 2, 3, 4, 5].map((c) => s.quotaFor(c)), [230, 265, 305, 350, 400]);
+  assert.deepStrictEqual([1, 2, 3, 4, 5].map((c) => s.quotaFor(c)), [260, 380, 550, 795, 1155]);
   assert.ok(s.suddenDeath && s.countsForRecords);
   const d = run({ mode: 'story', lives: 'decks' });
   assert.ok(!d.suddenDeath && !d.countsForRecords);
