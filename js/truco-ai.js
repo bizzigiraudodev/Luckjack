@@ -2,6 +2,8 @@
 // La personalidad cambia cuánto miente (bluff) y cuánto arriesga (aggression).
 (function (root) {
   const Truco = root.Truco || (typeof require !== 'undefined' && require('./truco.js'));
+  // Modo difícil: el cerebro con probabilidades (js/truco-brain.js), solo en el mano a mano.
+  const brain = () => root.TrucoBrain || (typeof require !== 'undefined' && require('./truco-brain.js'));
   const { rank, envidoOf } = Truco;
 
   const PERSONAS = {
@@ -42,7 +44,13 @@
     // Si ya se jugó en esta baza, importa si la puedo ganar (o si ya la gana mi compañero).
     let edge = 0;
     const cur = currentBest(hand);
-    if (cur && cur.team === t) edge = 3;
+    // Si la carta que va ganando la baza es nuestra, cuenta como si la tuviéramos (antes se olvidaba
+    // de ella: tiraba el ancho de basto en la 3ra y después decía "no quiero").
+    if (cur && cur.team === t) {
+      edge = 3;
+      ranks.push(cur.rank);
+      ranks.sort((a, b) => b - a);
+    }
     else if (cur) edge = ranks.some((r) => r > cur.rank) ? 4 : -4;
     // Cada carta brava del compañero suma (si te mostró dos, cuenta las dos).
     const strong = hints.strong === true ? 1 : Math.min(3, Number(hints.strong) || 0);
@@ -79,6 +87,11 @@
   // Devuelve la acción del rival ({ type, index? }).
   // `hints`: señas del compañero (solo en parejas).
   function decide(hand, p, persona = PERSONAS.gaucho, rng = Math.random, hints = {}) {
+    if (persona.smart && hand.n === 2 && brain()) return brain().decide(hand, p, persona, rng);
+    return classic(hand, p, persona, rng, hints);
+  }
+
+  function classic(hand, p, persona, rng, hints) {
     const acts = hand.actions(p);
     if (!acts.length) return null;
     // Con señas sabe si su compañero tiene envido (y lo trata como un 30).
@@ -98,8 +111,20 @@
       return { type: env >= need || (env >= need - 3 && rng() < 0.35) || bluff() ? 'quiero' : 'noquiero' };
     }
 
+    // Desde la 2da baza (mano a mano) sabe la chance de ganar la mano con lo que se vio (recorre todas
+    // las cartas que le pueden quedar al rival). Así no se achica con la mano ganada ni quiere una perdida.
+    const late = hand.n === 2 && hand.bazas.length && brain() && (pend ? pend.kind === 'truco' : has(acts, 'truco') || has(acts, 'mazo'));
+    const winP = late ? brain().trucoWinProb(hand, p, rng).win : null;
+
     if (pend && pend.kind === 'truco') {
       if (has(acts, 'envido') && env >= 27) return { type: env >= 30 && rng() < 0.5 ? 'real' : 'envido' };
+      if (winP !== null) {
+        if (winP > 0.999) return { type: has(acts, 'truco') ? 'truco' : 'quiero' };
+        if (winP < 0.001) return { type: 'noquiero' };
+        if (has(acts, 'truco') && (winP > 0.85 || (winP > 0.2 && bluff() && rng() < 0.3))) return { type: 'truco' };
+        const needP = 0.5 - (persona.aggression - 0.5) * 0.2 + (persona.trucoNeed || 0) * 0.04;
+        return { type: winP >= needP || (winP > 0.1 && bluff()) ? 'quiero' : 'noquiero' };
+      }
       const need = 9 + pend.level * 3 + (persona.trucoNeed || 0);
       if (has(acts, 'truco') && (pow >= need + 6 || (bluff() && rng() < 0.4))) return { type: 'truco' };
       return { type: pow >= need || (pow >= need - 3 && rng() < persona.aggression * 0.5) || bluff() ? 'quiero' : 'noquiero' };
@@ -114,17 +139,17 @@
     }
     if (has(acts, 'truco') && hand.aiAskedAt !== hand.truco.level) {
       const need = 12 + hand.truco.level * 3;
-      if (pow >= need + 2 && rng() < 0.4 + persona.aggression * 0.4) {
+      if (winP > 0.999 || ((winP !== null ? winP > 0.75 : pow >= need + 2) && rng() < 0.4 + persona.aggression * 0.4)) {
         hand.aiAskedAt = hand.truco.level;
         return { type: 'truco' };
       }
-      if (bluff() && rng() < 0.35) {
+      if (!(winP < 0.001) && bluff() && rng() < 0.35) {
         hand.aiAskedAt = hand.truco.level;
         return { type: 'truco' };
       }
     }
     // Irse al mazo solo con la mano perdida y el truco querido alto.
-    if (hand.truco.level >= 2 && pow < 2 && has(acts, 'mazo') && rng() < 0.5) return { type: 'mazo' };
+    if (!(winP > 0.5) && hand.truco.level >= 2 && pow < 2 && has(acts, 'mazo') && rng() < 0.5) return { type: 'mazo' };
     return { type: 'play', index: chooseCard(hand, p) };
   }
 

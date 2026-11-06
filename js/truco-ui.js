@@ -123,6 +123,8 @@
   // `hide`: índice de una de tus cartas que queda boca abajo (el Pombero te la esconde).
   async function deal(hand, t, hide) {
     buildBoard();
+    // Reparte el que no es mano, y el mazo se pone a su derecha (ver css: .table[data-dealer]).
+    $('table').dataset.dealer = hand.mano === 0 ? 'rival' : 'me';
     const order = hand.mano === 0 ? [0, 1] : [1, 0];
     for (let i = 0; i < 3; i++) {
       for (const p of order) {
@@ -327,6 +329,8 @@
       await showEvents(hand, t);
     }
     if (t !== token) return false;
+    // Difícil: el rival anota cómo jugaste (si mentiste al cantar) para la próxima.
+    if (persona && persona.read && window.TrucoBrain) TrucoBrain.learn(persona.read, hand, 0);
     await revealRival(hand);
     return true;
   }

@@ -31,7 +31,8 @@ Desde el menú (pestaña **🗡️ Truco**) se juega **truco clásico**: mano a 
 
 - Envido (2), Real envido (3) y Falta envido (lo que le falta al que va ganando para llegar a 15; en partidas a 30, para salir de las malas o para ganar: nunca más de 15). El envido está primero. Si no se quiere, el último que cantó se lleva lo ya aceptado + 1: envido-envido no querido = 3, envido-envido-real no querido = 5.
 - Truco, Retruco y Vale cuatro; irse al mazo.
-- El rival canta, quiere, sube y a veces miente según su personalidad (`js/truco-ai.js`).
+- El rival canta, quiere, sube y a veces miente según su personalidad (`js/truco-ai.js`). Desde la 2da baza calcula la chance real de ganar la mano con las cartas que ya se vieron, así que no se achica con la mano ganada (ni quiere una perdida).
+- **Mesas:** en la pampa se juega en una mesa de patio de madera gastada; en el purgatorio y el truco clásico, en una mesa de casino. El mazo queda a la derecha del que reparte (el que no es mano).
 - Se guardan tus partidas ganadas y perdidas.
 
 ### Truco de a 4 (parejas)
@@ -87,6 +88,10 @@ Pestaña **🗡️ Truco → 📖 Modo historia**. Es la precuela de la historia
 Al empezar elegís cómo jugar:
 - **💀 Muerte súbita:** perder una noche es perder la vida (cada rival tiene su final). Ganarla desbloquea el **Mazo Dorado** en el truco infinito y el tiempo cuenta para los rankings.
 - **🃏 Con 3 mazos:** reintentás la noche con el mazo siguiente. Más fácil, pero sin Mazo Dorado ni rankings.
+
+Y la dificultad (también en el purgatorio):
+- **🙂 Fácil:** los rivales de siempre.
+- **😈 Difícil:** los rivales usan `js/truco-brain.js`. Calculan la chance exacta de ganar el envido recorriendo todas las manos posibles que encajan con lo que ya se vio, y la chance de ganar la mano jugando las bazas que quedan de la mejor forma para los dos; con eso deciden por valor esperado qué cantar, querer o tirar en cada baza. Además te estudian (ideas de [TrucoAnalytics](https://github.com/IAARhub/TrucoAnalytics)): llevan tu *índice de mentira* (cantos con cartas malas sobre cantos) y tu *índice de agresión*, y si mentís seguido te creen menos. Cada noche hay que ganar por lo menos **10 apuestas mínimas**, así que la plata que traés de antes no alcanza para pasar con una mano suelta. Calibrado con simulaciones: con un solo bonus fuerte (Ancho Bravo, Truco Doble o Poncho Protector), un jugador promedio pasa la pampa con 3 mazos un 43–56% de las veces (en fácil, 66–79%).
 
 Si sobrevivís, el Gauchito Gil te da su bendición y morís tranquilo de viejo... y la historia sigue en el purgatorio (la secuela). Las reglas de cada rival son provisorias. Los sprites de los cinco son pixel art original de 64×68 (`js/sprites-pampa.js`).
 
@@ -274,6 +279,7 @@ api/room.js         # API de salas de truco online
 api/_redis.js       # conexión a Upstash compartida por las APIs
 js/truco.js       # motor del truco (reglas, cantos, puntaje)
 js/truco-ai.js    # rival de truco
+js/truco-brain.js # rival del modo difícil (probabilidades, perfil del jugador)
 js/truco-bonuses.js # bonuses del truco
 js/truco-run.js   # truco infinito (progresión roguelike)
 js/truco-ui.js    # mesa de truco

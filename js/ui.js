@@ -9,6 +9,7 @@
 
   // --- Datos guardados en el navegador ---
   const KEYS = {
+    trucoDifficulty: 'luckjack.trucoDifficulty', // última dificultad elegida en la historia del truco
     best: 'luckjack.best', // infinito: { cycles, money }
     classic: 'luckjack.bestClassic', // clásico: dinero máximo
     storyDone: 'luckjack.storyDone', // historia terminada → Mazo Dorado
@@ -707,7 +708,7 @@
     if (!game || game.mode !== 'story' || inCutscene || document.hidden || !$('menu').hidden) return;
     if (game.phase === 'victory' || game.phase === 'gameover') return;
     game.playMs = (game.playMs || 0) + dt;
-    $('story-timer').textContent = `${game.speedrun ? '⚡' : '⏱️'} ${Leaderboard.formatTime(game.playMs)}`;
+    $('story-timer').textContent = `${game.hard ? '😈 ' : ''}${game.speedrun ? '⚡' : '⏱️'} ${Leaderboard.formatTime(game.playMs)}`;
   }, 250);
 
   // --- Tiempo total de juego: cuenta mientras jugás (pestaña visible, sin menú ni cutscenes y
@@ -813,31 +814,49 @@
     render();
   }
 
-  // Historia del truco: muerte súbita (cuenta para rankings y da el Mazo Dorado) o 3 mazos (más fácil).
-  function chooseLives() {
+  // Historia del truco: dificultad (fácil o difícil) y, en la pampa, muerte súbita (cuenta para rankings
+  // y da el Mazo Dorado) o 3 mazos (más fácil). Devuelve { lives, difficulty } o null si volvés.
+  function chooseStoryOpts(story) {
     return new Promise((resolve) => {
+      const pampa = story !== 'purgatorio';
       let box = $('lives-pick');
-      if (!box) {
-        box = document.createElement('div');
-        box.id = 'lives-pick';
-        box.className = 'overlay';
-        box.innerHTML = `<div class="modal lives-modal">
-          <h2>🌙 Cinco noches en la pampa</h2>
-          <p class="sub">Cada noche viene alguien a jugarte un truco por tu vida. ¿Cómo jugás?</p>
-          <button class="btn-red big" data-lives="sudden">💀 Muerte súbita<small>Perder una noche es perder la vida. Da el Mazo Dorado y cuenta para los rankings.</small></button>
-          <button class="btn-blue big" data-lives="decks">🃏 Con 3 mazos<small>Más fácil: reintentás la noche. Sin Mazo Dorado ni rankings.</small></button>
+      if (box) box.remove();
+      box = document.createElement('div');
+      box.id = 'lives-pick';
+      box.className = 'overlay';
+      const title = pampa ? '🌙 Cinco noches en la pampa' : '🔥 El purgatorio';
+      const sub = pampa ? 'Cada noche viene alguien a jugarte un truco por tu vida. ¿Cómo jugás?' : 'El Viejo, el Diablo y San Pedro te esperan. Siempre con 3 mazos.';
+      const lives = pampa
+        ? `<button class="btn-red big" data-lives="sudden">💀 Muerte súbita<small>Perder una noche es perder la vida. Da el Mazo Dorado y cuenta para los rankings.</small></button>
+          <button class="btn-blue big" data-lives="decks">🃏 Con 3 mazos<small>Reintentás la noche. Sin Mazo Dorado ni rankings.</small></button>`
+        : '<button class="btn-red big" data-lives="decks">🔥 Bajar al purgatorio</button>';
+      box.innerHTML = `<div class="modal lives-modal">
+          <h2>${title}</h2>
+          <p class="sub">${sub}</p>
+          <div class="diff-pick" role="radiogroup" aria-label="Dificultad">
+            <button data-diff="facil" role="radio">🙂 Fácil<small>Los rivales de siempre.</small></button>
+            <button data-diff="dificil" role="radio">😈 Difícil<small>Rivales que calculan probabilidades, te estudian y no te creen si mentís. Cuotas más altas.</small></button>
+          </div>
+          ${lives}
           <button data-lives="">Volver</button>
         </div>`;
-        document.body.appendChild(box);
-      }
-      box.hidden = false;
-      box.querySelectorAll('button').forEach((b) => {
-        b.onclick = () => { box.hidden = true; resolve(b.dataset.lives || null); };
+      document.body.appendChild(box);
+      let diff = store.get(KEYS.trucoDifficulty) === 'dificil' ? 'dificil' : 'facil';
+      const paint = () => box.querySelectorAll('[data-diff]').forEach((b) => {
+        b.classList.toggle('active', b.dataset.diff === diff);
+        b.setAttribute('aria-checked', b.dataset.diff === diff);
+      });
+      paint();
+      box.querySelectorAll('[data-diff]').forEach((b) => {
+        b.onclick = () => { diff = b.dataset.diff; store.set(KEYS.trucoDifficulty, diff); paint(); };
+      });
+      box.querySelectorAll('[data-lives]').forEach((b) => {
+        b.onclick = () => { box.hidden = true; resolve(b.dataset.lives ? { lives: b.dataset.lives, difficulty: diff } : null); };
       });
     });
   }
 
-  function startTruco(mode, lives, story) {
+  function startTruco(mode, lives, story, difficulty) {
     $('menu').hidden = true;
     document.body.classList.remove('in-menu');
     if (mode === 'classic') {
@@ -848,7 +867,7 @@
     // Truco infinito e historia: la misma progresión que el blackjack, con su propia partida.
     const golden = store.get(KEYS.storyDone) || store.get(KEYS.trucoStoryDone);
     const startDeck = (mode === 'infinite' && golden) || (story === 'purgatorio' && store.get(KEYS.trucoStoryDone)) ? 'dorado' : null;
-    game = new TrucoRunModule.TrucoRun({ mode, startDeck, lives, story });
+    game = new TrucoRunModule.TrucoRun({ mode, startDeck, lives, story, difficulty });
     game.playMs = 0;
     game.speedrun = Speedrun.on;
     AntiBot.reset();
@@ -869,10 +888,11 @@
   });
   document.querySelectorAll('#modes-truco button[data-truco]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      if (btn.dataset.truco === 'purgatorio') return startTruco('story', 'decks', 'purgatorio');
-      if (btn.dataset.truco !== 'story') return startTruco(btn.dataset.truco);
-      const lives = await chooseLives();
-      if (lives) startTruco('story', lives);
+      const kind = btn.dataset.truco;
+      if (kind !== 'story' && kind !== 'purgatorio') return startTruco(kind);
+      const story = kind === 'purgatorio' ? 'purgatorio' : 'pampa';
+      const pick = await chooseStoryOpts(story);
+      if (pick) startTruco('story', pick.lives, story, pick.difficulty);
     });
   });
   // Elegir juego en el menú: Blackjack o Truco.
@@ -993,12 +1013,12 @@
   // Al ganar la pampa: seguir directo con la secuela.
   $('btn-sequel').addEventListener('click', () => {
     $('btn-sequel').hidden = true;
-    startTruco('story', 'decks', 'purgatorio');
+    startTruco('story', 'decks', 'purgatorio', game && game.difficulty);
   });
   $('btn-restart').addEventListener('click', () => {
     if (Truco4UI.active) Truco4UI.start();
     else if (TrucoOnline.active) TrucoOnline.rematch();
-    else if (game && game.isTruco) startTruco(game.mode, game.lives, game.story);
+    else if (game && game.isTruco) startTruco(game.mode, game.lives, game.story, game.difficulty);
     else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
     else startGame(game.mode);
   });
