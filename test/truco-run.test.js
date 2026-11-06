@@ -302,7 +302,7 @@ test('historia del purgatorio: la original, con 3 mazos, sin Mazo Dorado ni rank
   assert.strictEqual(w.phase, 'victory');
 });
 
-test('historia difícil: rival con cerebro, te estudia y cada noche hay que ganar 10 apuestas mínimas', () => {
+test('historia difícil: rival con cerebro, más plata y cada noche hay que ganar 6 apuestas mínimas', () => {
   const easy = new TrucoRun({ mode: 'story', startingPick: false });
   const hard = new TrucoRun({ mode: 'story', startingPick: false, difficulty: 'dificil' });
   assert.strictEqual(easy.hard, false);
@@ -310,12 +310,13 @@ test('historia difícil: rival con cerebro, te estudia y cada noche hay que gana
   assert.strictEqual(hard.hard, true);
   assert.strictEqual(hard.persona.smart, true);
   assert.ok(hard.persona.read, 'el rival lleva un perfil tuyo');
-  // Noche 1: $200 de arranque + 10 × $10 = $300 (más que los $285 de la curva).
+  // Noche 1: arrancás con $400 y hay que ganar 6 × $10 = $460 (la curva, 75% de $285, queda abajo).
   assert.strictEqual(easy.quota, 285);
-  assert.strictEqual(hard.quota, 300);
+  assert.strictEqual(hard.money, 400);
+  assert.strictEqual(hard.quota, 460);
   // Si llegás con plata de sobra, la cuota sube con vos: no se pasa con una mano suelta.
   hard.cycleStartMoney = 900;
-  assert.strictEqual(hard.quota, 1000);
+  assert.strictEqual(hard.quota, 960);
   // En el infinito no hay dificultad.
   assert.strictEqual(new TrucoRun({ mode: 'infinite', difficulty: 'dificil' }).hard, false);
 });

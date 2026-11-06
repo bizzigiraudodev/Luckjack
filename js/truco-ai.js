@@ -98,7 +98,8 @@
     const env = Math.max(envidoOf(hand.dealt[p]), hints.envido ? 30 : 0);
     const pow = power(hand, p, hints);
     const pend = hand.pending;
-    const bluff = () => rng() < persona.bluff;
+    // Sin cartas en la mano no hay farol posible: el rival ya ve todo lo que tengo.
+    const bluff = () => hand.cards[p].length > 0 && rng() < persona.bluff;
 
     if (pend && pend.kind === 'envido') {
       const chain = pend.chain;
@@ -123,7 +124,7 @@
         if (winP < 0.001) return { type: 'noquiero' };
         if (has(acts, 'truco') && (winP > 0.85 || (winP > 0.2 && bluff() && rng() < 0.3))) return { type: 'truco' };
         const needP = 0.5 - (persona.aggression - 0.5) * 0.2 + (persona.trucoNeed || 0) * 0.04;
-        return { type: winP >= needP || (winP > 0.1 && bluff()) ? 'quiero' : 'noquiero' };
+        return { type: winP >= needP ? 'quiero' : 'noquiero' }; // querer no es mentir: acá no hay farol
       }
       const need = 9 + pend.level * 3 + (persona.trucoNeed || 0);
       if (has(acts, 'truco') && (pow >= need + 6 || (bluff() && rng() < 0.4))) return { type: 'truco' };

@@ -818,24 +818,27 @@
   // y da el Mazo Dorado) o 3 mazos (más fácil). Devuelve { lives, difficulty } o null si volvés.
   function chooseStoryOpts(story) {
     return new Promise((resolve) => {
-      const pampa = story !== 'purgatorio';
+      const pampa = story === 'pampa';
+      const classic = story === 'classic';
       let box = $('lives-pick');
       if (box) box.remove();
       box = document.createElement('div');
       box.id = 'lives-pick';
       box.className = 'overlay';
-      const title = pampa ? '🌙 Cinco noches en la pampa' : '🔥 El purgatorio';
-      const sub = pampa ? 'Cada noche viene alguien a jugarte un truco por tu vida. ¿Cómo jugás?' : 'El Viejo, el Diablo y San Pedro te esperan. Siempre con 3 mazos.';
+      const title = classic ? '🗡️ Truco clásico' : pampa ? '🌙 Cinco noches en la pampa' : '🔥 El purgatorio';
+      const sub = classic ? 'Mano a mano contra el Viejo, a 15 puntos.'
+        : pampa ? 'Cada noche viene alguien a jugarte un truco por tu vida. ¿Cómo jugás?' : 'El Viejo, el Diablo y San Pedro te esperan. Siempre con 3 mazos.';
       const lives = pampa
         ? `<button class="btn-red big" data-lives="sudden">💀 Muerte súbita<small>Perder una noche es perder la vida. Da el Mazo Dorado y cuenta para los rankings.</small></button>
           <button class="btn-blue big" data-lives="decks">🃏 Con 3 mazos<small>Reintentás la noche. Sin Mazo Dorado ni rankings.</small></button>`
+        : classic ? '<button class="btn-green big" data-lives="classic">🗡️ Jugar</button>'
         : '<button class="btn-red big" data-lives="decks">🔥 Bajar al purgatorio</button>';
       box.innerHTML = `<div class="modal lives-modal">
           <h2>${title}</h2>
           <p class="sub">${sub}</p>
           <div class="diff-pick" role="radiogroup" aria-label="Dificultad">
-            <button data-diff="facil" role="radio">🙂 Fácil<small>Los rivales de siempre.</small></button>
-            <button data-diff="dificil" role="radio">😈 Difícil<small>Rivales que calculan probabilidades, te estudian y no te creen si mentís. Cuotas más altas.</small></button>
+            <button data-diff="facil" role="radio">🙂 Fácil<small>${classic ? 'El Viejo de siempre.' : 'Los rivales de siempre.'}</small></button>
+            <button data-diff="dificil" role="radio">😈 Difícil<small>${classic ? 'Calcula probabilidades, te estudia y no te cree si mentís.' : 'Rivales que calculan probabilidades, te estudian y no te creen si mentís. Cuotas más altas.'}</small></button>
           </div>
           ${lives}
           <button data-lives="">Volver</button>
@@ -861,7 +864,7 @@
     document.body.classList.remove('in-menu');
     if (mode === 'classic') {
       game = null; // el blackjack queda en pausa
-      TrucoUI.start(mode, { vars });
+      TrucoUI.start(mode, { vars, difficulty });
       return;
     }
     // Truco infinito e historia: la misma progresión que el blackjack, con su propia partida.
@@ -889,6 +892,11 @@
   document.querySelectorAll('#modes-truco button[data-truco]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const kind = btn.dataset.truco;
+      if (kind === 'classic') {
+        const pick = await chooseStoryOpts('classic');
+        if (pick) startTruco('classic', null, null, pick.difficulty);
+        return;
+      }
       if (kind !== 'story' && kind !== 'purgatorio') return startTruco(kind);
       const story = kind === 'purgatorio' ? 'purgatorio' : 'pampa';
       const pick = await chooseStoryOpts(story);
@@ -1019,7 +1027,7 @@
     if (Truco4UI.active) Truco4UI.start();
     else if (TrucoOnline.active) TrucoOnline.rematch();
     else if (game && game.isTruco) startTruco(game.mode, game.lives, game.story, game.difficulty);
-    else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars });
+    else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars, difficulty: TrucoUI.difficulty });
     else startGame(game.mode);
   });
   $('btn-help').addEventListener('click', () => { $('help').hidden = false; });

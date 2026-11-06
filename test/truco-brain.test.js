@@ -76,3 +76,35 @@ test('el perfil aprende si mentís al cantar', () => {
   assert.ok(TrucoBrain.lieIndex(prof.truco) > 0.6, 'cantó truco con cartas malas seis veces');
   assert.strictEqual(prof.hands, 6);
 });
+
+test('querer no es mentir: con 20% de chance la IA difícil nunca dice "quiero" (como mucho sube de farol)', () => {
+  // Ganó la 1ra, perdió la 2da y le queda un 6; vos cantás truco antes de tirar tu última carta (un 5).
+  const h = handWith([c(4, 'copa'), c(3, 'oro'), c(5, 'basto')], [c(12, 'oro'), c(4, 'espada'), c(6, 'copa')], 0);
+  play(h, 0, c(4, 'copa'));
+  play(h, 1, c(12, 'oro'));
+  play(h, 1, c(4, 'espada'));
+  play(h, 0, c(3, 'oro'));
+  h.act(0, { type: 'truco' });
+  for (let i = 0; i < 200; i++) {
+    const a = TrucoAI.decide(h, 1, { ...TrucoAI.PERSONAS.familiar, smart: true });
+    assert.notStrictEqual(a.type, 'quiero');
+  }
+});
+
+test('si le cantás truco después de ver su carta, la IA sabe que probablemente le ganás', () => {
+  // El caso que pasó jugando: ganaste la 1ra, la IA la 2da; en la 3ra la IA tira un 6 y vos, con un 5, cantás truco.
+  const h = handWith([c(3, 'oro'), c(4, 'copa'), c(5, 'basto')], [c(4, 'espada'), c(12, 'oro'), c(6, 'copa')], 0);
+  play(h, 0, c(3, 'oro'));
+  play(h, 1, c(4, 'espada'));
+  play(h, 0, c(4, 'copa'));
+  play(h, 1, c(12, 'oro'));
+  play(h, 1, c(6, 'copa'));
+  h.act(0, { type: 'truco' });
+  assert.ok(TrucoBrain.trucoWinProb(h, 1).win < 0.1, 'con su carta a la vista, tu canto dice que le ganás');
+  for (const persona of [{ ...TrucoAI.PERSONAS.familiar, smart: true }, TrucoAI.PERSONAS.familiar, TrucoAI.PERSONAS.diablo]) {
+    for (let i = 0; i < 100; i++) {
+      // Ni quiere ni sube de farol: ya no le quedan cartas, vos ves todo.
+      assert.strictEqual(TrucoAI.decide(h, 1, persona).type, 'noquiero');
+    }
+  }
+});

@@ -68,6 +68,8 @@
   let waiter = null;
   let seen = 0; // eventos de la mano ya mostrados
   let currentMode = 'classic';
+  let difficulty = 'facil'; // truco clásico: 'facil' o 'dificil' (el Viejo con el cerebro de js/truco-brain.js)
+  let classicPersona = null;
   let playerName = 'Vos';
   const els = new Map(); // carta → elemento en la mano
 
@@ -102,7 +104,7 @@
     body.dataset.boss = RIVAL.id;
     const [me, rival] = match.scores;
     $('cycle').parentElement.innerHTML = `TRUCO <b id="cycle">A ${TARGET}</b>`;
-    $('quota-label').textContent = `Vos – ${RIVAL.Name}`;
+    $('quota-label').textContent = `Vos – ${RIVAL.Name}${classicPersona && !run ? ' 😈' : ''}`;
     $('quota').textContent = `${me} – ${rival}`;
     $('quota').className = me >= rival ? 'ok' : 'warn';
     $('hand-label').textContent = 'Mano';
@@ -340,7 +342,7 @@
     while (!match.over && t === token) {
       const hand = match.newHand();
       renderHud();
-      if (!(await playHand(hand, t, RIVAL.persona))) return;
+      if (!(await playHand(hand, t, classicPersona || RIVAL.persona))) return;
       match.settle();
       renderHud();
       const won = hand.winner === 0;
@@ -443,6 +445,10 @@
     playerName = (ctx.vars && ctx.vars.name) || 'Vos';
     const t = token;
     RIVAL = RIVALS.gaucho;
+    difficulty = ctx.difficulty === 'dificil' ? 'dificil' : 'facil';
+    // En difícil el Viejo piensa con probabilidades y te va estudiando a lo largo de la partida.
+    classicPersona = difficulty === 'dificil' && window.TrucoBrain
+      ? { ...RIVAL.persona, smart: true, read: TrucoBrain.newProfile() } : null;
     match = new TrucoMatch({ target: TARGET, firstMano: Math.random() < 0.5 ? 0 : 1 });
     document.body.dataset.game = 'truco';
     $('gameover').hidden = true;
@@ -480,6 +486,7 @@
     record,
     get active() { return document.body.dataset.game === 'truco'; },
     get mode() { return currentMode; },
+    get difficulty() { return difficulty; },
     get playing() { return !!match && !match.over; },
     get handRunning() { return handRunning; },
     prepareRun,

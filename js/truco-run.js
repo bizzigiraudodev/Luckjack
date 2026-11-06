@@ -32,15 +32,23 @@
   // Cuotas de las cinco noches: $285, $415, $605, $875, $1270 (subidas dos veces: los jugadores llegaban sobrados)
   const STORY_QUOTA_BASE = 198;
   const STORY_QUOTA_GROWTH = 1.45;
-  // Difícil: los rivales piensan con probabilidades (js/truco-brain.js) y te estudian, y cada noche hay que ganar por lo menos 10 apuestas mínimas ($100 la primera, $300 la última):
-  // la plata que te sobró de antes no alcanza para pasar con una mano suelta.
+  // Difícil: los rivales piensan con probabilidades (js/truco-brain.js) y te estudian. Para compensar,
+  // arrancás con $400 y la curva de cuotas es un 25% más baja, pero cada noche hay que ganar por lo menos
+  // 6 apuestas mínimas ($60 la primera, $180 la última): la plata que traés no alcanza para pasar sin jugar.
   // Calibrado con simulaciones: con un bonus fuerte solo (Ancho Bravo, Truco Doble, Poncho) un jugador
-  // promedio pasa la historia con 3 mazos un 43-56% de las veces (en fácil, 66-79%).
-  const HARD_NIGHT_GAIN = 10;
+  // promedio pasa la pampa con 3 mazos un 56-76% de las veces (sin bonus, 27%; con muerte súbita, 21-33%).
+  const HARD_NIGHT_GAIN = 6;
+  const HARD_CURVE = 0.75;
+  const HARD_START = 400;
   const FAMILIAR_EVERY = 5; // el Familiar: cada 5 manos se come el 15% de tus fichas
   const FAMILIAR_BITE = 0.15;
 
   class TrucoRun extends Game {
+    // Difícil (estáticos para poder simular otros valores).
+    static nightGain = HARD_NIGHT_GAIN;
+    static hardCurve = HARD_CURVE;
+    static hardStart = HARD_START;
+
     // `lives`: en la historia, 'sudden' (muerte súbita: perder una noche es perder la vida) o 'decks'
     // (3 mazos como en el resto de los modos: más fácil, pero sin Mazo Dorado ni rankings).
     // `story`: 'pampa' (la historia del truco) o 'purgatorio' (la original: siempre con 3 mazos,
@@ -53,9 +61,10 @@
       this.difficulty = this.mode === 'story' && opts.difficulty === 'dificil' ? 'dificil' : 'facil';
       this.read = this.hard && TrucoBrain ? TrucoBrain.newProfile() : null; // lo que el rival aprende de vos
       if (this.mode === 'story' && this.story === 'pampa') {
-        this.money = STORY_START;
-        this.cycleStartMoney = STORY_START;
-        this.bestMoney = STORY_START;
+        const start = this.hard ? TrucoRun.hardStart : STORY_START;
+        this.money = start;
+        this.cycleStartMoney = start;
+        this.bestMoney = start;
       }
       this.mano = this.rng() < 0.5 ? 0 : 1;
       this.truco = null;
@@ -69,13 +78,14 @@
     // El truco tiene más varianza que el blackjack (se cobra apuesta × puntos), así que las cuotas
     // crecen más rápido: $140, $195, $275... (calibrado con simulaciones contra el rival).
     quotaFor(cycle) {
+      const m = this.hard ? TrucoRun.hardCurve : 1;
       const curve = this.mode === 'story' && this.story === 'pampa'
-        ? Math.round((STORY_QUOTA_BASE * Math.pow(STORY_QUOTA_GROWTH, cycle)) / 5) * 5
-        : Math.round((100 * Math.pow(1.4, cycle)) / 5) * 5;
+        ? Math.round((m * STORY_QUOTA_BASE * Math.pow(STORY_QUOTA_GROWTH, cycle)) / 5) * 5
+        : Math.round((m * 100 * Math.pow(1.4, cycle)) / 5) * 5;
       if (!this.hard) return curve;
       // La de este ciclo se cuenta desde lo que tenías al empezarlo; la del próximo, desde lo que tenés ahora.
       const start = cycle === this.cycle ? this.cycleStartMoney : this.money;
-      return Math.max(curve, Math.round((start + HARD_NIGHT_GAIN * this.minBetFor(cycle)) / 5) * 5);
+      return Math.max(curve, Math.round((start + TrucoRun.nightGain * this.minBetFor(cycle)) / 5) * 5);
     }
 
     get hard() {

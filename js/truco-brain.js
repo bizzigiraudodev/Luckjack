@@ -111,7 +111,17 @@
     const tE = read ? trust(read.envido) : 1;
     if (calls.some((t) => TRUCO_RE.test(t))) w *= 1 + tT * PARAMS.readWeight * ((ranks[0] + ranks[1]) / 27 - 0.45);
     if (calls.some((t) => ENVIDO_RE.test(t))) w *= 1 + tE * PARAMS.readWeight * ((envidoOf(rivalDealt) - 22) / 12);
-    return Math.max(0.15, w);
+    w = Math.max(0.15, w);
+    // Te cantó truco después de ver mi carta en esta baza: casi seguro tiene con qué ganarla.
+    // Las manos que no le ganan pesan lo que miente ese rival (1 de cada 4 hasta conocerlo).
+    const i = hand.bazas.length;
+    const pend = hand.pending;
+    if (pend && pend.kind === 'truco' && pend.caller === q && hand.table[p].length > i && hand.table[q].length === i) {
+      const mineNow = hand.rankOf(hand.table[p][i], p);
+      const left = rivalDealt.slice(hand.table[q].length);
+      if (!left.some((card) => hand.rankOf(card, q) > mineNow)) w *= read ? lieIndex(read.truco) : 0.25;
+    }
+    return w;
   }
 
   // --- Envido: chance exacta de ganarlo ---
@@ -243,7 +253,8 @@
     // Bonuses del jugador: Chamuyo y Mentiroso hacen que el rival quiera menos.
     const tNeed = (persona.trucoNeed || 0) * 0.04;
     const eNeed = (persona.envidoNeed || 0) * 0.04;
-    const bluff = () => rng() < (persona.bluff ?? 0.15);
+    // Sin cartas en la mano no hay farol posible: el rival ya ve todo lo que tengo.
+    const bluff = () => hand.cards[p].length > 0 && rng() < (persona.bluff ?? 0.15);
 
     // --- Respuestas al envido ---
     if (pend && pend.kind === 'envido') {
@@ -256,7 +267,8 @@
       if (pw > PARAMS.envidoCall + 0.12 && has(acts, 'envido')) return { type: 'envido' };
       const evQuiero = pw * wantVal - (1 - pw) * wantVal;
       if (pw < 0.001) return { type: 'noquiero' }; // envido perdido seguro (ya se vio todo)
-      return { type: evQuiero > -noVal + aggro || bluff() ? 'quiero' : 'noquiero' };
+      // Querer no es mentir: el farol es para cantar o subir, no para aceptar algo que conviene rechazar.
+      return { type: evQuiero > -noVal + aggro ? 'quiero' : 'noquiero' };
     }
 
     // --- Respuestas al truco ---
@@ -273,7 +285,7 @@
       if (pw + tNeed < 0.001) return { type: 'noquiero' };
       const evQuiero = pw * TRUCO_POINTS[lv] - (1 - pw) * TRUCO_POINTS[lv];
       if (has(acts, 'truco') && (pw > PARAMS.trucoRaise - aggro * 0.1 || (bluff() && rng() < 0.3))) return { type: 'truco' };
-      return { type: evQuiero > -TRUCO_POINTS[lv - 1] + aggro * 0.5 || bluff() ? 'quiero' : 'noquiero' };
+      return { type: evQuiero > -TRUCO_POINTS[lv - 1] + aggro * 0.5 ? 'quiero' : 'noquiero' };
     }
 
     // --- Mi turno: cantar algo o jugar ---
