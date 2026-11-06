@@ -165,8 +165,8 @@ test('simulación: partidas completas de truco infinito sin romper invariantes',
 
 test('historia de truco en la pampa: cinco rivales, uno por noche', () => {
   const r = run({ mode: 'story' });
-  const order = ['luzmala', 'silbon', 'futre', 'familiar', 'gil'];
-  const names = ['la Luz Mala', 'el Silbón', 'el Futre', 'el Familiar', 'el Gauchito Gil'];
+  const order = ['luzmala', 'silbon', 'pombero', 'familiar', 'gil'];
+  const names = ['la Luz Mala', 'el Silbón', 'el Pombero', 'el Familiar', 'el Gauchito Gil'];
   order.forEach((id, i) => {
     r.cycle = i + 1;
     assert.strictEqual(r.boss, id);
@@ -176,20 +176,18 @@ test('historia de truco en la pampa: cinco rivales, uno por noche', () => {
   assert.strictEqual(r.persona.bluff, 0, 'el Gauchito Gil nunca miente');
 });
 
-test('la Luz Mala te muestra una carta pero te baja la suerte; el Futre es siempre mano', () => {
+test('la Luz Mala te muestra una carta pero te baja la suerte; el Pombero te esconde una carta', () => {
   const r = run({ mode: 'story' });
   const luck = r.luck;
   assert.ok(r.revealsRivalCard);
   r.cycle = 2;
   assert.ok(!r.revealsRivalCard);
   assert.ok(r.luck > luck, 'fuera de la Luz Mala, más suerte');
+  assert.ok(!r.hidesCard);
   r.cycle = 3;
-  r.money = 1000;
-  for (let i = 0; i < 4; i++) {
-    r.phase = 'betting';
-    const h = r.deal(r.minBet);
-    assert.strictEqual(h.mano, 1, 'el Futre es mano siempre');
-  }
+  assert.ok(r.hidesCard, 'el Pombero esconde una de tus cartas');
+  r.cycle = 4;
+  assert.ok(!r.hidesCard);
 });
 
 test('el Silbón: cada 4 manos silba cerca y las manos perdidas cuestan x1.5', () => {
@@ -252,7 +250,7 @@ test('muerte súbita: perder un ciclo termina la partida con el final de ese riv
 test('historia de truco: se elige muerte súbita o 3 mazos; con 3 mazos no hay Mazo Dorado ni rankings', () => {
   const s = run({ mode: 'story' });
   assert.strictEqual(s.money, 200, 'en la pampa se arranca con $200');
-  assert.deepStrictEqual([1, 2, 3, 4, 5].map((c) => s.quotaFor(c)), [260, 380, 550, 795, 1155]);
+  assert.deepStrictEqual([1, 2, 3, 4, 5].map((c) => s.quotaFor(c)), [285, 415, 605, 875, 1270]);
   assert.ok(s.suddenDeath && s.countsForRecords);
   const d = run({ mode: 'story', lives: 'decks' });
   assert.ok(!d.suddenDeath && !d.countsForRecords);
@@ -266,7 +264,7 @@ test('historia de truco: se elige muerte súbita o 3 mazos; con 3 mazos no hay M
   d.money = 10;
   d.endCycle();
   assert.strictEqual(d.phase, 'gameover');
-  assert.strictEqual(d.ending, 'futre', 'con el último mazo te lleva el rival de esa noche');
+  assert.strictEqual(d.ending, 'pombero', 'con el último mazo te lleva el rival de esa noche');
   assert.ok(run({ mode: 'infinite' }).countsForRecords);
 });
 

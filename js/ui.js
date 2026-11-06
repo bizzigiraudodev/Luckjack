@@ -53,7 +53,7 @@
     // Historia del truco en la pampa
     luzmala: { title: 'LA LUZ MALA', goal: 'Para que te deje en paz', music: 'triste', print: ['LA LUZ MALA', ''] },
     silbon: { title: 'EL SILBÓN', goal: 'Para que siga de largo', music: 'diablo', print: ['EL SILBÓN', ''] },
-    futre: { title: 'EL FUTRE', goal: 'Para que no te atropelle', music: 'gaucho', print: ['EL FUTRE', ''] },
+    pombero: { title: 'EL POMBERO', goal: 'Para que no te lleve al monte', music: 'gaucho', print: ['EL POMBERO', ''] },
     familiar: { title: 'EL FAMILIAR', goal: 'Para que no te devore', music: 'diablo', print: ['EL FAMILIAR', ''] },
     gil: { title: 'EL GAUCHITO GIL', goal: 'Para ganarte el descanso', music: 'santo', print: ['EL GAUCHITO GIL', ''] },
   };
@@ -474,7 +474,7 @@
       const won = game.phase === 'victory';
       const counts = game.countsForRecords;
       $('gameover-title').textContent = won ? '🌄 ¡Sobreviviste a las cinco noches!' : {
-        luzmala: '💡 Te llevó la Luz Mala', silbon: '🎵 Te alcanzó el Silbón', futre: '🐎 Te atropelló el Futre',
+        luzmala: '💡 Te llevó la Luz Mala', silbon: '🎵 Te alcanzó el Silbón', pombero: '🌿 Te llevó el Pombero',
         familiar: '🐕 Te devoró el Familiar', gil: '🕯️ Te llegó la hora',
       }[game.ending] || '💀 Fin de la partida';
       $('gameover-reason').textContent = !won ? game.gameOverReason : counts

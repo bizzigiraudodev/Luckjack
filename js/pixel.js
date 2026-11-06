@@ -255,7 +255,7 @@
     const facePal = { K: P.K, S: pal.S, m: pal.m || P.m, W: '#ffffff' };
     const senas = Object.entries(SENA_FACES)
       .map(([sid, f]) => `<g class="sena sena-${sid}">${rects(f.map, facePal, f.x, f.y)}</g>`).join('');
-    // `noArms`: criaturas sin brazos (la Luz Mala); `noFace`: sin cara (el Futre no tiene cabeza).
+    // `noArms`: criaturas sin brazos (la Luz Mala); `noFace`: sin la cara del cuerpo base (los sprites de la pampa traen la suya).
     const arms = c.noArms ? [] : [
       `<g class="arm arm-l">${rects(ARM, armPal, 0, 19)}</g>`,
       `<g class="arm arm-r">${rects(ARM, armPal, 27, 19)}</g>`,

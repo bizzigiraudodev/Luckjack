@@ -49,8 +49,8 @@
       ['Ji, ji... seguime.', 'Te encandilé, ¿eh?', 'Mi luz nunca falla.'], ['Ay, me apagaste un poquito.', 'Bien jugado, para ser vivo.'], 'Son buenas... por ahora.'),
     silbon: pampa('silbon', 'el Silbón', 'silbon', 'diablo', ['EL SILBÓN', 'CADA 4 MANOS SILBA CERCA: PERDÉS X1.5'],
       ['Fiuuu...', 'Otro hueso para la bolsa.', '¿Me escuchaste cerca?'], ['Fiu... me desafinaste.', 'Los huesos no mienten... esta vez sí.'], 'Fiuuu... son buenas.'),
-    futre: pampa('futre', 'el Futre', 'futre', 'gaucho', ['EL FUTRE', 'VA AL GALOPE: ES MANO EN TODAS LAS MANOS'],
-      ['¡Al galope!', 'Sin cabeza y igual te gano.', 'Ni la vi venir, ¿eh?'], ['Perdí la cabeza... otra vez.', 'Me atropellaste vos.'], 'Son buenas.'),
+    pombero: pampa('pombero', 'el Pombero', 'pombero', 'gaucho', ['EL POMBERO', 'TE ESCONDE UNA CARTA EN CADA MANO'],
+      ['Ji, ji, ji...', '¿Buscabas algo?', 'Te la escondí bien, ¿eh?'], ['¡Fiu! Me encontraste.', 'Ya te la voy a hacer.'], 'Ji, ji... son buenas.'),
     familiar: pampa('familiar', 'el Familiar', 'familiar', 'diablo', ['EL FAMILIAR', 'CADA 5 MANOS SE COME EL 15% DE TUS FICHAS'],
       ['Grrr... un peón más.', 'El patrón va a estar contento.', 'Ñam.'], ['¡Grrr! Eso no estaba en el trato.', 'Hmm... duro de roer.'], 'Grrr, son buenas.'),
     gil: pampa('gil', 'el Gauchito Gil', 'gil', 'santo', ['EL GAUCHITO GIL', 'TRUCO HONRADO: ACÁ NO VALEN LAS MENTIRAS'],
@@ -120,14 +120,15 @@
     els.clear();
   }
 
-  async function deal(hand, t) {
+  // `hide`: índice de una de tus cartas que queda boca abajo (el Pombero te la esconde).
+  async function deal(hand, t, hide) {
     buildBoard();
     const order = hand.mano === 0 ? [0, 1] : [1, 0];
     for (let i = 0; i < 3; i++) {
       for (const p of order) {
         if (t !== token) return;
         const card = hand.dealt[p][i];
-        const el = cardEl(card, p === 1);
+        const el = cardEl(card, p === 1 || (p === 0 && i === hide));
         els.set(card, el);
         $(p === 0 ? 'tr-mine' : 'tr-rival').appendChild(el);
         Sound.sfx('card');
@@ -146,7 +147,8 @@
     const parts = [];
     const envidoOpen = !hand.envido.done && hand.bazas.length === 0 &&
       (hand.truco.level === 0 || (hand.pending && hand.pending.kind === 'envido'));
-    if (envidoOpen) parts.push(`Tu envido: <b>${hand.envidoValueOf(0)}</b>`);
+    // Con el Pombero no sabés una de tus cartas: tampoco tu envido.
+    if (envidoOpen) parts.push(opts.hide !== undefined ? 'Tu envido: <b>?</b>' : `Tu envido: <b>${hand.envidoValueOf(0)}</b>`);
     if (envidoOpen && opts.rivalEnvido) parts.push(`🔖 Envido de ${RIVAL.name}: <b>${envidoOf(hand.dealt[1])}</b>`);
     if (hand.truco.level) parts.push(`${TRUCO_NAMES[hand.truco.level]} querido`);
     $('intel').innerHTML = parts.join(' · ');
@@ -305,7 +307,8 @@
     Table.setMood(null, false);
     $('intel').textContent = '';
     message(hand.mano === 0 ? 'Sos mano.' : `${RIVAL.Name} es mano.`);
-    await deal(hand, t);
+    await deal(hand, t, opts.hide);
+    if (opts.hide !== undefined) log('🌿 El Pombero te escondió una carta: la vas a ver cuando la tires.');
     if (opts.reveal !== undefined) await flipRival(hand.dealt[1][opts.reveal]);
     await showEvents(hand, t); // la flor se anuncia al repartir
     while (!hand.finished && t === token) {
@@ -413,6 +416,7 @@
     const opts = {
       reveal: run.revealsRivalCard ? Math.floor(Math.random() * 3) : undefined,
       rivalEnvido: run.has('mazo_marcado'),
+      hide: run.hidesCard ? Math.floor(Math.random() * 3) : undefined,
     };
     if (run.whistle) { log('🎵 Se escucha el silbido bien cerca: esta mano, lo que perdés cuesta x1.5.'); Table.setSpeech('Fiuuu...'); }
     if (run.boss === 'familiar' && run.handInCycle % 5 === 0) log('🐕 El Familiar está hambriento: después de esta mano se come el 15% de tus fichas.');

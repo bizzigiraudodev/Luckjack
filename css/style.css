@@ -734,7 +734,7 @@ body[data-boss="diablo"] .felt { --felt: #7a1f2b; background: repeating-conic-gr
 body[data-boss="santo"] .felt { --felt: #3a6fb0; background: repeating-conic-gradient(var(--felt) 0 25%, #3568a6 0 50%) 0 0 / 6px 6px; }
 body[data-boss="luzmala"] .felt { --felt: #1f4a35; background: repeating-conic-gradient(var(--felt) 0 25%, #1b4430 0 50%) 0 0 / 6px 6px; }
 body[data-boss="silbon"] .felt { --felt: #3e3428; background: repeating-conic-gradient(var(--felt) 0 25%, #393024 0 50%) 0 0 / 6px 6px; }
-body[data-boss="futre"] .felt { --felt: #2e3a4a; background: repeating-conic-gradient(var(--felt) 0 25%, #2a3544 0 50%) 0 0 / 6px 6px; }
+body[data-boss="pombero"] .felt { --felt: #1c3020; background: repeating-conic-gradient(var(--felt) 0 25%, #192c1d 0 50%) 0 0 / 6px 6px; }
 body[data-boss="familiar"] .felt { --felt: #2a1f24; background: repeating-conic-gradient(var(--felt) 0 25%, #261c20 0 50%) 0 0 / 6px 6px; }
 body[data-boss="gil"] .felt { --felt: #8c1a24; background: repeating-conic-gradient(var(--felt) 0 25%, #821821 0 50%) 0 0 / 6px 6px; }
 body[data-boss="santo"] .table { background: #e8c25a; box-shadow: inset 0 6px 0 #ffe08a, inset 0 -8px 0 #b08a2e, 0 8px 0 rgba(0, 0, 0, 0.5); }
@@ -1105,7 +1105,7 @@ body.in-menu .app, body.in-menu .help-btn { visibility: hidden; }
 .cs-speaker.timbero { background: #4a4f63; }
 .cs-speaker.luzmala { background: #3fa860; }
 .cs-speaker.silbon { background: #5e4a36; }
-.cs-speaker.futre { background: #4a5468; }
+.cs-speaker.pombero { background: #3a5424; }
 .cs-speaker.familiar { background: #2a1f24; }
 .cs-speaker.gil { background: #c8102e; }
 .cs-text { font-size: 1.2rem; line-height: 1.35; min-height: 3.2em; }

@@ -74,13 +74,13 @@ Al principio solo están el **clásico** y la **historia** de cada juego. Pasart
 
 ### Truco modo historia: cinco noches en la pampa
 
-Pestaña **🗡️ Truco → 📖 Modo historia**. Es la precuela de la historia del blackjack: antes de morir de viejo, el timbero está retirado en su casucha de la pampa y cada noche viene alguien a jugarle un truco **por su vida**. Arrancás con **$200** y cada noche tiene su cuota (**$260, $380, $550, $795 y $1.155**).
+Pestaña **🗡️ Truco → 📖 Modo historia**. Es la precuela de la historia del blackjack: antes de morir de viejo, el timbero está retirado en su casucha de la pampa y cada noche viene alguien a jugarle un truco **por su vida**. Arrancás con **$200** y cada noche tiene su cuota (**$285, $415, $605, $875 y $1.270**).
 
 | Noche | Rival | Su trampa |
 |---|---|---|
 | 1 | 💡 **La Luz Mala** | Te muestra una de sus cartas, pero te baja la suerte (−5%) |
 | 2 | 🎵 **El Silbón** | Cada 4 manos silba cerca: lo que perdés en esa mano cuesta ×1,5 |
-| 3 | 🐎 **El Futre** | Va siempre al galope: es mano en todas las manos |
+| 3 | 🌿 **El Pombero** | Te esconde una carta en cada mano: la ves recién cuando la tirás (y no sabés tu envido) |
 | 4 | 🐕 **El Familiar** | Cada 5 manos se come el 15% de tus fichas |
 | 5 | 🕯️ **El Gauchito Gil** | Truco honrado: nunca miente y en su mesa no sirven el Chamuyero ni la Cara de Póker |
 

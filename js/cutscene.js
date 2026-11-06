@@ -125,6 +125,21 @@
       ombu(ctx, 150, 58, true);
     },
 
+    // El monte de noche: árboles retorcidos, enredaderas y una luz verde entre las ramas.
+    monte(ctx, t) {
+      bands(ctx, ['#060a06', '#0a120a', '#0e1a0e', '#142414'], 0, 72);
+      circle(ctx, 112, 26, 26, '#1a2c14');
+      circle(ctx, 112, 26, 16, '#2a4420');
+      circle(ctx, 112, 26, 8, Math.sin(t * 1.3) > 0 ? '#4a6a2e' : '#40602a');
+      for (const [x, w] of [[14, 10], [40, 7], [70, 9], [150, 12], [176, 8]]) {
+        rect(ctx, x, 0, w, H, '#0a0f08'); // troncos
+        rect(ctx, x + 2, 0, 2, H, '#141e10');
+      }
+      for (let i = 0; i < 9; i++) rect(ctx, 20 + i * 19, 6 + (i % 3) * 5, 1, 28 + (i % 4) * 6, '#1c2e16'); // enredaderas
+      bands(ctx, ['#0c140a', '#0a1008', '#080c06'], 72, H);
+      for (let x = 0; x < W; x += 6) rect(ctx, x, 70 + (x % 4), 3, 10, '#16241a'); // pastizal
+    },
+
     // Ingenio azucarero de noche: chimenea con humo y el cañaveral.
     ingenio(ctx, t) {
       bands(ctx, ['#120a0c', '#1e1014', '#2a161a', '#3a1c1e'], 0, 70);
@@ -241,7 +256,7 @@
     timbero: { name: '{name}', cls: 'timbero' },
     luzmala: { name: 'La Luz Mala', cls: 'luzmala' },
     silbon: { name: 'El Silbón', cls: 'silbon' },
-    futre: { name: 'El Futre', cls: 'futre' },
+    pombero: { name: 'El Pombero', cls: 'pombero' },
     familiar: { name: 'El Familiar', cls: 'familiar' },
     gil: { name: 'El Gauchito Gil', cls: 'gil' },
   };

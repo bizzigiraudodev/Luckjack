@@ -11,7 +11,7 @@
     // Historia del truco en la pampa
     luzmala: { bluff: 0.25, aggression: 0.5 }, // te encandila
     silbon: { bluff: 0.3, aggression: 0.85 }, // te engaña con el silbido: canta todo
-    futre: { bluff: 0.2, aggression: 0.7 }, // va al galope
+    pombero: { bluff: 0.3, aggression: 0.6 }, // travieso: esconde y engaña
     familiar: { bluff: 0.35, aggression: 0.6 }, // tramposo como su patrón
     gil: { bluff: 0, aggression: 0.55 }, // justo: nunca miente
   };

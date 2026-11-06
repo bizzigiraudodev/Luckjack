@@ -185,15 +185,18 @@
       if (cycle === 3) {
         return [
           {
-            bg: 'noche', music: 'gaucho', chars: [],
-            lines: rules('narrador', ['Por el camino viejo se escuchó un galope. El jinete no tenía cabeza.']),
+            bg: 'monte', music: 'gaucho', chars: [],
+            lines: rules('narrador', [
+              'La tercera noche, del monte llegó un silbido corto. Las cosas de la casucha empezaron a desaparecer.',
+              'El mate, las tortas fritas, el poncho... Alguien se reía entre los árboles.',
+            ]),
           },
           {
-            bg: 'noche', chars: [{ id: 'futre', pos: 'center' }],
+            bg: 'monte', chars: [{ id: 'pombero', pos: 'center' }],
             lines: [
-              { who: 'futre', text: '¿Me buscás la cara, {name}? La dejé en la cordillera.' },
-              { who: 'futre', text: `Yo voy siempre al galope: soy mano en todas las manos. Mi cuota es de $${quota}.` },
-              { who: 'futre', text: 'Si perdés, te llevo en ancas. Para siempre.' },
+              { who: 'pombero', text: 'Ji, ji... ¿Buscabas algo, {name}? Yo lo tengo. Yo siempre lo tengo.' },
+              { who: 'pombero', text: `Juguemos por $${quota}. En cada mano te escondo una carta: no la vas a ver hasta que la tires.` },
+              { who: 'pombero', text: 'Y si perdés... te llevo al monte, y nadie te va a encontrar nunca más.' },
             ],
           },
         ];
@@ -251,7 +254,7 @@
       const ends = {
         luzmala: { bg: 'noche', who: 'luzmala', say: 'Vení, {name}. Seguime...', end: '{name} siguió a la luz por el campo. Nunca más lo vieron.' },
         silbon: { bg: 'lunallena', who: 'silbon', say: 'Fiuuu... Uno más para la bolsa.', end: 'Por los caminos se escucha el silbido... y el ruido de unos huesos nuevos en la bolsa.' },
-        futre: { bg: 'noche', who: 'futre', say: 'Subí en ancas, {name}.', end: 'Dicen que los dos galopan por la cordillera, buscando cabezas.' },
+        pombero: { bg: 'monte', who: 'pombero', say: 'Ji, ji... ahora sos mío.', end: '{name} se perdió en el monte. A veces, de noche, se escucha su silbido.' },
         familiar: { bg: 'ingenio', who: 'familiar', say: 'Un peón más para el patrón.', end: 'El Familiar se lo llevó al ingenio. Las chimeneas siguieron humeando.' },
         gil: { bg: 'santuario', who: 'gil', say: 'No es castigo, hermano. Es tu hora.', end: '{name} cerró los ojos... y los abrió en un lugar gris, lleno de cartas flotando.' },
       };

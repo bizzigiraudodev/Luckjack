@@ -14,11 +14,11 @@
 
   // Historia del truco: en su retiro en la pampa, el timbero se juega la vida contra cinco
   // personajes del campo, uno por noche (en el infinito siempre es el Viejo).
-  const TRUCO_STORY = ['luzmala', 'silbon', 'futre', 'familiar', 'gil'];
+  const TRUCO_STORY = ['luzmala', 'silbon', 'pombero', 'familiar', 'gil'];
   // La historia original, como alternativa: el Viejo, el Diablo y San Pedro, con 3 mazos.
   const PURGATORIO_STORY = ['gaucho', 'diablo', 'santo'];
   const RIVAL_NAMES = {
-    gaucho: 'el Viejo', luzmala: 'la Luz Mala', silbon: 'el Silbón', futre: 'el Futre',
+    gaucho: 'el Viejo', luzmala: 'la Luz Mala', silbon: 'el Silbón', pombero: 'el Pombero',
     familiar: 'el Familiar', gil: 'el Gauchito Gil', diablo: 'el Diablo', santo: 'San Pedro',
   };
   // El Gauchito Gil es justo: no miente ni se deja mentir (no valen el Chamuyero ni la Cara de Póker).
@@ -28,8 +28,8 @@
   const WHISTLE_MULT = 1.5;
   // En la pampa se arranca con más plata: con muerte súbita, una mala racha no puede ser el final.
   const STORY_START = 200;
-  // Cuotas de las cinco noches: $260, $380, $550, $795, $1155 (subidas: los jugadores llegaban sobrados)
-  const STORY_QUOTA_BASE = 180;
+  // Cuotas de las cinco noches: $285, $415, $605, $875, $1270 (subidas dos veces: los jugadores llegaban sobrados)
+  const STORY_QUOTA_BASE = 198;
   const STORY_QUOTA_GROWTH = 1.45;
   const FAMILIAR_EVERY = 5; // el Familiar: cada 5 manos se come el 15% de tus fichas
   const FAMILIAR_BITE = 0.15;
@@ -116,6 +116,11 @@
       return this.has('ojo') || this.boss === 'luzmala';
     }
 
+    // El Pombero esconde cosas: en cada mano una de tus cartas queda boca abajo hasta que la jugás.
+    get hidesCard() {
+      return this.boss === 'pombero';
+    }
+
     // El Silbón silba cerca: en esa mano las pérdidas cuestan x1.5.
     get whistle() {
       return this.boss === 'silbon' && this.handInCycle % WHISTLE_EVERY === 0;
@@ -157,8 +162,7 @@
       this.lastBet = amount;
       this.trucoBet = amount;
       this.result = null;
-      // El Futre va siempre al galope: es mano en todas las manos.
-      this.mano = this.boss === 'futre' ? 1 : 1 - this.mano;
+      this.mano = 1 - this.mano;
       const sieteBravo = this.has('siete_bravo');
       // La trampa del Diablo (historia del purgatorio): las bazas pardas son suyas.
       const diablo = this.boss === 'diablo' ? 0.5 : 0;
