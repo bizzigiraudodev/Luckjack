@@ -394,6 +394,7 @@
       if (scene.music) Sound.music(scene.music);
       for (const line of scene.lines) {
         if (skipped) break;
+        if (line.ifNoName && !needsName(vars)) continue; // ya sabemos cómo se llama
         const sp = SPEAKERS[line.who] || SPEAKERS.narrador;
         setChars(scene.chars || [], line.who);
         $('cs-speaker').textContent = fill(sp.name, vars);

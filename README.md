@@ -8,7 +8,7 @@ Estética pixel art inspirada en Balatro: fondo en remolino pixelado con efecto 
 
 ## Historia
 
-Fuiste el mejor timbero de tu época: ganaste fortunas y te retiraste a una casucha en la pampa. Cuando moriste de viejo, terminaste en el **Purgatorio de los Timberos**, a cargo de un gaucho tan viejo que se olvidó de su propio nombre. La primera vez que abrís el juego hay una cutscene que lo cuenta y te pide tu nombre.
+Fuiste el mejor timbero de tu época: ganaste fortunas y te retiraste a una casucha en la pampa. Cuando moriste de viejo, terminaste en el **Purgatorio de los Timberos**, a cargo de un gaucho tan viejo que se olvidó de su propio nombre. La primera vez que abrís el juego, una cutscene corta te presenta, te pide tu nombre y cuenta tu retiro a la pampa (nada más). Lo que pasa en la pampa lo cuenta la historia del truco, y la llegada al purgatorio es la misma escena al empezar la historia del blackjack y la del purgatorio del truco (`Story.purgatorioIntro`); después cada juego explica sus reglas.
 
 ## Modos
 

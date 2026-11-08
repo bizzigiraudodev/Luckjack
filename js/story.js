@@ -1,26 +1,42 @@
 // Guion del modo historia: intro, presentación de cada jefe y finales.
 // {name} se reemplaza por el nombre que escribe el jugador.
 (function (root) {
+  // Intro al abrir el juego por primera vez: quién es el timbero (y cómo se llama) y su retiro a la pampa.
+  // Nada más: lo que pasa en la pampa y en el purgatorio lo cuenta cada historia.
   const intro = () => [
     {
       bg: 'casino', music: 'classic', chars: [{ id: 'timbero', pos: 'center' }],
       lines: [
         { who: 'narrador', text: 'Hubo una vez un timbero como no hubo otro.' },
         { who: 'narrador', text: 'Ganó en el hipódromo, en la ruleta, en el truco y en el blackjack. Los casinos le tenían miedo.' },
-        { who: 'narrador', text: 'Juntó tanta plata que los crupieres lo saludaban por el nombre... y rezaban para que no se sentara en su mesa.' },
+        { who: 'narrador', text: 'Los crupieres todavía se acuerdan de su nombre... y se persignan. ¿Cómo se llamaba?', input: 'name' },
+      ],
+    },
+    {
+      bg: 'casino', chars: [{ id: 'timbero', pos: 'center' }],
+      lines: [
+        { who: 'narrador', text: '{name}. Juntó tanta plata que lo saludaban por el nombre en todas las mesas... y rezaban para que no se sentara en la suya.' },
+        { who: 'timbero', text: 'Ya está. Ya gané todo lo que había para ganar.' },
       ],
     },
     {
       bg: 'pampa', music: 'pampa', chars: [{ id: 'timbero', pos: 'left' }],
       lines: [
-        { who: 'narrador', text: 'Con la plata hasta el techo, se retiró a una casucha en la pampa.' },
-        { who: 'narrador', text: 'Mate, tortas fritas y el horizonte. Nunca más tocó una carta.' },
+        { who: 'narrador', text: 'Con la plata hasta el techo, {name} se retiró a una casucha en la pampa.' },
+        { who: 'narrador', text: 'Mate, tortas fritas y el horizonte. Juró no tocar nunca más una carta.' },
+        { who: 'timbero', text: 'Acá no me encuentra nadie.' },
       ],
     },
+  ];
+
+  // Llegada al purgatorio: la misma escena en la historia del blackjack y en la del truco.
+  // Después cada juego explica cómo se pagan las cuotas.
+  const purgatorioIntro = () => [
     {
-      bg: 'noche', chars: [],
+      bg: 'noche', music: 'triste', chars: [],
       lines: [
-        { who: 'narrador', text: 'Y una noche tranquila, de pura vejez, se le terminó la racha.' },
+        { who: 'narrador', text: 'Pasaron los años en la casucha de la pampa.' },
+        { who: 'narrador', text: 'Y una noche tranquila, de pura vejez, a {name} se le terminó la racha.' },
       ],
     },
     {
@@ -35,19 +51,19 @@
       lines: [
         { who: 'gaucho', text: '¡Aura sí! Otro más que llega. Bienvenido al Purgatorio de los Timberos, m\'hijo.' },
         { who: 'gaucho', text: 'Yo soy el encargado. Hace tanto que estoy acá que me olvidé hasta de mi propio nombre.' },
-        { who: 'gaucho', text: '¿Y vos, chamigo? ¿Cómo te llamabas allá arriba?', input: 'name' },
-        { who: 'gaucho', text: '{name}... lindo nombre pa\' una lápida. Mirá: acá nadie sale gratis.' },
+        { who: 'gaucho', text: '¿Y vos, chamigo? ¿Cómo te llamabas allá arriba?', input: 'name', ifNoName: true },
+        { who: 'gaucho', text: '{name}... sí, acá te tengo anotado en la libreta de deudas. Mirá: acá nadie sale gratis.' },
         { who: 'gaucho', text: 'Tres cuotas tenés que pagar: la mía, la del Diablo pa\' no terminar en el infierno, y la de San Pedro pa\' entrar al Casino del Edén.' },
-        { who: 'gaucho', text: 'O si preferís, quedate jugando nomás. Acá el tiempo sobra. ¡Vamos a la mesa!' },
       ],
     },
   ];
 
   const cycleIntro = (cycle, quota) => {
     if (cycle === 1) {
-      return [{
+      return [...purgatorioIntro(), {
         bg: 'purgatorio', music: 'gaucho', chars: [{ id: 'gaucho', pos: 'center' }],
         lines: [
+          { who: 'gaucho', text: 'Las cuotas se pagan al blackjack, como en los casinos de allá arriba.' },
           { who: 'gaucho', text: 'Bueno, {name}. Primera cuota: la mía.' },
           { who: 'gaucho', text: `Juntame $${quota} en 15 manos. Cada 5 manos te abro la pulpería pa' que compres algo.` },
           { who: 'gaucho', text: 'Si llegás antes a la cuota, podés seguir sumando de a $5 por ronda... o pasar directo. Vos sabrás.' },
@@ -139,10 +155,11 @@
         return [
           {
             bg: 'pampa', music: 'pampa', chars: [{ id: 'timbero', pos: 'center' }],
-            lines: rules('narrador', [
-              'Antes del purgatorio y de las cuotas, {name} vivía tranquilo en su casucha de la pampa.',
-              'Mate, tortas fritas y el horizonte. Había jurado no tocar nunca más una carta.',
-            ]),
+            lines: [
+              { who: 'narrador', text: 'En la casucha de la pampa, los días pasaban entre mates y tortas fritas.' },
+              { who: 'narrador', text: '¿Cómo se llamaba el viejo timbero que vivía ahí?', input: 'name', ifNoName: true },
+              { who: 'timbero', text: 'Ni una carta más en mi vida. Lo juré.' },
+            ],
           },
           {
             bg: 'noche', music: 'triste', chars: [],
@@ -243,8 +260,8 @@
       {
         bg: 'noche', music: 'pampa', chars: [],
         lines: [
-          { who: 'narrador', text: 'Y una noche tranquila, de pura vejez, se le terminó la racha.' },
-          { who: 'narrador', text: 'Pero esa ya es otra historia... la del purgatorio de los timberos.' },
+          { who: 'narrador', text: 'Vivió tranquilo muchos años más. Pero el que vive de la timba no descansa en paz...' },
+          { who: 'narrador', text: 'Esa ya es otra historia: la del purgatorio de los timberos.' },
           { who: 'narrador', text: '🔥 Continúa en la historia del purgatorio.' },
           ...(golden ? [{ who: 'narrador', text: '✨ Ganaste el Mazo Dorado: arrancás el purgatorio y el truco infinito con él.' }] : []),
         ],
@@ -273,11 +290,11 @@
     cycleIntro(cycle, quota) {
       if (cycle === 1) {
         return [
+          ...purgatorioIntro(),
           {
-            bg: 'purgatorio', music: 'gaucho', chars: [{ id: 'timbero', pos: 'left' }, { id: 'gaucho', pos: 'right' }],
+            bg: 'purgatorio', chars: [{ id: 'timbero', pos: 'left' }, { id: 'gaucho', pos: 'right' }],
             lines: [
-              { who: 'gaucho', text: 'Así que sobreviviste a la pampa, {name}... y igual terminaste acá. Bienvenido al purgatorio.' },
-              { who: 'gaucho', text: 'Al truco, como Dios manda. Yo, el Diablo y San Pedro: cada uno cobra lo suyo.' },
+              { who: 'gaucho', text: 'Y las cuotas se pagan al truco, como Dios manda. Yo, el Diablo y San Pedro: cada uno cobra lo suyo.' },
               { who: 'narrador', text: 'En cada mano apostás y cobrás o pagás la apuesta por la diferencia de puntos.' },
             ],
           },
@@ -362,5 +379,5 @@
   };
 
 
-  root.Story = { intro, cycleIntro, victory, defeat, truco, trucoPurgatorio };
+  root.Story = { intro, purgatorioIntro, cycleIntro, victory, defeat, truco, trucoPurgatorio };
 })(window);
