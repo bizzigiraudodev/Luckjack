@@ -2,6 +2,8 @@
 
 **Jugar online:** https://luckjack-game.vercel.app
 
+**Para retomar el desarrollo:** ver [HANDOFF.md](HANDOFF.md) (estado, decisiones de diseño, balance y pendientes).
+
 Blackjack **roguelike** para el navegador. Ganá dinero mano a mano, superá la cuota de cada ciclo y comprá bonuses aleatorios en la tienda para romper la banca... hasta que la suerte se acabe.
 
 Estética pixel art inspirada en Balatro: fondo en remolino pixelado con efecto CRT, cartas y crupier dibujados píxel a píxel y la fuente [Tiny5](https://github.com/Gissio/font_tiny5) (SIL Open Font License, ver `fonts/OFL-Tiny5.txt`).

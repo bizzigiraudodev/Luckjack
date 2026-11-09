@@ -1,2 +1,9 @@
 node_modules/
 .DS_Store
+tools/sim/out-*.json
+tools/back.svg
+tools/back.png
+tools/back1x.png
+tools/b64.txt
+tools/sprites/sprites64.json
+tools/sprites/preview.png
