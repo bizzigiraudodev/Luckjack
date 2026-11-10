@@ -66,7 +66,7 @@
     const link = ctx.inviteLink(v.code);
     const wa = document.createElement('a');
     wa.className = 'btn-link btn-green';
-    wa.href = `https://wa.me/?text=${encodeURIComponent(`¡Truco de a 4 en Luckjack! Entrá a la sala ${v.code}: ${link}`)}`;
+    wa.href = `https://wa.me/?text=${encodeURIComponent(`¡Truco de a 4 en Costumbres Argentinas! Entrá a la sala ${v.code}: ${link}`)}`;
     wa.target = '_blank';
     wa.rel = 'noopener';
     wa.textContent = '📲 WhatsApp';

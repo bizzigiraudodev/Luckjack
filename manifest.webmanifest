@@ -1,7 +1,7 @@
 {
-  "name": "Luckjack",
-  "short_name": "Luckjack",
-  "description": "Blackjack roguelike: superá la cuota de cada ciclo y comprá bonuses en la tienda.",
+  "name": "Costumbres Argentinas",
+  "short_name": "Costumbres",
+  "description": "Truco argentino y blackjack roguelike en pixel art.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

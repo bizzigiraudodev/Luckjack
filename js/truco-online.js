@@ -227,7 +227,7 @@
     code.textContent = v.code;
     const wa = document.createElement('a');
     wa.className = 'btn-link btn-green';
-    wa.href = `https://wa.me/?text=${encodeURIComponent(`¡Te desafío a un truco en Luckjack! Entrá a la sala ${v.code}: ${link}`)}`;
+    wa.href = `https://wa.me/?text=${encodeURIComponent(`¡Te desafío a un truco en Costumbres Argentinas! Entrá a la sala ${v.code}: ${link}`)}`;
     wa.target = '_blank';
     wa.rel = 'noopener';
     wa.textContent = '📲 WhatsApp';
@@ -240,7 +240,7 @@
     if (navigator.share) {
       const share = document.createElement('button');
       share.textContent = 'Compartir';
-      share.onclick = () => navigator.share({ title: 'Luckjack', text: `Truco en la sala ${v.code}`, url: link }).catch(() => {});
+      share.onclick = () => navigator.share({ title: 'Costumbres Argentinas', text: `Truco en la sala ${v.code}`, url: link }).catch(() => {});
       items.push(share);
     }
     box.replaceChildren(...items);
