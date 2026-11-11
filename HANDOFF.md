@@ -10,7 +10,7 @@ Este documento sirve para retomar el trabajo en una sesión nueva (por ejemplo, 
 
 - **Juego:** Luckjack, un juego web en pixel art con dos juegos dentro: **blackjack** y **truco argentino**. Tiene modos roguelike (ciclos, cuotas, tienda, bonuses), historias con cutscenes, rankings globales, truco de a 4 con bots y truco online entre amigos.
 - **Repo:** `bizzigiraudodev/Luckjack` (GitHub).
-- **Producción:** https://luckjack-game.vercel.app (Vercel publica solo lo que llega a `main`).
+- **Producción:** https://costumbres-arg.vercel.app (Vercel publica solo lo que llega a `main`). Antes era `luckjack-game.vercel.app`; al cambiar de dominio, cada navegador perdió su `localStorage` (id de jugador y progreso), por eso existen la temporada 2 de rankings y las cuentas.
 - **Stack:** JavaScript vanilla, sin build ni dependencias. Los módulos son UMD: en el navegador quedan como globales (`window.Truco`, `window.TrucoAI`...) y en Node se cargan con `require`. El backend son Vercel Functions (`api/`) más Upstash Redis.
 - **PWA:** `sw.js` cachea todos los archivos. La versión actual del caché es `luckjack-v30`.
 

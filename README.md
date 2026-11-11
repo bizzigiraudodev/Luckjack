@@ -1,6 +1,6 @@
 # 🍀 Luckjack
 
-**Jugar online:** https://luckjack-game.vercel.app
+**Jugar online:** https://costumbres-arg.vercel.app
 
 **Para retomar el desarrollo:** ver [HANDOFF.md](HANDOFF.md) (estado, decisiones de diseño, balance y pendientes).
 
@@ -192,7 +192,7 @@ npm start   # sirve la carpeta con `serve`
 
 Luckjack es una app web instalable (PWA): no hace falta ninguna tienda de apps.
 
-- **Android (Chrome):** abrí https://luckjack-game.vercel.app y tocá **📲 Instalar app** (o menú ⋮ → *Instalar app*).
+- **Android (Chrome):** abrí https://costumbres-arg.vercel.app y tocá **📲 Instalar app** (o menú ⋮ → *Instalar app*).
 - **iPhone/iPad (Safari):** abrí el link, tocá **Compartir** ⬆️ → *Agregar a pantalla de inicio*.
 
 Queda con su ícono, se abre a pantalla completa y funciona sin internet.
