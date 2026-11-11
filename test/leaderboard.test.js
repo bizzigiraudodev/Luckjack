@@ -67,6 +67,7 @@ function fakeRedis() {
       case 'HDEL': if (h[key]) delete h[key][args[0]]; result = 1; break;
       case 'HMGET': result = args.map((f) => (h[key] || {})[f] || null); break;
       case 'INCR': kv[key] = (kv[key] || 0) + 1; result = kv[key]; break;
+      case 'GET': result = kv[key] === undefined ? null : kv[key]; break;
       case 'EXPIRE': result = 1; break;
       default: throw new Error(`comando no soportado: ${cmd}`);
     }

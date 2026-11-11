@@ -27,7 +27,8 @@
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* sin storage */ } },
   };
 
-  const vars = { name: store.get(KEYS.name) || 'Timbero' };
+  // Con cuenta, tu nombre es tu usuario (en las cutscenes y en los rankings).
+  const vars = { name: (window.Account && Account.user && Account.user.username) || store.get(KEYS.name) || 'Timbero' };
   const fill = (text) => text.replace(/\{name\}/g, vars.name);
 
   let game = null;
@@ -664,6 +665,8 @@
     lbBoard = board;
     $('leaderboard').hidden = false;
     $('lb-name').value = vars.name;
+    $('lb-name').disabled = !!Account.user;
+    $('lb-name').title = Account.user ? 'Con cuenta, tu nombre es tu usuario' : '';
     document.querySelectorAll('#lb-tabs .tab').forEach((t) => t.classList.toggle('active', t.dataset.board === board));
     const info = Leaderboard.BOARDS[board];
     $('lb-title').textContent = `${info.icon} ${info.title}`;
@@ -681,7 +684,8 @@
       pos.textContent = i < 3 ? ['🥇', '🥈', '🥉'][i] : `#${i + 1}`;
       const name = document.createElement('span');
       name.className = 'who';
-      name.textContent = e.name || 'Timbero';
+      name.textContent = (e.name || 'Timbero') + (e.acct ? ' ✔' : ''); // ✔ = juega con cuenta
+      if (e.acct) name.title = 'Juega con cuenta';
       const val = document.createElement('b');
       val.textContent = info.format(e.value);
       const extra = document.createElement('small');
@@ -732,6 +736,8 @@
   // --- Menú ---
   function showMenu() {
     submitPlaytime();
+    syncAccount();
+    renderAccount();
     $('btn-sequel').hidden = true;
     Truco4UI.stop();
     TrucoUI.stop();
@@ -956,6 +962,7 @@
   document.querySelectorAll('#lb-tabs .tab').forEach((t) => t.addEventListener('click', () => showRanks(t.dataset.board)));
   $('lb-name-form').addEventListener('submit', (e) => {
     e.preventDefault();
+    if (Account.user) return; // con cuenta, el nombre es el usuario
     vars.name = $('lb-name').value.trim().slice(0, 16) || 'Timbero';
     store.set(KEYS.name, vars.name);
     $('lb-name').value = vars.name;
@@ -964,6 +971,98 @@
   $('btn-to-menu').addEventListener('click', () => {
     if (TrucoOnline.active) TrucoOnline.leave();
     showMenu();
+  });
+
+  // --- Cuenta (opcional): usuario y contraseña. Sin cuenta se juega como invitado. ---
+  function renderAccount() {
+    const u = Account.user;
+    $('btn-account').textContent = u ? `👤 ${u.username}` : '👤 Invitado · Entrar o crear cuenta';
+    $('btn-account').classList.toggle('logged', !!u);
+    $('account-guest').hidden = !!u;
+    $('account-user').hidden = !u;
+    if (u) $('acct-name').textContent = u.username;
+  }
+
+  // Pone en este dispositivo el progreso de la cuenta (ya combinado con el local) y el usuario como nombre.
+  function adoptAccount(progress) {
+    Progress.apply(localStorage, progress);
+    vars.name = Account.user.username;
+    store.set(KEYS.name, vars.name);
+    renderAccount();
+    if (!$('menu').hidden) showMenu();
+  }
+
+  // Sube el progreso de este dispositivo y baja el de la cuenta (como mucho cada 30 segundos).
+  let lastSync = 0;
+  async function syncAccount(force = false) {
+    if (!Account.user || (!force && Date.now() - lastSync < 30000)) return;
+    lastSync = Date.now();
+    try {
+      const before = JSON.stringify(Progress.collect(localStorage));
+      const progress = await Account.sync(Progress.collect(localStorage));
+      if (!progress) return;
+      Progress.apply(localStorage, progress);
+      // Si llegó algo nuevo de otro dispositivo (un desbloqueo, un récord), se ve en el menú.
+      if (JSON.stringify(Progress.collect(localStorage)) !== before && !$('menu').hidden) showMenu();
+    } catch (e) {
+      if (!Account.user) {
+        renderAccount();
+        if (!$('menu').hidden) showNote('Tu sesión venció: volvé a entrar a tu cuenta.');
+      }
+    }
+  }
+
+  function showNote(text) {
+    $('menu-note').textContent = text;
+    $('menu-note').hidden = false;
+  }
+
+  $('btn-account').addEventListener('click', () => {
+    renderAccount();
+    $('acct-msg').textContent = '';
+    $('account').hidden = false;
+    if (!Account.user) setTimeout(() => $('acct-user').focus(), 50);
+  });
+  $('account-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const act = (e.submitter && e.submitter.dataset.act) || 'login';
+    const username = $('acct-user').value.trim();
+    const password = $('acct-pass').value;
+    const msg = $('acct-msg');
+    msg.className = 'acct-msg';
+    msg.textContent = act === 'register' ? 'Creando la cuenta...' : 'Entrando...';
+    $('account-form').querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    try {
+      const local = Progress.collect(localStorage);
+      const progress = act === 'register'
+        ? await Account.register(username, password, Leaderboard.playerId(), local)
+        : await Account.login(username, password, local);
+      $('acct-pass').value = '';
+      adoptAccount(progress);
+      lastSync = Date.now();
+      Sound.sfx('coin');
+      msg.className = 'acct-msg ok';
+      msg.textContent = '';
+      showNote(act === 'register'
+        ? `👤 ¡Cuenta creada! Ahora sos ${Account.user.username} en cualquier dispositivo.`
+        : `👤 ¡Hola de nuevo, ${Account.user.username}! Tu progreso ya está acá.`);
+      $('account').hidden = true;
+    } catch (err) {
+      msg.textContent = err.message;
+    } finally {
+      $('account-form').querySelectorAll('button').forEach((b) => { b.disabled = false; });
+    }
+  });
+  $('acct-guest-btn').addEventListener('click', () => { $('account').hidden = true; });
+  $('acct-close').addEventListener('click', () => { $('account').hidden = true; });
+  $('acct-logout').addEventListener('click', async () => {
+    await syncAccount(true); // lo último que jugaste queda guardado en la cuenta
+    Account.logout();
+    vars.name = 'Timbero';
+    store.set(KEYS.name, vars.name);
+    renderAccount();
+    $('account').hidden = true;
+    showNote('Saliste de tu cuenta. Ahora jugás como invitado en este dispositivo.');
   });
 
   function renderSoundButtons() {

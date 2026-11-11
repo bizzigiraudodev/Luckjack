@@ -2,8 +2,10 @@
 //   GET  /api/leaderboard?board=story|chips|cycles|trucoStory|trucoCycles|speedStory|speedTrucoStory|playtime&pid=...
 //        → los 10 mejores (en playtime, los 200 que más jugaron)
 //        (los ids de los jugadores no se devuelven: tu fila viene marcada con `me`)
-//   POST /api/leaderboard  { board, pid, name, value, hands } → guarda la marca si mejora la anterior
-// Cada jugador (pid, un id aleatorio de su dispositivo) tiene una sola fila por ranking: su mejor marca.
+//   POST /api/leaderboard  { board, pid, name, value, hands, token? } → guarda la marca si mejora la anterior
+// Cada jugador (pid, un id aleatorio de su dispositivo, o el de su cuenta) tiene una sola fila por
+// ranking: su mejor marca. Con `token` (sesión de una cuenta, ver api/account.js) la marca va a la
+// cuenta, con su usuario como nombre; sin cuenta, nadie puede usar el nombre de una cuenta ajena.
 
 const BOARDS = {
   story: { order: 'asc', min: 5000, max: 24 * 3600 * 1000 }, // milisegundos: menos es mejor
@@ -63,6 +65,13 @@ const MAX_CHIPS_PER_HAND = 1000;
 const MIN_HANDS_PER_CYCLE = 5;
 
 const { config, redis, cleanName } = require('./_redis.js');
+const Accounts = require('./_accounts.js');
+
+// Temporada de los rankings. Al cambiar el dominio del juego, cada navegador perdió su id de jugador
+// (vive en localStorage, que es por dominio) y nadie podía mejorar sus marcas viejas. La temporada 2
+// arranca de cero en claves nuevas (lb2:*); las de la temporada 1 (lb:*) quedan en la base sin usarse,
+// así que se puede volver atrás cambiando esta constante.
+const SEASON_PREFIX = 'lb2';
 
 // Valida lo que manda el juego. Devuelve { board, pid, entry, value } o { error }.
 function validate(body) {
@@ -109,7 +118,7 @@ function sanitizeProof(p) {
 
 const keys = (board, test = false) => (test
   ? { scores: `lbtest:${board}`, info: `lbtest:${board}:info` }
-  : { scores: `lb:${board}`, info: `lb:${board}:info` });
+  : { scores: `${SEASON_PREFIX}:${board}`, info: `${SEASON_PREFIX}:${board}:info` });
 
 async function top(cfg, board, me = '') {
   const { scores, info } = keys(board);
@@ -191,6 +200,15 @@ async function handler(req, res) {
       const data = validate(body);
       if (data.error) return res.status(data.bot ? 403 : 400).json({ error: data.error });
       if (!(await allowed(cfg, req))) return res.status(429).json({ error: 'Demasiados envíos, probá en un rato' });
+      if (body.token) {
+        // Con cuenta: la marca es de la cuenta (su id y su usuario), juegue desde donde juegue.
+        const acct = await Accounts.sessionAccount(cfg, body.token);
+        if (!acct) return res.status(401).json({ error: 'Tu sesión venció: volvé a entrar para guardar la marca' });
+        data.pid = acct.pid;
+        data.entry = { ...data.entry, name: acct.username, acct: true };
+      } else if (await Accounts.isAccountName(cfg, data.entry.name)) {
+        return res.status(403).json({ error: `"${data.entry.name}" es el usuario de una cuenta: entrá con esa cuenta o cambiá tu nombre` });
+      }
       return res.status(200).json(await submit(cfg, data));
     }
     res.setHeader('Allow', 'GET, POST');
@@ -205,3 +223,4 @@ module.exports.validate = validate;
 module.exports.BOARDS = BOARDS;
 module.exports.plausible = plausible;
 module.exports.botReason = botReason;
+module.exports.SEASON_PREFIX = SEASON_PREFIX;

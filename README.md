@@ -156,7 +156,19 @@ En el menú, **⚡ Speedrun: sí** saca todas las animaciones, las esperas y las
 - Hay una **clave de prueba** (solo se guarda su hash en el servidor) para correr tests automáticos: sus marcas no las frena el anti-bot pero van a un ranking de pruebas aparte y nunca aparecen en los públicos. Se configura en el navegador con `localStorage.setItem('luckjack.testKey', JSON.stringify('<clave>'))`.
 - Como el juego corre en tu navegador, nada de esto es infalible contra alguien muy decidido; sí frena a los bots comunes.
 
-Las marcas se mandan solas al terminar (o al abandonar una partida de infinito). Cada jugador tiene una sola fila por ranking: su mejor marca. El nombre es el que escribiste en la intro y se puede cambiar desde la pantalla de rankings.
+Las marcas se mandan solas al terminar (o al abandonar una partida de infinito). Cada jugador tiene una sola fila por ranking: su mejor marca. El nombre es el que escribiste en la intro y se puede cambiar desde la pantalla de rankings (con cuenta, es tu usuario).
+
+**Temporada 2:** al cambiar el dominio del juego, cada navegador perdió su id de jugador (vive en el almacenamiento del navegador, que es por dominio) y nadie podía mejorar sus marcas viejas. Los rankings arrancaron de cero en claves nuevas (`lb2:*`). Las de la temporada 1 (`lb:*`) siguen en la base sin usarse: para volver atrás alcanza con cambiar `SEASON_PREFIX` en `api/leaderboard.js`, y para liberar espacio se pueden borrar desde la consola de Upstash.
+
+### Cuentas (opcionales)
+
+En el menú, **👤 Invitado · Entrar o crear cuenta**. Sin cuenta se juega como invitado, como siempre: el progreso queda en ese dispositivo. Con una cuenta (**usuario y contraseña, sin mail ni links**):
+
+- **Crear cuenta:** elegís un usuario (de 3 a 16 letras, números, `.`, `-` o `_`) y, si está libre, una contraseña. La cuenta se queda con tu id de jugador y tu progreso de ese dispositivo, así que tus marcas pasan a ser de la cuenta.
+- **Entrar** desde cualquier celu o compu con el mismo usuario y contraseña: te llega el progreso (desbloqueos, Mazo Dorado, récords, tiempo jugado) y tus marcas siguen siendo tuyas. Combinar nunca hace perder nada: los desbloqueos se suman y de cada récord queda el mejor (`js/progress.js`).
+- **En los rankings** tu nombre es tu usuario, con un ✔. Un invitado no puede usar el nombre de una cuenta.
+- **Seguridad:** la contraseña se guarda con scrypt y sal propia, nunca tal cual. Después de 10 contraseñas mal, ese usuario queda frenado 15 minutos, y cada IP puede hacer 30 pedidos por minuto. Como no hay mail, **la contraseña no se puede recuperar**.
+- **API:** `api/account.js` (`register`, `login`, `sync`, `logout`). Las sesiones duran 6 meses desde el último uso.
 
 **Rankings globales (Vercel + Upstash Redis, gratis):** la API está en `api/leaderboard.js`. Para activarla:
 

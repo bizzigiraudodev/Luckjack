@@ -309,6 +309,28 @@ python3 tools/card-back.py        # dorso del mazo (imprime el tamaño; b64.txt 
 - **Salas online** (`api/room.js`): usan la misma base de Upstash. Los celulares consultan cada ~1 segundo si hubo cambios.
 - **Variables de entorno en Vercel:** `KV_REST_API_URL` y `KV_REST_API_TOKEN`, o `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`.
 
+### Temporada 2 de los rankings (11 de noviembre de 2026)
+
+El dominio de Vercel cambió y, como el id de jugador (`luckjack.playerId`) vive en el `localStorage` (que es por dominio), nadie podía mejorar sus marcas viejas. Se reiniciaron **todos** los rankings sin tocar la base: ahora se leen y escriben en `lb2:*` (`SEASON_PREFIX` en `api/leaderboard.js`). Las claves de la temporada 1 (`lb:*`) siguen en Upstash sin usarse: se puede volver atrás cambiando la constante, o borrarlas desde la consola.
+
+### Cuentas (`api/account.js`, `api/_accounts.js`, `js/account.js`, `js/progress.js`)
+
+- **Qué es:** usuario y contraseña, sin mail. Es opcional: sin cuenta se juega como invitado.
+- **En la base:**
+  - `acct:<usuario en minúsculas>` = `{ username, salt, hash, pid, created, progress }`. La contraseña se guarda con scrypt y sal propia.
+  - `sess:<token>` = usuario. Vence a los 6 meses sin usarse.
+  - `afail:<usuario>` cuenta las contraseñas mal (10 → frenado 15 minutos).
+  - `arl:<ip>` es el límite de 30 pedidos por minuto por IP.
+- **Al crear la cuenta:** se queda con el `pid` del dispositivo (las marcas de la temporada 2 pasan a la cuenta) y con su progreso.
+- **Al entrar:** el dispositivo adopta el `pid` de la cuenta (`Leaderboard.playerId()` lo devuelve) y su progreso combinado.
+- **Progreso:** `js/progress.js` define qué viaja con la cuenta (los desbloqueos, `best`, `trucoBest`, `bestClassic`, `playMs`, `trucoClassic`, `truco4`) y cómo se combina sin perder nada. Se sincroniza al volver al menú, como mucho cada 30 segundos.
+- **Rankings con cuenta:** el envío lleva el `token`. El servidor usa el `pid` y el usuario de la cuenta, y marca la fila con `acct: true` (en la UI se ve un ✔). Sin token, un nombre que es usuario de una cuenta se rechaza con 403.
+- **Limitaciones:**
+  - Si entrás a una cuenta en un dispositivo donde ya jugaste como invitado, las marcas de ese invitado quedan como filas aparte.
+  - El usuario no se puede cambiar.
+  - La contraseña no se puede recuperar.
+- **Pendiente posible:** cambiar la contraseña estando adentro, y una forma de borrar la cuenta.
+
 ## 10. Datos guardados en el navegador (`localStorage`)
 
 | Clave | Para qué |
@@ -322,6 +344,8 @@ python3 tools/card-back.py        # dorso del mazo (imprime el tamaño; b64.txt 
 | `luckjack.trucoDifficulty` | última dificultad elegida |
 | `luckjack.best`, `luckjack.trucoBest`, `luckjack.bestClassic` | récords locales |
 | `luckjack.playMs`, `luckjack.playSent` | tiempo total de juego y lo último que se mandó al ranking |
+| `luckjack.account` | sesión de la cuenta: `{ username, token, pid }` (sin cuenta, no existe) |
+| `luckjack.playerId` | id de jugador del invitado en este dispositivo |
 
 Para probar con todo desbloqueado, setear en `true` estas claves: `seenIntro`, `trucoPampaBeaten`, `trucoStoryBeaten` y `trucoStoryDone`.
 

@@ -48,8 +48,11 @@
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* sin storage */ } },
   };
 
-  // Id aleatorio del dispositivo, para marcar tus filas y guardar una sola por jugador.
+  // Id del jugador: el de tu cuenta si entraste, si no uno aleatorio de este dispositivo.
+  // Sirve para marcar tus filas y guardar una sola por jugador.
   function playerId() {
+    const acct = storage.get('luckjack.account');
+    if (acct && acct.pid) return acct.pid;
     let id = storage.get('luckjack.playerId');
     if (!id) {
       id = Array.from({ length: 16 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
@@ -111,10 +114,12 @@
       try {
         const proof = root.AntiBot ? root.AntiBot.proof() : null;
         const testKey = storage.get('luckjack.testKey') || undefined;
-        const res = await api('POST', { board, pid: entry.pid, name, value, hands, proof, testKey });
+        const acct = storage.get('luckjack.account');
+        const token = (acct && acct.token) || undefined;
+        const res = await api('POST', { board, pid: entry.pid, name, value, hands, proof, testKey, token });
         return { rank: res.rank, global: true, improved: res.improved, test: !!res.test };
       } catch (e) {
-        if (e.status === 400 || e.status === 403) return { rejected: e.message || 'La marca no se guardó.' };
+        if (e.status === 400 || e.status === 401 || e.status === 403) return { rejected: e.message || 'La marca no se guardó.' };
       }
     }
     const rank = local.list.indexOf(entry) + 1;

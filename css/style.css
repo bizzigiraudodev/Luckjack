@@ -1312,3 +1312,23 @@ body[data-game="truco"] .shoe {
     8px 6px 0 #d6caae, 9px 7px 0 var(--outline), 4px 12px 0 rgba(0, 0, 0, 0.35);
 }
 body[data-game="truco"] .shoe::after, body[data-game="truco"] .shoe-cards { display: none; }
+
+/* --- Cuenta --- */
+.menu-account {
+  display: block;
+  margin: 2px auto 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 205, 60, 0.45);
+  color: var(--gold, #ffcd3c);
+  box-shadow: none;
+}
+.menu-account.logged { border-color: rgba(63, 191, 127, 0.7); color: #8fe3b6; }
+.account-modal { max-width: 420px; display: flex; flex-direction: column; gap: 10px; }
+.account-form { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.account-form input { font: inherit; padding: 8px 10px; border-radius: 6px; border: 2px solid var(--outline); background: #f3eee3; color: #1b1420; }
+.acct-hint { margin: 0; font-size: 0.75rem; opacity: 0.8; }
+.acct-msg { margin: 0; min-height: 1.2em; font-size: 0.85rem; color: #ffd27a; }
+.acct-msg.ok { color: #8fe3b6; }
+#account { z-index: 46; } /* por encima del menú */

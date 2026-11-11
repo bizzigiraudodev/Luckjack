@@ -184,6 +184,7 @@
     <div class="menu-box">
       <h1 class="logo big-logo"><span class="l1">COSTUMBRES </span><span class="l2">ARGENTINAS</span></h1>
       <p class="tagline">El purgatorio de los timberos</p>
+      <button class="menu-account" id="btn-account" type="button">👤 Invitado · Entrar o crear cuenta</button>
       <div class="menu-chars" id="menu-chars"></div>
       <p class="menu-note" id="menu-note" role="status" hidden></p>
       <div class="tabs menu-games" id="menu-games" role="tablist">
@@ -225,6 +226,35 @@
         <button class="btn-orange" type="submit">OK</button>
       </form>
       <span class="cs-next" id="cs-next" hidden>▼</span>
+    </div>
+  </div>
+
+  <div class="overlay" id="account" hidden>
+    <div class="modal account-modal" role="dialog" aria-labelledby="account-title">
+      <h2 id="account-title">👤 Tu cuenta</h2>
+      <div id="account-guest">
+        <p class="sub">Estás jugando como <b>invitado</b>: tu progreso queda solo en este dispositivo. Con una cuenta (usuario y contraseña, sin mail) tu progreso y tus marcas te siguen a cualquier celu o compu.</p>
+        <form id="account-form" class="account-form">
+          <label for="acct-user">Usuario</label>
+          <input id="acct-user" maxlength="16" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+          <label for="acct-pass">Contraseña</label>
+          <input id="acct-pass" type="password" maxlength="72" autocomplete="current-password" required>
+          <p class="acct-hint">Como no hay mail, la contraseña no se puede recuperar: anotala.</p>
+          <p class="acct-msg" id="acct-msg" role="status"></p>
+          <div class="modal-actions">
+            <button type="submit" class="btn-green" data-act="login">Entrar</button>
+            <button type="submit" class="btn-blue" data-act="register">Crear cuenta</button>
+          </div>
+        </form>
+        <button type="button" id="acct-guest-btn">Seguir como invitado</button>
+      </div>
+      <div id="account-user" hidden>
+        <p class="sub">Entraste como <b id="acct-name"></b>. Tu progreso y tus marcas en los rankings se guardan en tu cuenta: entrá con el mismo usuario y contraseña desde cualquier dispositivo.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn-red" id="acct-logout">Cerrar sesión</button>
+          <button type="button" class="primary" id="acct-close">Cerrar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -381,6 +411,8 @@
   <script src="js/table.js"></script>
   <script src="js/cutscene.js"></script>
   <script src="js/story.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/account.js"></script>
   <script src="js/leaderboard.js"></script>
   <script src="js/truco.js"></script>
   <script src="js/truco-brain.js"></script>
