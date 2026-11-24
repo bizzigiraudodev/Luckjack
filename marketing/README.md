@@ -15,7 +15,12 @@ Un equipo de marketing hecho con agentes de Claude Code (`.claude/agents/`) y to
 
 **Cómo llamarlos:** en tu sesión de Claude Code, pedí *"usá el agente guionista para..."* o escribí directo lo que querés y nombrá al agente.
 
-Los agentes no se llaman entre sí. El `director-marketing` deja la lista de pedidos para cada uno y vos se los pasás.
+**Autonomía:** con las skills o herramientas que tengas en tu compu, los agentes publican y cargan material solos. Igual piden tu confirmación para tres cosas, porque no tienen vuelta atrás o comprometen tu reputación:
+- escribirle a una persona o a un medio;
+- postear en comunidades ajenas;
+- publicar algo fuera del calendario.
+
+Si el `director-marketing` no puede lanzar a los otros agentes, te deja la lista de pedidos para que se los pases.
 
 ## Qué hay
 
