@@ -366,6 +366,18 @@ Para probar con todo desbloqueado, setear en `true` estas claves: `seenIntro`, `
    - Que la IA fácil deje de querer de farol en la 1ra baza.
    - Guardar el perfil de la IA entre partidas.
 
+## Marketing
+
+Hay un equipo de marketing con agentes de Claude Code en `.claude/agents/`:
+- `director-marketing`
+- `guionista`
+- `community-manager`
+- `productor-visual`
+- `analista-growth`
+- `prensa-y-alianzas`
+
+Su trabajo vive en `marketing/` (brief, timeline de eventos, guiones de video, textos, métricas y kit de prensa). Empezá por [marketing/README.md](marketing/README.md). Las analíticas web de Vercel están **desactivadas**: activarlas es el primer paso para poder medir.
+
 ## 12. Historial reciente (lo último primero)
 
 | Commit | Qué hizo |
