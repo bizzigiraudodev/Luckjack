@@ -23,6 +23,9 @@ Sin esto no se puede medir ni publicar bien. Responsable entre paréntesis.
 - [ ] **Banco de clips:** grabar 30 clips de 5–15 segundos del juego, verticales, para tener material para seis semanas (`productor-visual`, ver `guiones/banco-de-clips.md`).
 - [ ] **Página en itch.io** (gratis, "HTML5 game" con link al juego o el juego embebido): es una vidriera para el público indie (`prensa-y-alianzas` + dev).
 - [ ] **Corregir el título del README**, que todavía dice "Luckjack" (dev).
+- [ ] 🎮 **Desbloquear "Jugar con un amigo" (y el de a 4 online) desde el principio** (dev). Hoy se puede crear una sala recién después de pasarse la historia: quien llega por un video de "mandale el link a tu amigo" no puede crearla. Ver `estudio-de-mercado.md`, sección 4.
+- [ ] 🎮 **Placa para compartir el resultado** al terminar una historia o una partida, con el link (dev).
+- [ ] 🎮 *Opcional:* **modo "5 de copas"** (la carta más alta) como evento temporal, para engancharse al debate del momento (dev).
 
 ---
 
@@ -44,6 +47,7 @@ La temporada 2 de rankings arrancó de cero y hay cuentas nuevas: es la excusa p
 | Jue 3 | 🎬 [`01-ia-no-se-come-mentiras.md`](guiones/01-ia-no-se-come-mentiras.md) |
 | Vie 4 | 🖼️ Carrusel "Cómo crear tu cuenta en 10 segundos (y que tus marcas te sigan a cualquier celu)" |
 | Sáb 5 | 💬 Post en grupos de truco de Facebook (uno por día como mucho, siempre presentándote como el dev) |
+| Sáb 5 y dom 6 | **Se Pica en ESPN** (torneo nacional de truco por equipos). Contenido el mismo fin de semana: *"¿Mirando Se Pica? Practicá contra una IA que no se come tus mentiras"*, o el truco de a 4 online para armar pareja. Sin su logo, sin la imagen de Paredes y sin dar a entender que hay una relación. |
 | Dom 6 | 🎬 Repost del clip con mejor retención de la semana, con otro texto en pantalla |
 
 **Desafío de la temporada (sin desarrollo):** "Los primeros 10 en terminar la historia de la pampa en muerte súbita entran al Salón de la Fama de la temporada 2". Se saca una captura del ranking el 31 de enero y se publica.

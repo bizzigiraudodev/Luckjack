@@ -26,6 +26,7 @@ Si el `director-marketing` no puede lanzar a los otros agentes, te deja la lista
 
 | Archivo | Para qué |
 |---|---|
+| [estudio-de-mercado.md](estudio-de-mercado.md) | **Qué funciona y qué no en el nicho**, competencia, oportunidades y el plan por etapas (con fuentes) |
 | [brief.md](brief.md) | **Lo primero que lee todo el equipo:** producto, público, tono, pilares y reglas que no se rompen |
 | [timeline.md](timeline.md) | Eventos de marketing de diciembre 2026 a noviembre 2027 (las primeras seis semanas, día por día) |
 | [guiones/](guiones/) | 7 guiones listos y el banco de clips para grabarlos |

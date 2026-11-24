@@ -11,6 +11,10 @@ Todo el equipo de marketing (`.claude/agents/`) lee este archivo antes de produc
 - **Plataformas:** cualquier navegador (celu, tablet, compu). No está en Play Store ni App Store (ver la timeline).
 - **Desarrollo:** un desarrollador independiente argentino.
 
+## Posicionamiento
+
+Ver [estudio-de-mercado.md](estudio-de-mercado.md). En las tiendas ya hay apps de truco con millones de descargas y juego online (Truco Blyts, Gran Truco Argentino...). **No nos vendemos como "otra app de truco"**, sino como **"el truco con historia"**: te jugás la vida contra leyendas, una IA que te estudia, roguelike de cartas, y se juega desde un link sin instalar ni ver publicidad.
+
 ## Qué lo hace distinto (los ganchos)
 
 En orden de fuerza para redes:
