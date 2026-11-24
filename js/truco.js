@@ -16,7 +16,13 @@
 
   // Jerarquía del truco: 14 = ancho de espadas ... 1 = los cuatros.
   const BASE_RANK = { 3: 10, 2: 9, 1: 8, 12: 7, 11: 6, 10: 5, 7: 4, 6: 3, 5: 2, 4: 1 };
+  // Modo "5 de copas" (evento): en 2026 circuló la propuesta de que el 5 de copas sea la carta más
+  // alta, y la Asociación Argentina de Truco la llevó a debate. Con el modo activo le gana a todo.
+  // Solo lo activa el truco clásico contra el Viejo (las salas online y el resto de los modos, nunca).
+  let fiveOfCups = false;
+  function setFiveOfCups(on) { fiveOfCups = !!on; }
   function rank(c) {
+    if (fiveOfCups && c.n === 5 && c.s === 'copa') return 15;
     if (c.n === 1 && c.s === 'espada') return 14;
     if (c.n === 1 && c.s === 'basto') return 13;
     if (c.n === 7 && c.s === 'espada') return 12;
@@ -375,6 +381,7 @@
   const Truco = {
     SUITS, NUMBERS, TRUCO_NAMES, ENVIDO_NAMES, PHRASES, faltaFor,
     buildDeck, rank, envidoOf, handWinner, TrucoHand, TrucoMatch,
+    setFiveOfCups, get fiveOfCups() { return fiveOfCups; },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Truco;
   else root.Truco = Truco;

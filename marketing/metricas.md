@@ -4,7 +4,8 @@ Las mantiene el agente `analista-growth`.
 
 ## Estado actual (24 de noviembre de 2026)
 
-- **Web Analytics de Vercel:** **desactivado** en el proyecto `luckjack`. Hoy no hay datos de visitas, países, dispositivos ni de dónde llega la gente.
+- **Web Analytics de Vercel:** el script ya está en el juego, pero **falta activarlo en el panel** (proyecto `luckjack`). Hasta entonces no hay datos de visitas, países, dispositivos ni de dónde llega la gente.
+- **Contadores propios:** `GET https://costumbres-arg.vercel.app/api/stats?weeks=8` devuelve las **salas online creadas** (de 2 y de 4) y las **cuentas nuevas**, por semana y en total. Empezaron a contar el 24 de noviembre de 2026.
 - **Datos propios que sí hay** (en la base Upstash, vía las APIs del juego):
   - **Rankings de la temporada 2** (`lb2:*`): cuánta gente terminó una historia o mandó tiempo jugado (el ranking `playtime` muestra hasta 200).
   - **Cuentas creadas** (`acct:*`).
@@ -12,11 +13,7 @@ Las mantiene el agente `analista-growth`.
 ## Paso 1: activar la medición (fase 0 de la timeline)
 
 1. En Vercel: proyecto **luckjack** → pestaña **Analytics** → **Enable**. El plan gratis alcanza para empezar.
-2. 🎮 Agregar el script en `index.html` (y sumar la versión del caché en `sw.js`):
-   ```html
-   <script defer src="/_vercel/insights/script.js"></script>
-   ```
-   Es sin cookies. Hacerlo **después** de activarlo en el panel, porque antes esa ruta da 404.
+2. ✅ El script ya está en `index.html` (`/_vercel/insights/script.js`, sin cookies). Hasta que se activa da 404, sin consecuencias.
 3. Comprobar en el panel que aparecen visitas.
 
 **Ojo:** según el plan de Vercel, algunas cosas (eventos personalizados, desglose por UTM) pueden no estar en el gratis. Revisar en el panel qué hay disponible. Si falta algo, la alternativa es contar eventos con un endpoint propio en `api/` (🎮 *requiere desarrollo*).
@@ -47,10 +44,11 @@ Los parámetros UTM no rompen nada del juego: el único parámetro que el juego 
 | **Visitas por red** | Web Analytics (UTM o referrer) | Saber qué red trae gente |
 | **Visitas por video** | `utm_content` | Saber qué guion funciona |
 | **Retención de los videos** (% que lo mira entero) y **guardados/compartidos** | El panel de cada red | El gancho funciona si más del 50% pasa los 3 segundos |
-| **Cuentas creadas por semana** | Base: cantidad de claves `acct:*` | El jugador que se queda |
+| **Cuentas creadas por semana** | `/api/stats` (`accounts`) | El jugador que se queda |
 | **Jugadores con tiempo jugado** | Ranking `playtime` | Gente activa (aproximado) |
 | **Historias terminadas** | Rankings `trucoStory` y `story` | Profundidad del juego |
-| **Salas online creadas** | 🎮 Hoy no se cuentan (las salas vencen solas); hace falta un contador | Mide el pilar "con amigos" |
+| **Salas online creadas** | `/api/stats` (`rooms2` y `rooms4`) | Mide el pilar "con amigos" y la viralidad |
+| **Llegadas por resultados compartidos** | Web Analytics con `utm_source=share` | Mide el botón 📤 Compartir |
 
 ## Informe mensual
 

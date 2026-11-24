@@ -373,7 +373,9 @@
     $('gameover-title').textContent = won ? '🏆 ¡Ganaste la partida!' : '💀 Perdiste la partida';
     $('gameover-reason').textContent = `Vos ${match.scores[0]} – ${match.scores[1]} ${RIVAL.Name}` +
       (won ? `. "Me ganaste bien, ${playerName}."` : '. "Otra vez será, m\'hijo."');
-    $('gameover-stats').innerHTML = `Partidas ganadas: <b>${rec.wins}</b> · Perdidas: <b>${rec.losses}</b>`;
+    $('gameover-stats').innerHTML = `Partidas ganadas: <b>${rec.wins}</b> · Perdidas: <b>${rec.losses}</b>` +
+      (difficulty === 'dificil' || Truco.fiveOfCups
+        ? `<br>${[difficulty === 'dificil' ? '😈 Difícil' : '', Truco.fiveOfCups ? '🏆 Modo 5 de copas' : ''].filter(Boolean).join(' · ')}` : '');
     $('gameover-ranks').hidden = true;
     $('btn-gameover-ranks').hidden = true;
     $('gameover').hidden = false;
@@ -446,6 +448,7 @@
     const t = token;
     RIVAL = RIVALS.gaucho;
     difficulty = ctx.difficulty === 'dificil' ? 'dificil' : 'facil';
+    Truco.setFiveOfCups(!!ctx.fiveOfCups); // evento: el 5 de copas es la carta más alta
     // En difícil el Viejo piensa con probabilidades y te va estudiando a lo largo de la partida.
     classicPersona = difficulty === 'dificil' && window.TrucoBrain
       ? { ...RIVAL.persona, smart: true, read: TrucoBrain.newProfile() } : null;
@@ -456,7 +459,9 @@
     Table.setDealer(RIVAL.id);
     if (window.setBackgroundTheme) window.setBackgroundTheme(RIVAL.id);
     document.querySelector('.print-big textPath').textContent = `TRUCO · A ${TARGET} PUNTOS`;
-    document.querySelector('.print-small textPath').textContent = 'SIN FLOR · EL ENVIDO ESTÁ PRIMERO';
+    document.querySelector('.print-small textPath').textContent = Truco.fiveOfCups
+      ? 'MODO 5 DE COPAS · LE GANA A TODO' : 'SIN FLOR · EL ENVIDO ESTÁ PRIMERO';
+    if (Truco.fiveOfCups) log('🏆 Modo 5 de copas: el 5 de copas le gana a todo, hasta al ancho de espada.');
     Sound.music('gaucho');
     renderHud();
     loop(t);
@@ -464,6 +469,7 @@
 
   function stop() {
     token++;
+    Truco.setFiveOfCups(false); // el modo 5 de copas es solo para el truco clásico
     run = null;
     handRunning = false;
     if (waiter) {
@@ -487,6 +493,7 @@
     get active() { return document.body.dataset.game === 'truco'; },
     get mode() { return currentMode; },
     get difficulty() { return difficulty; },
+    get fiveOfCups() { return Truco.fiveOfCups; },
     get playing() { return !!match && !match.over; },
     get handRunning() { return handRunning; },
     prepareRun,

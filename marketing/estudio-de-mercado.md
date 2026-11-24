@@ -85,6 +85,8 @@ Las dos entran en conflicto con tu "sin publicidad". **itch.io** no exige anunci
 
 ## 4. Problemas del producto que frenan el marketing (resolver antes de empujar)
 
+> **Estado al 24 de noviembre de 2026:** el 1, el 2, el 4 y el 5 están **hechos**. Del 3, el script ya está en el juego y **falta el toggle en el panel de Vercel**. También se agregó `GET /api/stats` para contar salas online y cuentas.
+
 **Lectura** sobre el código actual: son cambios chicos con mucho impacto. Todos son 🎮.
 
 1. **🔴 "Jugar con un amigo" está bloqueado hasta pasarse la historia.** Quien llega por un video de "mandale el link a tu amigo" **no puede crear la sala**; solo puede entrar a una que le mandan. Es el pilar más viral y está trabado. **Recomendación:** desbloquear "Jugar con un amigo" (y el de a 4 online) desde el principio. La historia puede seguir desbloqueando el infinito y el de a 4 contra bots.

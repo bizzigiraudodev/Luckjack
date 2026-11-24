@@ -13,6 +13,7 @@ const Truco = require('../js/truco.js');
 const TrucoAI = require('../js/truco-ai.js');
 const Senas = require('../js/senas.js');
 const { config, redis, cleanName } = require('./_redis.js');
+const { bump } = require('./_stats.js');
 
 const { TrucoMatch, TrucoHand, rank, envidoOf, PHRASES } = Truco;
 const TTL = 2 * 3600;
@@ -364,7 +365,10 @@ async function create(cfg, body) {
       rematch: Array(size).fill(false), left: null, senas: [], senaSeq: 0,
     };
     const ok = await redis(cfg, ['SET', key(code), JSON.stringify(room), 'EX', TTL, 'NX']);
-    if (ok === 'OK') return { code, token, seat: 0, view: view(room, 0) };
+    if (ok === 'OK') {
+      await bump(cfg, size === 4 ? 'rooms4' : 'rooms2'); // para medir cuánta gente juega con amigos
+      return { code, token, seat: 0, view: view(room, 0) };
+    }
   }
   throw new HttpError(503, 'No se pudo crear la sala, probá de nuevo');
 }

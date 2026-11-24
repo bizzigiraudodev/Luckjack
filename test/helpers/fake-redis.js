@@ -24,6 +24,7 @@ module.exports = function fakeRedis() {
         result = 1;
         break;
       }
+      case 'MGET': result = args.map((k) => (kv.has(k) ? kv.get(k) : null)); break;
       case 'DEL': result = kv.delete(args[0]) ? 1 : 0; break;
       case 'INCR': kv.set(args[0], String(Number(kv.get(args[0]) || 0) + 1)); result = Number(kv.get(args[0])); break;
       case 'EXPIRE': result = kv.has(args[0]) ? 1 : 0; break;

@@ -16,16 +16,16 @@ La mantiene el agente `director-marketing`. Las primeras seis semanas están det
 
 Sin esto no se puede medir ni publicar bien. Responsable entre paréntesis.
 
-- [ ] **Activar Web Analytics en Vercel** (proyecto `luckjack`) y agregar el script de analíticas al juego (`analista-growth` + dev). Hoy no está activado: no sabemos cuánta gente entra ni de dónde.
+- [ ] **Activar Web Analytics en Vercel** (proyecto `luckjack` → Analytics → Enable). Solo falta el toggle del panel: el script ya está en el juego desde el 24 de noviembre.
 - [ ] **Crear las cuentas** `@costumbresarg` (o el usuario libre más parecido) en TikTok, Instagram, YouTube y X. Misma foto (el ícono del mate) y misma bio en todas (`community-manager`):
   > 🗡️ Truco argentino gratis, sin descargar · Leyendas del campo · IA que no se come tus mentiras · Jugá con amigos por link 👇
 - [ ] **Link en la bio con UTM** por red (ver `metricas.md`).
 - [ ] **Banco de clips:** grabar 30 clips de 5–15 segundos del juego, verticales, para tener material para seis semanas (`productor-visual`, ver `guiones/banco-de-clips.md`).
 - [ ] **Página en itch.io** (gratis, "HTML5 game" con link al juego o el juego embebido): es una vidriera para el público indie (`prensa-y-alianzas` + dev).
-- [ ] **Corregir el título del README**, que todavía dice "Luckjack" (dev).
-- [ ] 🎮 **Desbloquear "Jugar con un amigo" (y el de a 4 online) desde el principio** (dev). Hoy se puede crear una sala recién después de pasarse la historia: quien llega por un video de "mandale el link a tu amigo" no puede crearla. Ver `estudio-de-mercado.md`, sección 4.
-- [ ] 🎮 **Placa para compartir el resultado** al terminar una historia o una partida, con el link (dev).
-- [ ] 🎮 *Opcional:* **modo "5 de copas"** (la carta más alta) como evento temporal, para engancharse al debate del momento (dev).
+- [x] **Corregir el título del README** (hecho).
+- [x] **Desbloquear "Jugar con un amigo" (y el de a 4 online) desde el principio** (hecho). Hoy se puede crear una sala recién después de pasarse la historia: quien llega por un video de "mandale el link a tu amigo" no puede crearla. Ver `estudio-de-mercado.md`, sección 4.
+- [x] **Placa para compartir el resultado** con el botón 📤 Compartir (hecho).
+- [x] **Modo "5 de copas"** en el truco clásico (hecho). Es material para un video: *"Jugamos con la regla del 5 de copas: ¿te animás?"*.
 
 ---
 

@@ -466,7 +466,7 @@
         purgatorio: '🌫️ Te quedaste en el purgatorio', infierno: '🔥 Te fuiste al infierno', casi: '🚪 Tan cerca del Edén',
       }[game.ending] || '💀 Fin de la partida';
       $('gameover-reason').textContent = !won ? game.gameOverReason
-        : 'Les ganaste al Viejo, al Diablo y a San Pedro. 🔓 Desbloqueaste el truco infinito, el de a 4 y jugar con un amigo.';
+        : 'Les ganaste al Viejo, al Diablo y a San Pedro. 🔓 Desbloqueaste el truco infinito y el de a 4.';
       $('gameover-stats').innerHTML = `Ciclos superados: <b>${game.maxCleared}/3</b> · Manos jugadas: <b>${game.handsPlayed}</b>` +
         '<br>🔥 Historia del purgatorio (no da Mazo Dorado ni cuenta para rankings)';
       $('btn-gameover-ranks').hidden = true;
@@ -484,7 +484,7 @@
         : 'El Gauchito Gil te dio su bendición. Jugaste con 3 mazos: no hay Mazo Dorado ni rankings (probá con muerte súbita). La historia sigue en el purgatorio.';
       $('gameover-stats').innerHTML = `Noches superadas: <b>${game.maxCleared}/${game.storyBosses.length}</b> · Manos jugadas: <b>${game.handsPlayed}</b>` +
         (won ? ` · Tiempo: <b>${Leaderboard.formatTime(game.playMs)}</b>` : '') +
-        `<br>${game.suddenDeath ? '💀 Muerte súbita' : '🃏 Con 3 mazos (no cuenta para rankings)'}`;
+        `<br>${game.suddenDeath ? '💀 Muerte súbita' : '🃏 Con 3 mazos (no cuenta para rankings)'}${game.hard ? ' · 😈 Difícil' : ''}`;
       $('btn-gameover-ranks').hidden = !counts;
       $('btn-sequel').hidden = !won;
       return;
@@ -777,7 +777,7 @@
     ['#modes-truco [data-truco="purgatorio"]', 'pampa', 'La secuela: pasate primero la historia de la pampa'],
     ['#modes-truco [data-truco="infinite"]', 'truco', 'Pasate la historia del truco para desbloquearlo'],
     ['#btn-truco4', 'truco', 'Pasate la historia del truco para desbloquearlo'],
-    ['#btn-online', 'truco', 'Pasate la historia del truco para desbloquearlo'],
+    // "Jugar con un amigo" está abierto desde el principio: es la forma de invitar a otros a jugar.
   ];
   function renderLocks() {
     for (const [sel, gameId, msg] of LOCKS) {
@@ -846,6 +846,7 @@
             <button data-diff="facil" role="radio">🙂 Fácil<small>${classic ? 'El Viejo de siempre.' : 'Los rivales de siempre.'}</small></button>
             <button data-diff="dificil" role="radio">😈 Difícil<small>${classic ? 'Calcula probabilidades, te estudia y no te cree si mentís.' : 'Rivales que calculan probabilidades, te estudian y no te creen si mentís. Cuotas más altas.'}</small></button>
           </div>
+          ${classic ? '<button class="five-cups" data-five="1" role="switch" aria-checked="false">🏆 Modo 5 de copas<small>Evento: el 5 de copas le gana a todo (hasta al ancho de espada).</small></button>' : ''}
           ${lives}
           <button data-lives="">Volver</button>
         </div>`;
@@ -859,18 +860,27 @@
       box.querySelectorAll('[data-diff]').forEach((b) => {
         b.onclick = () => { diff = b.dataset.diff; store.set(KEYS.trucoDifficulty, diff); paint(); };
       });
+      let fiveOfCups = false;
+      const five = box.querySelector('[data-five]');
+      if (five) {
+        five.onclick = () => {
+          fiveOfCups = !fiveOfCups;
+          five.classList.toggle('active', fiveOfCups);
+          five.setAttribute('aria-checked', fiveOfCups);
+        };
+      }
       box.querySelectorAll('[data-lives]').forEach((b) => {
-        b.onclick = () => { box.hidden = true; resolve(b.dataset.lives ? { lives: b.dataset.lives, difficulty: diff } : null); };
+        b.onclick = () => { box.hidden = true; resolve(b.dataset.lives ? { lives: b.dataset.lives, difficulty: diff, fiveOfCups } : null); };
       });
     });
   }
 
-  function startTruco(mode, lives, story, difficulty) {
+  function startTruco(mode, lives, story, difficulty, fiveOfCups = false) {
     $('menu').hidden = true;
     document.body.classList.remove('in-menu');
     if (mode === 'classic') {
       game = null; // el blackjack queda en pausa
-      TrucoUI.start(mode, { vars, difficulty });
+      TrucoUI.start(mode, { vars, difficulty, fiveOfCups });
       return;
     }
     // Truco infinito e historia: la misma progresión que el blackjack, con su propia partida.
@@ -900,7 +910,7 @@
       const kind = btn.dataset.truco;
       if (kind === 'classic') {
         const pick = await chooseStoryOpts('classic');
-        if (pick) startTruco('classic', null, null, pick.difficulty);
+        if (pick) startTruco('classic', null, null, pick.difficulty, pick.fiveOfCups);
         return;
       }
       if (kind !== 'story' && kind !== 'purgatorio') return startTruco(kind);
@@ -959,6 +969,38 @@
     ? (game.mode === 'story' ? 'trucoStory' : 'trucoCycles')
     : (game.mode === 'story' ? 'story' : 'cycles')));
   $('btn-close-ranks').addEventListener('click', () => { $('leaderboard').hidden = true; });
+
+  // --- Compartir el resultado: la placa sale de lo que muestra la ventana de fin de partida,
+  // contado en primera persona ("Te llevó el Pombero" → "Me llevó el Pombero"). Sirve para todos los modos.
+  const FIRST_PERSON = [
+    [/¡Ganaste/g, '¡Gané'], [/Ganaste/g, 'Gané'], [/Perdiste/g, 'Perdí'], [/¡Ganaron/g, '¡Ganamos'], [/Perdieron/g, 'Perdimos'],
+    [/Te fundiste/g, 'Me fundí'], [/Te llevó/g, 'Me llevó'], [/Te alcanzó/g, 'Me alcanzó'], [/Te devoró/g, 'Me devoró'],
+    [/Te llegó/g, 'Me llegó'], [/Te quedaste/g, 'Me quedé'], [/Te fuiste/g, 'Me fui'], [/Entraste/g, 'Entré'],
+    [/Sobreviviste/g, 'Sobreviví'], [/Le ganaste/g, 'Le gané'], [/ te ganó/g, ' me ganó'],
+  ];
+  const firstPerson = (t) => FIRST_PERSON.reduce((s, [re, to]) => s.replace(re, to), t);
+  function gameOverResult() {
+    const title = firstPerson($('gameover-title').textContent.trim());
+    const lines = [];
+    const reason = $('gameover-reason').textContent;
+    const score = reason.match(/^[^.]*\d+\s*[–-]\s*\d+[^.]*/); // "Vos 15 – 9 El Viejo"
+    if (score) lines.push(score[0].replace(/^Vos /, 'Yo '));
+    const stats = $('gameover-stats').innerHTML.split(/<br\s*\/?>|·/).map((p) => p.replace(/<[^>]+>/g, '').trim());
+    for (const p of stats) {
+      if (p && p.length <= 60 && !/no cuenta para rankings|^Récord|Perdidas|Partidas ganadas/.test(p)) lines.push(p);
+    }
+    const won = /Gané|Ganamos|Sobreviví|Entré|nuevo récord/i.test(title + lines.join(' '));
+    return { title, lines: lines.slice(0, 4), challenge: won ? '¿Te animás?' : '¿Llegás más lejos?' };
+  }
+  $('btn-share').addEventListener('click', async () => {
+    const btn = $('btn-share');
+    const res = await Share.share(gameOverResult());
+    if (res === 'copied' || res === 'failed') {
+      btn.textContent = res === 'copied' ? '✔ Copiado: pegalo donde quieras' : '❌ No se pudo compartir';
+      setTimeout(() => { btn.textContent = '📤 Compartir'; }, 2500);
+    }
+    Sound.sfx('coin');
+  });
   document.querySelectorAll('#lb-tabs .tab').forEach((t) => t.addEventListener('click', () => showRanks(t.dataset.board)));
   $('lb-name-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1126,7 +1168,7 @@
     if (Truco4UI.active) Truco4UI.start();
     else if (TrucoOnline.active) TrucoOnline.rematch();
     else if (game && game.isTruco) startTruco(game.mode, game.lives, game.story, game.difficulty);
-    else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars, difficulty: TrucoUI.difficulty });
+    else if (TrucoUI.active) TrucoUI.start(TrucoUI.mode, { vars, difficulty: TrucoUI.difficulty, fiveOfCups: TrucoUI.fiveOfCups });
     else startGame(game.mode);
   });
   $('btn-help').addEventListener('click', () => { $('help').hidden = false; });

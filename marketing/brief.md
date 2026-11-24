@@ -36,6 +36,8 @@ En orden de fuerza para redes:
 5. **Rankings online y speedrun.** Historia más rápida, más ciclos, tiempo jugado y modo speedrun. **Temporada 2:** los rankings arrancaron de cero en noviembre de 2026. Hay cuentas con usuario y contraseña, sin mail.
 6. **Estética.** Pixel art con mazo español, el mate del Viejo en la mesa, mesa de patio de madera en la pampa, humor gauchesco y voseo.
 7. **Además, blackjack roguelike** con su propia historia (el segundo juego de la app).
+8. **Compartí tu resultado:** al terminar una partida, el botón 📤 Compartir arma una placa ("🌿 Me llevó el Pombero · ¿Llegás más lejos?") con el link. Sirve para pedirle a la comunidad que comparta.
+9. **Modo 5 de copas** (evento, en el truco clásico): el 5 de copas le gana a todo. Viene del debate que circuló en 2026.
 
 ## Público
 

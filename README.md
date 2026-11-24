@@ -1,4 +1,6 @@
-# 🍀 Luckjack
+# 🧉 Costumbres Argentinas
+
+> Antes se llamaba *Luckjack* (por eso las claves de `localStorage` empiezan con `luckjack.`).
 
 **Jugar online:** https://costumbres-arg.vercel.app
 
@@ -75,7 +77,7 @@ Pestaña **🗡️ Truco → 👥 Jugar con un amigo**:
 
 ### Modos bloqueados
 
-Al principio solo están el **clásico** y la **historia** de cada juego. Pasarte la historia del blackjack desbloquea el roguelike infinito; pasarte la historia del truco (con muerte súbita o con 3 mazos) desbloquea su secuela (la historia del purgatorio), el truco infinito, el truco de a 4 y jugar con un amigo. Si un amigo te manda el link de una sala, podés entrar igual.
+Al principio solo están el **clásico** y la **historia** de cada juego. Pasarte la historia del blackjack desbloquea el roguelike infinito; pasarte la historia del truco (con muerte súbita o con 3 mazos) desbloquea su secuela (la historia del purgatorio), el truco infinito y el truco de a 4 contra bots. **Jugar con un amigo** (mano a mano o de a 4 online) está abierto desde el principio: es la forma de invitar a otros a jugar.
 
 ### Truco modo historia: cinco noches en la pampa
 
@@ -161,6 +163,25 @@ En el menú, **⚡ Speedrun: sí** saca todas las animaciones, las esperas y las
 Las marcas se mandan solas al terminar (o al abandonar una partida de infinito). Cada jugador tiene una sola fila por ranking: su mejor marca. El nombre es el que escribiste en la intro y se puede cambiar desde la pantalla de rankings (con cuenta, es tu usuario).
 
 **Temporada 2:** al cambiar el dominio del juego, cada navegador perdió su id de jugador (vive en el almacenamiento del navegador, que es por dominio) y nadie podía mejorar sus marcas viejas. Los rankings arrancaron de cero en claves nuevas (`lb2:*`). Las de la temporada 1 (`lb:*`) siguen en la base sin usarse: para volver atrás alcanza con cambiar `SEASON_PREFIX` en `api/leaderboard.js`, y para liberar espacio se pueden borrar desde la consola de Upstash.
+
+### Compartir el resultado
+
+Al terminar cualquier partida (historias, infinito, truco clásico, online o de a 4), el botón **📤 Compartir** arma una placa con el resultado contado en primera persona ("🌿 Me llevó el Pombero · Noches superadas: 2/5 · 😈 Difícil"), el desafío ("¿Llegás más lejos?") y el link al juego.
+- **En el celu** abre el menú de compartir del sistema, con la imagen (1080×1350) y el texto.
+- **Si el navegador no puede compartir,** copia el texto.
+- **El link lleva UTM** (`utm_source=share`), así se puede medir cuánta gente llega por resultados compartidos.
+- **Código:** `js/share.js` (la placa se dibuja en un canvas con el ícono y la fuente del juego).
+
+### Modo 5 de copas (evento)
+
+En el **truco clásico**, la ventana de inicio tiene el interruptor **🏆 Modo 5 de copas**: el 5 de copas pasa a ser la carta más alta y le gana hasta al ancho de espada. Viene de la propuesta que circuló en 2026 y que la Asociación Argentina de Truco llevó a debate.
+- **El envido no cambia:** el 5 de copas sigue valiendo 5.
+- **La IA (fácil y difícil) lo sabe,** porque cambia la jerarquía del motor (`Truco.setFiveOfCups`).
+- **Se apaga solo al salir del clásico,** así nunca afecta las historias, el infinito ni las salas online.
+
+### Estadísticas para el marketing
+
+`GET /api/stats?weeks=8` devuelve, por semana (desde el lunes, UTC) y en total, cuántas **salas online** se crearon (de 2 y de 4) y cuántas **cuentas** nuevas hubo. Solo totales, nada personal. Los contadores empezaron el 24 de noviembre de 2026 (`api/_stats.js`).
 
 ### Cuentas (opcionales)
 

@@ -16,6 +16,9 @@
   <meta name="apple-mobile-web-app-title" content="Costumbres Argentinas">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/style.css">
+  <!-- Vercel Web Analytics (sin cookies): empieza a contar cuando se activa en el panel del proyecto.
+       Mientras esté apagado, este archivo da 404 y no pasa nada más. -->
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
   <canvas id="bg" aria-hidden="true"></canvas>
@@ -326,6 +329,7 @@
       <div class="ranks-result" id="gameover-ranks" hidden></div>
       <div class="modal-actions">
         <button class="btn-purple" id="btn-sequel" hidden>🔥 Seguir al purgatorio</button>
+        <button class="btn-green" id="btn-share">📤 Compartir</button>
         <button class="btn-orange" id="btn-gameover-ranks">🏆 Rankings</button>
         <button class="btn-red" id="btn-to-menu">Menú</button>
         <button class="primary" id="btn-restart">Jugar de nuevo</button>
@@ -352,7 +356,7 @@
         <li><b>Truco de a 4:</b> vos y el Viejo contra el Diablo y San Pedro. Gana la baza la carta más alta (empate entre compañeros: es de la pareja; entre rivales: parda), el envido es el mejor tanto de cada pareja . Con 🤫 (un toque, en cualquier momento) tu compañero ve todas tus cartas bravas y si tenés envido; los rivales nunca las ven. Con 💬 le das órdenes (cantá el vino, doble, real, falta, 2da, el re, el vale cuatro, jugá callado) o cargás a los rivales. Las caras: cejas = ancho de espadas, guiño = ancho de bastos, boca a la derecha = 7 de espadas, boca a la izquierda = 7 de oro, morder el labio = un tres, trompita = un dos, fruncir el ceño = envido, cerrar los ojos = nada.</li>
         <li><b>Jugar con un amigo:</b> creá una sala (a 15 o a 30), mandale el link por WhatsApp y juegan mano a mano, cada uno desde su celular. Podés cargarlo con frases rápidas 💬 y pedir revancha. Si se corta, abrí el link de nuevo y volvés a la sala.</li>
         <li><b>🔥 Historia del purgatorio:</b> la secuela de la pampa, contra el Viejo, el Diablo (las pardas son suyas) y San Pedro (no se miente), con 3 mazos. Se desbloquea al ganar la pampa; si la ganaste con muerte súbita, arrancás con el ✨ Mazo Dorado. No cuenta para los rankings.</li>
-        <li><b>🔒 Modos bloqueados:</b> al principio solo están el clásico y la historia. Pasate la historia del blackjack para desbloquear el infinito, y la del truco para el truco infinito, el de a 4 y jugar con un amigo.</li>
+        <li><b>🔒 Modos bloqueados:</b> al principio solo están el clásico y la historia. Pasate la historia del blackjack para desbloquear el infinito, y la del truco para el truco infinito y el de a 4 contra bots. Jugar con un amigo está abierto desde el principio.</li>
         <li><b>⌛ Tiempo jugado:</b> en Rankings aparece el tiempo total que jugó cada uno, en todos los modos.</li>
         <li><b>⚡ Modo speedrun:</b> desde el menú sacás todas las animaciones y cutscenes. Los tiempos de la historia jugada así van a rankings aparte. Las marcas que parecen de un bot no se guardan.</li>
         <li><b>De a 4 online:</b> al crear la sala elegí "De a 4", compartí el link y armá las parejas tocando dos asientos. Con "Empezar" los lugares vacíos los llenan bots. Tus señas y tus órdenes solo las ve tu compañero, y si es un bot te obedece.</li>
@@ -411,6 +415,7 @@
   <script src="js/table.js"></script>
   <script src="js/cutscene.js"></script>
   <script src="js/story.js"></script>
+  <script src="js/share.js"></script>
   <script src="js/progress.js"></script>
   <script src="js/account.js"></script>
   <script src="js/leaderboard.js"></script>

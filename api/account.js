@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const { config, redis } = require('./_redis.js');
 const A = require('./_accounts.js');
 const Progress = require('../js/progress.js');
+const { bump } = require('./_stats.js');
 
 const RATE_LIMIT = 30; // pedidos por minuto por IP
 const MAX_FAILS = 10; // contraseñas mal seguidas por usuario antes de frenarlo 15 minutos
@@ -37,6 +38,7 @@ async function register(cfg, body) {
   // NX: solo se crea si nadie tiene ese usuario (sin importar mayúsculas).
   const ok = await redis(cfg, ['SET', A.accountKey(username), JSON.stringify(acct), 'NX']);
   if (!ok) return [409, { error: 'Ese usuario ya existe. Si es tuyo, entrá con tu contraseña.' }];
+  await bump(cfg, 'accounts');
   return [200, publicAccount(acct, await A.newSession(cfg, username))];
 }
 

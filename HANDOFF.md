@@ -90,7 +90,8 @@ tools/                # herramientas fuera del juego (ver sección 8)
 - **Siempre disponibles:** el clásico y la historia de cada juego.
 - **Al ganar la historia del blackjack:** se desbloquea el blackjack infinito.
 - **Al ganar la historia de la pampa:** se desbloquea la historia del purgatorio (la secuela).
-- **Al ganar cualquier historia del truco:** se desbloquean el truco infinito, el truco de a 4 y jugar con un amigo. Los links de invitación a salas funcionan igual aunque no lo tengas desbloqueado.
+- **Al ganar cualquier historia del truco:** se desbloquean el truco infinito y el truco de a 4 contra bots.
+- **Jugar con un amigo** (online, mano a mano o de a 4) está abierto desde el principio (desde el 24 de noviembre de 2026; antes también se bloqueaba). Es el canal viral: quien llega por un video tiene que poder crear una sala.
 - **En pantallas bajas** (ancho ≥ 721 y alto ≤ 820), los modos se muestran en dos columnas para que el menú entre completo.
 
 ### Blackjack
@@ -367,6 +368,13 @@ Para probar con todo desbloqueado, setear en `true` estas claves: `seenIntro`, `
    - Guardar el perfil de la IA entre partidas.
 
 ## Marketing
+
+**Arreglos de producto para el marketing (24 de noviembre de 2026):**
+- **"Jugar con un amigo"** está abierto desde el principio.
+- **Botón 📤 Compartir** con la placa del resultado (`js/share.js`).
+- **Modo 5 de copas** en el truco clásico (`Truco.setFiveOfCups`).
+- **Contadores de salas y cuentas** en `GET /api/stats` (`api/_stats.js`).
+- **Script de Web Analytics** en `index.html`. **Falta activarlo en el panel de Vercel** (proyecto `luckjack` → Analytics → Enable): mientras tanto, el script da 404 sin consecuencias.
 
 Hay un equipo de marketing con agentes de Claude Code en `.claude/agents/`:
 - `director-marketing`
