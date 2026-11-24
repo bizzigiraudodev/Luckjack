@@ -27,6 +27,7 @@ Si el `director-marketing` no puede lanzar a los otros agentes, te deja la lista
 | Archivo | Para qué |
 |---|---|
 | [estudio-de-mercado.md](estudio-de-mercado.md) | **Qué funciona y qué no en el nicho**, competencia, oportunidades y el plan por etapas (con fuentes) |
+| [instagram/](instagram/README.md) | **La cuenta de Instagram:** cómo crearla, perfil, bio, destacadas, grilla de lanzamiento con captions y publicación por API. Las imágenes están en `instagram/img/` |
 | [brief.md](brief.md) | **Lo primero que lee todo el equipo:** producto, público, tono, pilares y reglas que no se rompen |
 | [timeline.md](timeline.md) | Eventos de marketing de diciembre 2026 a noviembre 2027 (las primeras seis semanas, día por día) |
 | [guiones/](guiones/) | 7 guiones listos y el banco de clips para grabarlos |

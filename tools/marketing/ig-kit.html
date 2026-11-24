@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Kit de Instagram</title>
+<!-- Genera las imágenes de la cuenta de Instagram con el arte real del juego: los fondos de las
+     cutscenes (js/cutscene.js), los sprites (js/pixel.js y js/sprites-pampa.js) y la fuente Tiny5.
+     Lo usa tools/marketing/ig-kit.js (Playwright), que guarda cada imagen en marketing/instagram/img/. -->
+<link rel="stylesheet" href="../../css/fonts.css">
+<style>body { margin: 0; background: #111; }</style>
+</head>
+<body>
+<!-- js/cutscene.js engancha eventos a estos elementos del juego al cargar: acá van ocultos. -->
+<div id="cutscene" hidden><button id="cs-skip"></button></div>
+<script src="../../js/sprites-pampa.js"></script>
+<script src="../../js/pixel.js"></script>
+<script src="../../js/cutscene.js"></script>
+<script>
+// --- Paleta del juego (css/style.css) ---
+const C = {
+  ink: '#ffffff', cream: '#f3eee3', gold: '#ffcd3c', red: '#fe5f55', green: '#3fbf7f', felt: '#2f8a5b',
+  night: '#120c1c', outline: '#1e1a24', purple: '#9b6bff', blue: '#0095ff', brass: '#c9a24a',
+};
+const font = (px) => `${px}px Tiny5, monospace`;
+
+function canvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  return [c, ctx];
+}
+
+// Fondo de una cutscene (192x108), escalado en pixel art para cubrir w x h (recorta los costados).
+function background(ctx, id, w, h, t = 1.2, dim = 0) {
+  const [bg, bctx] = canvas(192, 108);
+  Cutscene.BACKGROUNDS[id](bctx, t);
+  const scale = Math.ceil(Math.max(w / 192, h / 108));
+  const bw = 192 * scale;
+  const bh = 108 * scale;
+  ctx.drawImage(bg, (w - bw) / 2, (h - bh) / 2, bw, bh);
+  if (dim) {
+    ctx.fillStyle = `rgba(10, 6, 14, ${dim})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+  // Sombra arriba para que el título se lea sobre cualquier fondo.
+  const g = ctx.createLinearGradient(0, 0, 0, Math.min(460, h * 0.35));
+  g.addColorStop(0, 'rgba(10, 6, 14, 0.85)');
+  g.addColorStop(1, 'rgba(10, 6, 14, 0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, Math.min(460, h * 0.35));
+}
+
+// Un SVG del juego (personaje, mate o palo) dibujado nítido, de `size` px de alto, centrado en (x, y).
+function drawSvg(ctx, svgText, x, y, size) {
+  return new Promise((resolve) => {
+    const m = svgText.match(/viewBox="0 0 (\d+) (\d+)"/) || svgText.match(/width="(\d+)" height="(\d+)"/);
+    const vw = m ? Number(m[1]) : 32;
+    const vh = m ? Number(m[2]) : 34;
+    const h = size;
+    const w = Math.round((size * vw) / vh);
+    // En el juego, las caras alternativas (señas, sonrisa, tristeza, sudor) se ocultan por CSS: acá se sacan.
+    const clean = svgText.replace(/<g class="(sena [^"]*|mouth mouth-happy|mouth mouth-sad|sweat)">.*?<\/g>/g, '');
+    const fixed = clean.includes('xmlns=') ? clean : clean.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    const sized = fixed.replace(/<svg([^>]*?)>/, (all, attrs) => `<svg${attrs.replace(/\s(width|height|shape-rendering)="[^"]*"/g, '')} width="${w}" height="${h}" shape-rendering="crispEdges">`);
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, x - w / 2, y - h / 2, w, h); resolve(); };
+    img.onerror = () => resolve();
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(sized);
+  });
+}
+
+function wrap(ctx, text, max) {
+  const out = [];
+  let line = '';
+  for (const word of String(text).split(/\s+/)) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > max && line) { out.push(line); line = word; } else line = test;
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+// Texto con sombra dura (estilo pixel), centrado. Devuelve la y siguiente.
+function text(ctx, str, y, px, color, { max = 960, gap = 1.18, x = 540, shadow = C.outline } = {}) {
+  ctx.font = font(px);
+  ctx.textAlign = 'center';
+  for (const l of wrap(ctx, str, max)) {
+    ctx.fillStyle = shadow;
+    ctx.fillText(l, x + px / 12, y + px / 12);
+    ctx.fillStyle = color;
+    ctx.fillText(l, x, y);
+    y += px * gap;
+  }
+  return y;
+}
+
+// Franja de abajo con la marca, para que toda la grilla se reconozca.
+function brandBar(ctx, w, h, label = 'COSTUMBRES ARGENTINAS · TRUCO GRATIS') {
+  ctx.fillStyle = 'rgba(18, 12, 28, 0.88)';
+  ctx.fillRect(0, h - 96, w, 96);
+  ctx.fillStyle = C.brass;
+  ctx.fillRect(0, h - 100, w, 6);
+  text(ctx, label, h - 36, 34, C.gold, { shadow: 'transparent' });
+}
+
+// --- Piezas ---
+const RIVALS = [
+  { id: 'luzmala', bg: 'noche', noche: 1, name: 'LA LUZ MALA', rule: 'Te muestra una de sus cartas... pero te tira la suerte abajo.', quote: '"Juguemos un truquito... por tu vida."' },
+  { id: 'silbon', bg: 'lunallena', noche: 2, name: 'EL SILBÓN', rule: 'Cada 4 manos silba cerca: lo que perdés cuesta x1,5.', quote: '"Si lo escuchás lejos, está cerca."' },
+  { id: 'pombero', bg: 'monte', noche: 3, name: 'EL POMBERO', rule: 'Te esconde una carta en cada mano. Ni tu envido sabés.', quote: '"Ji, ji... ¿Buscabas algo?"' },
+  { id: 'familiar', bg: 'ingenio', noche: 4, name: 'EL FAMILIAR', rule: 'Cada 5 manos se come el 15% de tus fichas.', quote: '"Este año sos vos."' },
+  { id: 'gil', bg: 'santuario', noche: 5, name: 'EL GAUCHITO GIL', rule: 'El único que juega derecho: no miente y no te deja mentir.', quote: '"No vengo a asustarte."' },
+];
+
+async function rivalPost(r) {
+  const W = 1080, H = 1350;
+  const [c, ctx] = canvas(W, H);
+  background(ctx, r.bg, W, H, 1.6, 0.25);
+  text(ctx, `NOCHE ${r.noche} DE 5`, 120, 46, C.gold);
+  text(ctx, r.name, 210, 96, C.ink);
+  await drawSvg(ctx, Pixel.character(r.id), W / 2, 590, 560);
+  let y = text(ctx, r.rule, 990, 52, C.cream, { max: 900 });
+  text(ctx, r.quote, y + 24, 40, C.gold, { max: 900 });
+  brandBar(ctx, W, H);
+  return c;
+}
+
+async function introPost() {
+  const W = 1080, H = 1350;
+  const [c, ctx] = canvas(W, H);
+  background(ctx, 'noche', W, H, 0.4, 0.2);
+  text(ctx, '¿TE JUGÁS', 170, 110, C.ink);
+  text(ctx, 'LA VIDA', 290, 110, C.ink);
+  text(ctx, 'AL TRUCO?', 410, 110, C.red);
+  await drawSvg(ctx, Pixel.character('timbero'), W / 2, 760, 460);
+  text(ctx, 'Cinco noches. Cinco leyendas del campo.', 1090, 46, C.cream);
+  text(ctx, 'Gratis, sin descargar · link en la bio', 1170, 38, C.gold);
+  brandBar(ctx, W, H);
+  return c;
+}
+
+async function iaPost() {
+  const W = 1080, H = 1350;
+  const [c, ctx] = canvas(W, H);
+  background(ctx, 'purgatorio', W, H, 3.4, 0.35);
+  ctx.fillStyle = 'rgba(18, 12, 28, 0.82)'; // franja detrás del título (tapa las cartas que flotan en el fondo)
+  ctx.fillRect(0, 40, W, 340);
+  text(ctx, '😈 MODO DIFÍCIL', 130, 56, C.red);
+  text(ctx, 'LA IA QUE NO SE COME', 250, 74, C.ink);
+  text(ctx, 'TUS MENTIRAS', 340, 74, C.gold);
+  await drawSvg(ctx, Pixel.character('gaucho'), W / 2, 680, 470);
+  // "Pizarrón" con el índice de mentira (gráfico, no una pantalla del juego).
+  ctx.fillStyle = 'rgba(18, 12, 28, 0.85)';
+  ctx.fillRect(170, 940, 740, 210);
+  ctx.strokeStyle = C.brass;
+  ctx.lineWidth = 6;
+  ctx.strokeRect(170, 940, 740, 210);
+  text(ctx, 'Calcula probabilidades.', 1010, 42, C.cream, { shadow: 'transparent' });
+  text(ctx, 'Si mentís seguido, te deja de creer.', 1070, 38, C.gold, { shadow: 'transparent' });
+  text(ctx, 'Y nunca ve tus cartas.', 1124, 34, C.cream, { shadow: 'transparent' });
+  brandBar(ctx, W, H);
+  return c;
+}
+
+async function amigosPost() {
+  const W = 1080, H = 1350;
+  const [c, ctx] = canvas(W, H);
+  background(ctx, 'pampa', W, H, 2, 0.15);
+  text(ctx, '¿NO HAY MAZO?', 150, 92, C.ink);
+  text(ctx, 'MANDÁ EL LINK', 260, 92, C.gold);
+  await drawSvg(ctx, Pixel.character('timbero'), 330, 700, 400);
+  await drawSvg(ctx, Pixel.character('gaucho'), 750, 700, 400);
+  await drawSvg(ctx, Pixel.mate('gaucho'), W / 2, 820, 150);
+  text(ctx, 'Truco online mano a mano o de a 4,', 1040, 44, C.cream);
+  text(ctx, 'cada uno desde su celu.', 1100, 44, C.cream);
+  text(ctx, 'Con señas que solo ve tu compañero 🤫', 1175, 36, C.gold);
+  brandBar(ctx, W, H);
+  return c;
+}
+
+async function podioPost() {
+  const W = 1080, H = 1350;
+  const [c, ctx] = canvas(W, H);
+  background(ctx, 'eden', W, H, 1, 0.3);
+  text(ctx, 'TEMPORADA 2', 140, 60, C.gold);
+  text(ctx, 'EL PODIO ESTÁ', 260, 92, C.ink);
+  text(ctx, 'VACÍO 👀', 370, 92, C.red);
+  // Podio en pixel art, sin nadie arriba.
+  const steps = [[2, 380, 300, '#b9c8cb'], [1, 540, 380, C.gold], [3, 700, 240, '#c8743a']];
+  for (const [n, x, hgt, col] of steps) {
+    ctx.fillStyle = C.outline;
+    ctx.fillRect(x - 86, 1010 - hgt - 6, 172, hgt + 6);
+    ctx.fillStyle = col;
+    ctx.fillRect(x - 80, 1010 - hgt, 160, hgt);
+    text(ctx, `${n}`, 1010 - hgt + 80, 72, C.outline, { x, shadow: 'transparent' });
+  }
+  text(ctx, 'Pasá las cinco noches en muerte súbita', 1100, 42, C.cream);
+  text(ctx, 'y entrá al Salón de la Fama', 1160, 42, C.cream);
+  brandBar(ctx, W, H);
+  return c;
+}
+
+async function cincoCopasPost() {
+  const W = 1080, H = 1350;
+  const [c, ctx] = canvas(W, H);
+  background(ctx, 'infierno', W, H, 2, 0.3);
+  text(ctx, '🏆 MODO 5 DE COPAS', 150, 70, C.gold);
+  // Carta del 5 de copas en grande.
+  const cx = W / 2, cy = 640, cw = 420, ch = 600;
+  ctx.fillStyle = C.outline;
+  ctx.fillRect(cx - cw / 2 - 10, cy - ch / 2 - 10, cw + 20, ch + 20);
+  ctx.fillStyle = C.cream;
+  ctx.fillRect(cx - cw / 2, cy - ch / 2, cw, ch);
+  ctx.fillStyle = Pixel.SPANISH_COLORS.copa;
+  ctx.font = font(110);
+  ctx.textAlign = 'left';
+  ctx.fillText('5', cx - cw / 2 + 30, cy - ch / 2 + 120);
+  await drawSvg(ctx, Pixel.spanishSuit('copa'), cx, cy + 20, 300);
+  text(ctx, 'Le gana a todo.', 1060, 64, C.ink);
+  text(ctx, 'Hasta al ancho de espada.', 1140, 48, C.cream);
+  brandBar(ctx, W, H);
+  return c;
+}
+
+async function matePost() {
+  const W = 1080, H = 1350;
+  const [c, ctx] = canvas(W, H);
+  background(ctx, 'pampa', W, H, 0.8, 0.1);
+  text(ctx, 'FELIZ DÍA', 170, 104, C.ink);
+  text(ctx, 'DEL MATE 🧉', 290, 104, C.gold);
+  await drawSvg(ctx, Pixel.mate('gaucho'), W / 2, 700, 520);
+  text(ctx, 'El Viejo Timbero no reparte sin el suyo.', 1100, 44, C.cream);
+  text(ctx, '¿Un truquito? Link en la bio', 1170, 40, C.gold);
+  brandBar(ctx, W, H);
+  return c;
+}
+
+// Foto de perfil: el ícono del juego sobre el paño, con margen para el recorte circular.
+async function profile() {
+  const S = 1080;
+  const [c, ctx] = canvas(S, S);
+  // El ícono "maskable" tiene el dibujo en el centro, con margen: el recorte circular no lo corta.
+  const img = await new Promise((resolve) => { const i = new Image(); i.onload = () => resolve(i); i.src = '../../icons/icon-maskable-512.png'; });
+  ctx.drawImage(img, 0, 0, S, S);
+  return c;
+}
+
+// Portadas de destacadas (1080x1920): un ícono grande centrado (lo que se ve en el círculo) y el nombre.
+const HIGHLIGHTS = [
+  { file: 'destacada-jugar', label: 'JUGAR', color: C.green, art: () => Pixel.spanishSuit('espada'), size: 520 },
+  { file: 'destacada-leyendas', label: 'LEYENDAS', color: '#5b8a3c', art: () => Pixel.character('pombero'), size: 640 },
+  { file: 'destacada-dificil', label: 'DIFÍCIL', color: '#7a1f2b', art: () => Pixel.character('diablo'), size: 600 },
+  { file: 'destacada-amigos', label: 'AMIGOS', color: C.blue, art: () => Pixel.mate('gaucho'), size: 480 },
+  { file: 'destacada-rankings', label: 'RANKINGS', color: '#a85d00', art: () => Pixel.spanishSuit('oro'), size: 520 },
+  { file: 'destacada-novedades', label: 'NOVEDADES', color: C.purple, art: () => Pixel.character('gaucho'), size: 620 },
+];
+async function highlight(h) {
+  const W = 1080, H = 1920;
+  const [c, ctx] = canvas(W, H);
+  ctx.fillStyle = h.color;
+  ctx.fillRect(0, 0, W, H);
+  // Aro dorado como el de la mesa.
+  ctx.strokeStyle = C.brass;
+  ctx.lineWidth = 24;
+  ctx.beginPath();
+  ctx.arc(W / 2, H / 2, 440, 0, Math.PI * 2);
+  ctx.stroke();
+  await drawSvg(ctx, h.art(), W / 2, H / 2, h.size);
+  text(ctx, h.label, H / 2 + 620, 90, C.ink);
+  return c;
+}
+
+// Vista previa de la grilla (cómo queda el perfil con las 9 primeras publicaciones).
+async function gridPreview(posts) {
+  const cell = 360, gap = 6;
+  const [c, ctx] = canvas(cell * 3 + gap * 2, Math.round(cell * 1.25) * 3 + gap * 2);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, c.width, c.height);
+  posts.slice(0, 9).forEach((p, i) => {
+    const x = (i % 3) * (cell + gap);
+    const y = Math.floor(i / 3) * (Math.round(cell * 1.25) + gap);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(p, x, y, cell, Math.round(cell * 1.25));
+  });
+  return c;
+}
+
+window.buildKit = async () => {
+  await document.fonts.load('64px Tiny5');
+  const out = {};
+  const png = (cnv) => cnv.toDataURL('image/png');
+  out['perfil'] = png(await profile());
+  for (const h of HIGHLIGHTS) out[h.file] = png(await highlight(h));
+  // Orden de publicación (la grilla muestra lo último arriba a la izquierda).
+  const posts = [
+    ['post-01-dia-del-mate', await matePost()],
+    ['post-02-te-jugas-la-vida', await introPost()],
+    ['post-03-podio-vacio', await podioPost()],
+    ['post-04-ia-dificil', await iaPost()],
+    ...await Promise.all(RIVALS.map(async (r, i) => [`post-0${5 + i}-noche-${r.noche}-${r.id}`, await rivalPost(r)])),
+    ['post-10-con-amigos', await amigosPost()],
+    ['post-11-cinco-de-copas', await cincoCopasPost()],
+  ];
+  for (const [name, cnv] of posts) out[name] = png(cnv);
+  // En el perfil se ven primero las últimas 9 publicaciones (de la 11 a la 3).
+  out['grilla-vista-previa'] = png(await gridPreview(posts.slice(2).reverse().map(([, cnv]) => cnv)));
+  return out;
+};
+</script>
+</body>
+</html>

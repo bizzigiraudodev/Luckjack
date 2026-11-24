@@ -17,7 +17,7 @@ La mantiene el agente `director-marketing`. Las primeras seis semanas están det
 Sin esto no se puede medir ni publicar bien. Responsable entre paréntesis.
 
 - [ ] **Activar Web Analytics en Vercel** (proyecto `luckjack` → Analytics → Enable). Solo falta el toggle del panel: el script ya está en el juego desde el 24 de noviembre.
-- [ ] **Crear las cuentas** `@costumbresarg` (o el usuario libre más parecido) en TikTok, Instagram, YouTube y X. Misma foto (el ícono del mate) y misma bio en todas (`community-manager`):
+- [ ] **Crear las cuentas** (para Instagram, la guía y todas las imágenes están en `instagram/README.md`) `@costumbresarg` (o el usuario libre más parecido) en TikTok, Instagram, YouTube y X. Misma foto (el ícono del mate) y misma bio en todas (`community-manager`):
   > 🗡️ Truco argentino gratis, sin descargar · Leyendas del campo · IA que no se come tus mentiras · Jugá con amigos por link 👇
 - [ ] **Link en la bio con UTM** por red (ver `metricas.md`).
 - [ ] **Banco de clips:** grabar 30 clips de 5–15 segundos del juego, verticales, para tener material para seis semanas (`productor-visual`, ver `guiones/banco-de-clips.md`).
